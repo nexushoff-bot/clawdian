@@ -1009,12 +1009,10 @@ var OpenClawClient = class {
         id: "msg-" + this.generateId(),
         method: "chat.send",
         params: {
-          sessionKey: "main",
-          // Use main session
+          sessionKey: `agent:${msg.agent}`,
+          // Use agent-specific session
           message: msg.content,
-          // Correct parameter name
           idempotencyKey: this.generateId()
-          // Required for deduplication
         }
       };
       console.log("[Clawdian] Sending message via WebSocket:", request);

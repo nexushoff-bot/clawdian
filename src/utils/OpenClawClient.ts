@@ -368,15 +368,15 @@ export class OpenClawClient {
                 return;
             }
 
-            // Use correct parameters: message, idempotencyKey
+            // Try using agent name as session key
             const request = {
                 type: 'req',
                 id: 'msg-' + this.generateId(),
                 method: 'chat.send',
                 params: {
-                    sessionKey: 'main',  // Use main session
-                    message: msg.content,  // Correct parameter name
-                    idempotencyKey: this.generateId()  // Required for deduplication
+                    sessionKey: `agent:${msg.agent}`,  // Use agent-specific session
+                    message: msg.content,
+                    idempotencyKey: this.generateId()
                 }
             };
 
