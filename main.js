@@ -733,27 +733,45 @@ var OpenClawClient = class {
     return this.agents;
   }
   async fetchAgents() {
-    const httpUrl = this.url.replace("ws://", "http://").replace("wss://", "https://");
-    try {
-      const response = await fetch(`${httpUrl}/agents/list`, {
-        method: "GET",
-        headers: {
-          "Authorization": `Bearer ${this.token}`
-        }
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      const data = await response.json();
-      this.agents = data.agents || [];
-      if (this.onAgentsUpdated) {
-        this.onAgentsUpdated(this.agents);
-      }
-      return this.agents;
-    } catch (err) {
-      console.log("[Clawdian] Failed to fetch agents, using defaults:", err);
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      console.log("[Clawdian] Cannot fetch agents - not connected");
       return [];
     }
+    return new Promise((resolve) => {
+      const requestId = this.generateId();
+      const timeout = setTimeout(() => {
+        console.log("[Clawdian] Agent fetch timeout");
+        resolve([]);
+      }, 5e3);
+      const originalHandler = this.handleMessage.bind(this);
+      this.handleMessage = async (data) => {
+        var _a;
+        if (data.id === requestId) {
+          clearTimeout(timeout);
+          this.handleMessage = originalHandler;
+          if (data.type === "res" && ((_a = data.payload) == null ? void 0 : _a.agents)) {
+            this.agents = data.payload.agents;
+            if (this.onAgentsUpdated) {
+              this.onAgentsUpdated(this.agents);
+            }
+            resolve(this.agents);
+          } else {
+            console.log("[Clawdian] No agents in response:", data);
+            resolve([]);
+          }
+        } else {
+          originalHandler(data);
+        }
+      };
+      const request = {
+        type: "req",
+        id: requestId,
+        method: "agents.list",
+        params: {}
+      };
+      console.log("[Clawdian] Requesting agents list via WebSocket:", request);
+      this.ws.send(JSON.stringify(request));
+    });
   }
   updateConfig(url, token) {
     this.url = url;

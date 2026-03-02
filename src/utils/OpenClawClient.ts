@@ -56,34 +56,54 @@ export class OpenClawClient {
     }
 
     async fetchAgents(): Promise<AgentInfo[]> {
-        const httpUrl = this.url.replace('ws://', 'http://').replace('wss://', 'https://');
-        
-        try {
-            // Try to fetch agents via HTTP API
-            const response = await fetch(`${httpUrl}/agents/list`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${this.token}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-
-            const data = await response.json();
-            this.agents = data.agents || [];
-            
-            if (this.onAgentsUpdated) {
-                this.onAgentsUpdated(this.agents);
-            }
-            
-            return this.agents;
-        } catch (err) {
-            console.log('[Clawdian] Failed to fetch agents, using defaults:', err);
-            // Return empty array - UI will handle defaults
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+            console.log('[Clawdian] Cannot fetch agents - not connected');
             return [];
         }
+
+        return new Promise((resolve) => {
+            const requestId = this.generateId();
+            const timeout = setTimeout(() => {
+                console.log('[Clawdian] Agent fetch timeout');
+                resolve([]);
+            }, 5000);
+
+            // Store original handler
+            const originalHandler = this.handleMessage.bind(this);
+            
+            // Temporary handler for this request
+            this.handleMessage = async (data) => {
+                if (data.id === requestId) {
+                    clearTimeout(timeout);
+                    this.handleMessage = originalHandler; // Restore
+                    
+                    if (data.type === 'res' && data.payload?.agents) {
+                        this.agents = data.payload.agents;
+                        if (this.onAgentsUpdated) {
+                            this.onAgentsUpdated(this.agents);
+                        }
+                        resolve(this.agents);
+                    } else {
+                        console.log('[Clawdian] No agents in response:', data);
+                        resolve([]);
+                    }
+                } else {
+                    // Pass other messages to original handler
+                    originalHandler(data);
+                }
+            };
+
+            // Send agents list request
+            const request = {
+                type: 'req',
+                id: requestId,
+                method: 'agents.list',
+                params: {}
+            };
+
+            console.log('[Clawdian] Requesting agents list via WebSocket:', request);
+            this.ws!.send(JSON.stringify(request));
+        });
     }
 
     updateConfig(url: string, token: string) {
