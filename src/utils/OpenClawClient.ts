@@ -7,6 +7,7 @@ export interface ChatMessage {
         currentFile?: string;
         fileContent?: string;
     };
+    sessionId?: string;
 }
 
 interface GatewayMessage {
@@ -374,13 +375,15 @@ export class OpenClawClient {
                 return;
             }
 
-            // Use just agent name as session key
+            // Use agent name as session key, or create session-specific key
+            const sessionKey = msg.sessionId ? `session:${msg.sessionId}` : msg.agent;
+
             const request = {
                 type: 'req',
                 id: 'msg-' + this.generateId(),
                 method: 'chat.send',
                 params: {
-                    sessionKey: msg.agent,  // Just the agent name
+                    sessionKey: sessionKey,
                     message: msg.content,
                     idempotencyKey: this.generateId()
                 }

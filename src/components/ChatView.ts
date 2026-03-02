@@ -17,11 +17,14 @@ export class ChatView extends ItemView {
     loadingEl: HTMLElement | null = null;
     isLoading = false;
     lastProcessedRunId: string | null = null;
+    sessionId: string;
 
     constructor(leaf: WorkspaceLeaf, client: OpenClawClient, plugin: ClawdianPlugin) {
         super(leaf);
         this.client = client;
         this.plugin = plugin;
+        // Generate unique session ID for this chat instance
+        this.sessionId = 'obsidian-chat-' + this.generateSessionId();
     }
 
     getViewType(): string {
@@ -424,7 +427,8 @@ export class ChatView extends ItemView {
             await this.client.sendMessage({
                 agent: this.plugin.settings.defaultAgent,
                 content: text,
-                context
+                context,
+                sessionId: this.sessionId  // Use unique session for this chat
             });
         } catch (err) {
             this.addMessage('agent', '⚠️ Failed to send. Connection lost?');
@@ -443,6 +447,10 @@ export class ChatView extends ItemView {
         if (this.loadingEl) {
             this.loadingEl.style.display = 'none';
         }
+    }
+
+    private generateSessionId(): string {
+        return Date.now().toString(36) + Math.random().toString(36).substr(2);
     }
 
     addMessage(sender: 'user' | 'agent', text: string) {

@@ -294,6 +294,7 @@ var ChatView = class extends import_obsidian4.ItemView {
     this.lastProcessedRunId = null;
     this.client = client;
     this.plugin = plugin;
+    this.sessionId = "obsidian-chat-" + this.generateSessionId();
   }
   getViewType() {
     return VIEW_TYPE_CHAT;
@@ -609,7 +610,9 @@ var ChatView = class extends import_obsidian4.ItemView {
       await this.client.sendMessage({
         agent: this.plugin.settings.defaultAgent,
         content: text,
-        context
+        context,
+        sessionId: this.sessionId
+        // Use unique session for this chat
       });
     } catch (err) {
       this.addMessage("agent", "\u26A0\uFE0F Failed to send. Connection lost?");
@@ -626,6 +629,9 @@ var ChatView = class extends import_obsidian4.ItemView {
     if (this.loadingEl) {
       this.loadingEl.style.display = "none";
     }
+  }
+  generateSessionId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
   }
   addMessage(sender, text) {
     console.log("[Clawdian] addMessage called with sender:", sender, "text:", text);
@@ -1104,13 +1110,13 @@ var OpenClawClient = class {
         reject(new Error("Not connected"));
         return;
       }
+      const sessionKey = msg.sessionId ? `session:${msg.sessionId}` : msg.agent;
       const request = {
         type: "req",
         id: "msg-" + this.generateId(),
         method: "chat.send",
         params: {
-          sessionKey: msg.agent,
-          // Just the agent name
+          sessionKey,
           message: msg.content,
           idempotencyKey: this.generateId()
         }
