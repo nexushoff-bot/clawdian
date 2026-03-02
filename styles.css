@@ -1,0 +1,260 @@
+.clawdian-chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 8px;
+}
+
+.clawdian-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.clawdian-title {
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.clawdian-agent-select {
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+.clawdian-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.clawdian-message {
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.clawdian-message-user {
+    background: var(--background-modifier-form-field);
+    margin-left: 20px;
+}
+
+.clawdian-message-agent {
+    background: var(--background-secondary);
+    margin-right: 20px;
+}
+
+.clawdian-message-sender {
+    font-size: 11px;
+    font-weight: bold;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    text-transform: capitalize;
+}
+
+.clawdian-message-text {
+    white-space: pre-wrap;
+}
+
+.clawdian-input-container {
+    display: flex;
+    gap: 8px;
+    padding: 8px;
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+.clawdian-input {
+    flex: 1;
+    resize: none;
+    min-height: 60px;
+    padding: 8px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background: var(--background-primary);
+    font-size: 13px;
+}
+
+.clawdian-send-btn {
+    align-self: flex-end;
+    padding: 8px 16px;
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.clawdian-send-btn:hover {
+    background: var(--interactive-accent-hover);
+}
+
+/* Pairing Modal Styles */
+.clawdian-pairing-code {
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    padding: 16px;
+    margin: 16px 0;
+    font-family: var(--font-monospace);
+    font-size: 14px;
+    text-align: center;
+    user-select: all;
+}
+
+.clawdian-pairing-code-label {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.clawdian-pairing-status {
+    text-align: center;
+    padding: 12px;
+    border-radius: 6px;
+    margin: 12px 0;
+    font-size: 14px;
+}
+
+.clawdian-pairing-success {
+    background: var(--background-modifier-success);
+    color: var(--text-success);
+}
+
+.clawdian-pairing-error {
+    background: var(--background-modifier-error);
+    color: var(--text-error);
+}
+
+/* Connect Prompt */
+.clawdian-connect-prompt {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.clawdian-connect-prompt p {
+    color: var(--text-muted);
+    margin-bottom: 16px;
+}
+
+.clawdian-connect-btn {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border: none;
+    border-radius: 6px;
+    padding: 12px 24px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.clawdian-connect-btn:hover {
+    background: var(--interactive-accent-hover);
+}
+
+.clawdian-connect-btn:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.clawdian-setup-code-btn {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    padding: 12px 24px;
+    font-size: 14px;
+    cursor: pointer;
+    margin-left: 8px;
+}
+
+.clawdian-setup-code-btn:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+/* Pairing Required Styles */
+.clawdian-status-icon {
+    font-size: 48px;
+    text-align: center;
+    margin-bottom: 16px;
+    color: var(--text-muted);
+}
+
+.clawdian-connect-title {
+    text-align: center;
+    margin: 0 0 8px 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.clawdian-connect-desc {
+    text-align: center;
+    color: var(--text-muted);
+    margin: 0 0 20px 0;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.clawdian-btn-container {
+    text-align: center;
+}
+
+.clawdian-device-id {
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    padding: 16px;
+    margin: 16px 0;
+}
+
+.clawdian-terminal-command {
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 12px;
+    font-family: var(--font-monospace);
+    font-size: 13px;
+    overflow-x: auto;
+}
+
+.clawdian-terminal-command code {
+    color: var(--text-accent);
+    word-break: break-all;
+}
+
+.clawdian-copy-btn {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-bottom: 12px;
+}
+
+.clawdian-copy-btn:hover {
+    background: var(--interactive-accent-hover);
+}
+
+.clawdian-device-id-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 8px;
+}
+
+/* Settings styles */
+.clawdian-settings-section {
+    margin-bottom: 24px;
+}
