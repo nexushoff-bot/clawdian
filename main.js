@@ -284,6 +284,8 @@ var ChatView = class extends import_obsidian4.ItemView {
     this.inputContainerEl = null;
     this.deviceIdDisplayEl = null;
     this.agentSelectEl = null;
+    this.loadingEl = null;
+    this.isLoading = false;
     this.client = client;
     this.plugin = plugin;
   }
@@ -309,6 +311,12 @@ var ChatView = class extends import_obsidian4.ItemView {
       this.plugin.saveSettings();
     });
     this.messagesEl = container.createEl("div", { cls: "clawdian-messages" });
+    this.loadingEl = this.messagesEl.createEl("div", {
+      cls: "clawdian-loading",
+      attr: { style: "display: none;" }
+    });
+    const spinner = this.loadingEl.createEl("div", { cls: "clawdian-spinner" });
+    this.loadingEl.createEl("span", { text: "Waiting for agent response..." });
     this.connectPromptEl = this.messagesEl.createEl("div", {
       cls: "clawdian-connect-prompt"
     });
@@ -366,7 +374,7 @@ var ChatView = class extends import_obsidian4.ItemView {
       }
     });
     this.client.onMessage = (text) => {
-      var _a;
+      var _a, _b;
       console.log("[Clawdian] UI received message:", text);
       try {
         const data = JSON.parse(text);
@@ -377,6 +385,7 @@ var ChatView = class extends import_obsidian4.ItemView {
           if (message.content && Array.isArray(message.content)) {
             const textContent = message.content.filter((item) => item.type === "text").map((item) => item.text).join("");
             console.log("[Clawdian] Extracted text:", textContent);
+            this.hideLoading();
             this.addMessage("agent", textContent);
             return;
           }
@@ -384,18 +393,21 @@ var ChatView = class extends import_obsidian4.ItemView {
         if (data.type === "event" && data.event === "chat") {
           console.log("[Clawdian] Found chat event, checking payload...");
           const message = (_a = data.payload) == null ? void 0 : _a.message;
-          if (message) {
-            console.log("[Clawdian] Found message in payload, extracting text...");
+          const state = (_b = data.payload) == null ? void 0 : _b.state;
+          console.log("[Clawdian] Chat event state:", state);
+          if (state === "final" && message) {
+            console.log("[Clawdian] Processing final message, extracting text...");
             if (message.content && Array.isArray(message.content)) {
               const textContent = message.content.filter((item) => item.type === "text").map((item) => item.text).join("");
-              console.log("[Clawdian] Extracted text from chat event:", textContent);
+              console.log("[Clawdian] Extracted text from final chat event:", textContent);
+              this.hideLoading();
               this.addMessage("agent", textContent);
               return;
             } else {
               console.log("[Clawdian] Message content not in expected array format");
             }
-          } else {
-            console.log("[Clawdian] No message in chat event payload");
+          } else if (state !== "final") {
+            console.log("[Clawdian] Skipping non-final message (state:", state, ")");
           }
         }
         console.log("[Clawdian] Message does not match expected formats");
@@ -403,6 +415,7 @@ var ChatView = class extends import_obsidian4.ItemView {
         console.log("[Clawdian] Failed to parse as JSON:", e);
       }
       console.log("[Clawdian] Using fallback text handling");
+      this.hideLoading();
       this.addMessage("agent", text);
     };
     this.client.onConnect = () => {
@@ -545,23 +558,34 @@ var ChatView = class extends import_obsidian4.ItemView {
       new import_obsidian4.Notice("Not connected. Click Connect first.");
       return;
     }
+    if (this.isLoading) {
+      return;
+    }
     const text = this.inputEl.value.trim();
     if (!text)
       return;
     this.addMessage("user", text);
     this.inputEl.value = "";
+    this.showLoading();
     const context = {};
+    console.log("[Clawdian] includeVaultContext setting:", this.plugin.settings.includeVaultContext);
     if (this.plugin.settings.includeVaultContext) {
       const activeFile = this.app.workspace.getActiveFile();
+      console.log("[Clawdian] Active file:", activeFile == null ? void 0 : activeFile.path);
       if (activeFile) {
         context.currentFile = activeFile.path;
         try {
           const content = await this.app.vault.read(activeFile);
           context.fileContent = content.slice(0, 5e3);
+          console.log("[Clawdian] Context prepared - file:", context.currentFile, "content length:", context.fileContent.length);
         } catch (e) {
           console.log("[Clawdian] Could not read file:", e);
         }
+      } else {
+        console.log("[Clawdian] No active file found");
       }
+    } else {
+      console.log("[Clawdian] Vault context disabled in settings");
     }
     try {
       await this.client.sendMessage({
@@ -571,6 +595,19 @@ var ChatView = class extends import_obsidian4.ItemView {
       });
     } catch (err) {
       this.addMessage("agent", "\u26A0\uFE0F Failed to send. Connection lost?");
+    }
+  }
+  showLoading() {
+    this.isLoading = true;
+    if (this.loadingEl) {
+      this.loadingEl.style.display = "flex";
+      this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+    }
+  }
+  hideLoading() {
+    this.isLoading = false;
+    if (this.loadingEl) {
+      this.loadingEl.style.display = "none";
     }
   }
   addMessage(sender, text) {

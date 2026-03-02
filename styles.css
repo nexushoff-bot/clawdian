@@ -258,3 +258,52 @@
 .clawdian-settings-section {
     margin-bottom: 24px;
 }
+
+/* User messages - blue theme */
+.clawdian-message-user {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border: 1px solid #2196f3;
+    margin-left: 20px;
+    align-self: flex-end;
+}
+
+.clawdian-message-user .clawdian-message-sender {
+    color: #1976d2;
+}
+
+/* Agent messages - green theme */
+.clawdian-message-agent {
+    background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
+    border: 1px solid #4caf50;
+    margin-right: 20px;
+    align-self: flex-start;
+}
+
+.clawdian-message-agent .clawdian-message-sender {
+    color: #2e7d32;
+}
+
+/* Loading spinner */
+.clawdian-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.clawdian-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--background-modifier-border);
+    border-top: 2px solid var(--interactive-accent);
+    border-radius: 50%;
+    animation: clawdian-spin 1s linear infinite;
+    margin-right: 8px;
+}
+
+@keyframes clawdian-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

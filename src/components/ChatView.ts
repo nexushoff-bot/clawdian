@@ -14,6 +14,8 @@ export class ChatView extends ItemView {
     inputContainerEl: HTMLElement | null = null;
     deviceIdDisplayEl: HTMLElement | null = null;
     agentSelectEl: HTMLSelectElement | null = null;
+    loadingEl: HTMLElement | null = null;
+    isLoading = false;
 
     constructor(leaf: WorkspaceLeaf, client: OpenClawClient, plugin: ClawdianPlugin) {
         super(leaf);
@@ -51,6 +53,14 @@ export class ChatView extends ItemView {
 
         // Messages area
         this.messagesEl = container.createEl('div', { cls: 'clawdian-messages' });
+
+        // Loading indicator (initially hidden)
+        this.loadingEl = this.messagesEl.createEl('div', {
+            cls: 'clawdian-loading',
+            attr: { style: 'display: none;' }
+        });
+        const spinner = this.loadingEl.createEl('div', { cls: 'clawdian-spinner' });
+        this.loadingEl.createEl('span', { text: 'Waiting for agent response...' });
 
         // Connect/Prompt section
         this.connectPromptEl = this.messagesEl.createEl('div', {
@@ -132,7 +142,7 @@ export class ChatView extends ItemView {
             try {
                 const data = JSON.parse(text);
                 console.log('[Clawdian] Parsed data:', data);
-                
+
                 // Check if this is a direct chat payload (not wrapped in event)
                 if (data.message && data.message.role === 'assistant' && data.message.content) {
                     console.log('[Clawdian] Found direct chat payload, extracting text...');
@@ -143,33 +153,39 @@ export class ChatView extends ItemView {
                             .map((item: any) => item.text)
                             .join('');
                         console.log('[Clawdian] Extracted text:', textContent);
+                        this.hideLoading();
                         this.addMessage('agent', textContent);
                         return;
                     }
                 }
-                
+
                 // Check for wrapped event format (fallback)
                 if (data.type === 'event' && data.event === 'chat') {
                     console.log('[Clawdian] Found chat event, checking payload...');
                     const message = data.payload?.message;
-                    if (message) {
-                        console.log('[Clawdian] Found message in payload, extracting text...');
+                    const state = data.payload?.state;
+                    console.log('[Clawdian] Chat event state:', state);
+
+                    // Only process final messages to avoid duplicates
+                    if (state === 'final' && message) {
+                        console.log('[Clawdian] Processing final message, extracting text...');
                         if (message.content && Array.isArray(message.content)) {
                             const textContent = message.content
                                 .filter((item: any) => item.type === 'text')
                                 .map((item: any) => item.text)
                                 .join('');
-                            console.log('[Clawdian] Extracted text from chat event:', textContent);
+                            console.log('[Clawdian] Extracted text from final chat event:', textContent);
+                            this.hideLoading();
                             this.addMessage('agent', textContent);
                             return;
                         } else {
                             console.log('[Clawdian] Message content not in expected array format');
                         }
-                    } else {
-                        console.log('[Clawdian] No message in chat event payload');
+                    } else if (state !== 'final') {
+                        console.log('[Clawdian] Skipping non-final message (state:', state, ')');
                     }
                 }
-                
+
                 console.log('[Clawdian] Message does not match expected formats');
             } catch (e) {
                 console.log('[Clawdian] Failed to parse as JSON:', e);
@@ -177,6 +193,7 @@ export class ChatView extends ItemView {
             }
             // Fallback to plain text handling
             console.log('[Clawdian] Using fallback text handling');
+            this.hideLoading();
             this.addMessage('agent', text);
         };
         this.client.onConnect = () => {
@@ -347,25 +364,39 @@ export class ChatView extends ItemView {
             return;
         }
 
+        if (this.isLoading) {
+            return; // Prevent multiple sends while loading
+        }
+
         const text = this.inputEl.value.trim();
         if (!text) return;
 
         this.addMessage('user', text);
         this.inputEl.value = '';
 
+        // Show loading spinner
+        this.showLoading();
+
         // Get vault context
         const context: any = {};
+        console.log('[Clawdian] includeVaultContext setting:', this.plugin.settings.includeVaultContext);
         if (this.plugin.settings.includeVaultContext) {
             const activeFile = this.app.workspace.getActiveFile();
+            console.log('[Clawdian] Active file:', activeFile?.path);
             if (activeFile) {
                 context.currentFile = activeFile.path;
                 try {
                     const content = await this.app.vault.read(activeFile);
                     context.fileContent = content.slice(0, 5000);
+                    console.log('[Clawdian] Context prepared - file:', context.currentFile, 'content length:', context.fileContent.length);
                 } catch (e) {
                     console.log('[Clawdian] Could not read file:', e);
                 }
+            } else {
+                console.log('[Clawdian] No active file found');
             }
+        } else {
+            console.log('[Clawdian] Vault context disabled in settings');
         }
 
         try {
@@ -376,6 +407,21 @@ export class ChatView extends ItemView {
             });
         } catch (err) {
             this.addMessage('agent', '⚠️ Failed to send. Connection lost?');
+        }
+    }
+
+    showLoading() {
+        this.isLoading = true;
+        if (this.loadingEl) {
+            this.loadingEl.style.display = 'flex';
+            this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+        }
+    }
+
+    hideLoading() {
+        this.isLoading = false;
+        if (this.loadingEl) {
+            this.loadingEl.style.display = 'none';
         }
     }
 
