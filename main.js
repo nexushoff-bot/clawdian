@@ -96,7 +96,8 @@ var DEFAULT_SETTINGS = {
   gatewayUrl: "ws://127.0.0.1:18789",
   gatewayToken: "",
   defaultAgent: "",
-  includeVaultContext: true
+  includeVaultContext: true,
+  autoConnect: false
 };
 var ClawdianSettingTab = class extends import_obsidian2.PluginSettingTab {
   constructor(app, plugin) {
@@ -186,6 +187,10 @@ var ClawdianSettingTab = class extends import_obsidian2.PluginSettingTab {
     });
     new import_obsidian2.Setting(containerEl).setName("Include vault context").setDesc("Send current file and vault info with messages").addToggle((toggle) => toggle.setValue(this.plugin.settings.includeVaultContext).onChange(async (value) => {
       this.plugin.settings.includeVaultContext = value;
+      await this.plugin.saveSettings();
+    }));
+    new import_obsidian2.Setting(containerEl).setName("Auto-connect on startup").setDesc("Automatically connect to Gateway when Obsidian starts").addToggle((toggle) => toggle.setValue(this.plugin.settings.autoConnect).onChange(async (value) => {
+      this.plugin.settings.autoConnect = value;
       await this.plugin.saveSettings();
     }));
     containerEl.createEl("h3", { text: "Advanced" });
@@ -999,15 +1004,21 @@ var OpenClawClient = class {
         reject(new Error("Not connected"));
         return;
       }
-      const message = {
-        type: "message",
-        agent: msg.agent,
-        content: msg.content,
-        context: msg.context,
-        timestamp: Date.now()
+      const request = {
+        type: "req",
+        id: "msg-" + this.generateId(),
+        method: "chat.send",
+        params: {
+          sessionKey: "main",
+          // Use main session
+          message: msg.content,
+          // Correct parameter name
+          idempotencyKey: this.generateId()
+          // Required for deduplication
+        }
       };
-      console.log("[Clawdian] Sending message via WebSocket:", message);
-      this.ws.send(JSON.stringify(message));
+      console.log("[Clawdian] Sending message via WebSocket:", request);
+      this.ws.send(JSON.stringify(request));
       resolve();
     });
   }

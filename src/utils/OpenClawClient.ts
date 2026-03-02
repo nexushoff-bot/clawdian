@@ -368,17 +368,20 @@ export class OpenClawClient {
                 return;
             }
 
-            // Send message as an event
-            const message = {
-                type: 'message',
-                agent: msg.agent,
-                content: msg.content,
-                context: msg.context,
-                timestamp: Date.now()
+            // Use correct parameters: message, idempotencyKey
+            const request = {
+                type: 'req',
+                id: 'msg-' + this.generateId(),
+                method: 'chat.send',
+                params: {
+                    sessionKey: 'main',  // Use main session
+                    message: msg.content,  // Correct parameter name
+                    idempotencyKey: this.generateId()  // Required for deduplication
+                }
             };
 
-            console.log('[Clawdian] Sending message via WebSocket:', message);
-            this.ws!.send(JSON.stringify(message));
+            console.log('[Clawdian] Sending message via WebSocket:', request);
+            this.ws!.send(JSON.stringify(request));
             resolve();
         });
     }

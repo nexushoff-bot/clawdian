@@ -7,13 +7,15 @@ export interface ClawdianSettings {
     gatewayToken: string;
     defaultAgent: string;
     includeVaultContext: boolean;
+    autoConnect: boolean;
 }
 
 export const DEFAULT_SETTINGS: ClawdianSettings = {
     gatewayUrl: 'ws://127.0.0.1:18789',
     gatewayToken: '',
     defaultAgent: '',
-    includeVaultContext: true
+    includeVaultContext: true,
+    autoConnect: false
 };
 
 export class ClawdianSettingTab extends PluginSettingTab {
@@ -160,6 +162,16 @@ export class ClawdianSettingTab extends PluginSettingTab {
                 .setValue(this.plugin.settings.includeVaultContext)
                 .onChange(async (value) => {
                     this.plugin.settings.includeVaultContext = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('Auto-connect on startup')
+            .setDesc('Automatically connect to Gateway when Obsidian starts')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.autoConnect)
+                .onChange(async (value) => {
+                    this.plugin.settings.autoConnect = value;
                     await this.plugin.saveSettings();
                 }));
 
