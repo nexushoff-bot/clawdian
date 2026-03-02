@@ -1,5 +1,5 @@
 import { ItemView, WorkspaceLeaf, Notice, setIcon } from 'obsidian';
-import { OpenClawClient } from '../utils/OpenClawClient';
+import { OpenClawClient, AgentInfo } from '../utils/OpenClawClient';
 import ClawdianPlugin from '../main';
 import { SetupCodeModal } from './SetupCodeModal';
 
@@ -13,6 +13,7 @@ export class ChatView extends ItemView {
     connectPromptEl: HTMLElement | null = null;
     inputContainerEl: HTMLElement | null = null;
     deviceIdDisplayEl: HTMLElement | null = null;
+    agentSelectEl: HTMLSelectElement | null = null;
 
     constructor(leaf: WorkspaceLeaf, client: OpenClawClient, plugin: ClawdianPlugin) {
         super(leaf);
@@ -41,15 +42,11 @@ export class ChatView extends ItemView {
         const header = container.createEl('div', { cls: 'clawdian-header' });
         header.createEl('span', { text: '🦞 Clawdian', cls: 'clawdian-title' });
 
-        const agentSelect = header.createEl('select', { cls: 'clawdian-agent-select' });
-        ['nexus', 'prism', 'orion', 'aristotowl'].forEach(agent => {
-            const option = agentSelect.createEl('option', { text: agent, value: agent });
-            if (agent === this.plugin.settings.defaultAgent) {
-                option.selected = true;
-            }
-        });
-        agentSelect.addEventListener('change', (e) => {
-            this.plugin.settings.defaultAgent = (e.target as HTMLSelectElement).value as any;
+        this.agentSelectEl = header.createEl('select', { cls: 'clawdian-agent-select' });
+        this.populateAgentDropdown();
+        this.agentSelectEl.addEventListener('change', (e) => {
+            this.plugin.settings.defaultAgent = (e.target as HTMLSelectElement).value;
+            this.plugin.saveSettings();
         });
 
         // Messages area
@@ -133,6 +130,11 @@ export class ChatView extends ItemView {
         this.client.onConnect = () => {
             console.log('[Clawdian] ChatView onConnect called');
             this.showConnected();
+            // Fetch agents after connecting
+            this.fetchAndUpdateAgents();
+        };
+        this.client.onAgentsUpdated = (agents) => {
+            this.populateAgentDropdown(agents);
         };
         this.client.onDisconnect = () => {
             console.log('[Clawdian] ChatView onDisconnect called');
@@ -171,6 +173,51 @@ export class ChatView extends ItemView {
                 }
                 new Notice('Connection failed: ' + err.message);
             }
+        }
+    }
+
+    async fetchAndUpdateAgents() {
+        const agents = await this.client.fetchAgents();
+        this.populateAgentDropdown(agents);
+    }
+
+    populateAgentDropdown(agents?: AgentInfo[]) {
+        if (!this.agentSelectEl) return;
+        
+        // Clear existing options
+        this.agentSelectEl.empty();
+        
+        // Use provided agents or fall back to stored agents
+        const agentsList = agents?.length ? agents : this.client.getAgents();
+        
+        if (agentsList.length === 0) {
+            // Fallback to default agents if none fetched yet
+            const defaultAgents = [
+                { id: 'nexus', name: 'Nexus', description: 'Project coordinator' },
+                { id: 'prism', name: 'Prism', description: 'Designer' },
+                { id: 'orion', name: 'Orion', description: 'Developer' },
+                { id: 'aristotowl', name: 'Aristotowl', description: 'Writer' }
+            ];
+            defaultAgents.forEach(agent => {
+                const option = this.agentSelectEl!.createEl('option', { 
+                    text: agent.name,
+                    value: agent.id 
+                });
+                if (agent.id === this.plugin.settings.defaultAgent) {
+                    option.selected = true;
+                }
+            });
+        } else {
+            // Use fetched agents
+            agentsList.forEach(agent => {
+                const option = this.agentSelectEl!.createEl('option', { 
+                    text: agent.name || agent.id,
+                    value: agent.id 
+                });
+                if (agent.id === this.plugin.settings.defaultAgent) {
+                    option.selected = true;
+                }
+            });
         }
     }
 

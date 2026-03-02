@@ -167,10 +167,26 @@ var ClawdianSettingTab = class extends import_obsidian2.PluginSettingTab {
       });
     });
     containerEl.createEl("h3", { text: "Preferences" });
-    new import_obsidian2.Setting(containerEl).setName("Default Agent").setDesc("Which agent to chat with by default").addDropdown((dropdown) => dropdown.addOption("nexus", "Nexus (Project Coordinator)").addOption("prism", "Prism (Designer)").addOption("orion", "Orion (Developer)").addOption("aristotowl", "Aristotowl (Writer/Artist)").setValue(this.plugin.settings.defaultAgent).onChange(async (value) => {
-      this.plugin.settings.defaultAgent = value;
-      await this.plugin.saveSettings();
-    }));
+    const agentSetting = new import_obsidian2.Setting(containerEl).setName("Default Agent").setDesc("Which agent to chat with by default");
+    const agents = this.plugin.client.getAgents();
+    const dropdown = agentSetting.addDropdown((dropdown2) => {
+      if (agents.length > 0) {
+        agents.forEach((agent) => {
+          dropdown2.addOption(agent.id, agent.name || agent.id);
+        });
+      } else {
+        dropdown2.addOption("nexus", "Nexus");
+        dropdown2.addOption("prism", "Prism");
+        dropdown2.addOption("orion", "Orion");
+        dropdown2.addOption("aristotowl", "Aristotowl");
+      }
+      dropdown2.setValue(this.plugin.settings.defaultAgent);
+      dropdown2.onChange(async (value) => {
+        this.plugin.settings.defaultAgent = value;
+        await this.plugin.saveSettings();
+      });
+      return dropdown2;
+    });
     new import_obsidian2.Setting(containerEl).setName("Include vault context").setDesc("Send current file and vault info with messages").addToggle((toggle) => toggle.setValue(this.plugin.settings.includeVaultContext).onChange(async (value) => {
       this.plugin.settings.includeVaultContext = value;
       await this.plugin.saveSettings();
@@ -265,6 +281,7 @@ var ChatView = class extends import_obsidian4.ItemView {
     this.connectPromptEl = null;
     this.inputContainerEl = null;
     this.deviceIdDisplayEl = null;
+    this.agentSelectEl = null;
     this.client = client;
     this.plugin = plugin;
   }
@@ -283,15 +300,11 @@ var ChatView = class extends import_obsidian4.ItemView {
     container.addClass("clawdian-chat-container");
     const header = container.createEl("div", { cls: "clawdian-header" });
     header.createEl("span", { text: "\u{1F99E} Clawdian", cls: "clawdian-title" });
-    const agentSelect = header.createEl("select", { cls: "clawdian-agent-select" });
-    ["nexus", "prism", "orion", "aristotowl"].forEach((agent) => {
-      const option = agentSelect.createEl("option", { text: agent, value: agent });
-      if (agent === this.plugin.settings.defaultAgent) {
-        option.selected = true;
-      }
-    });
-    agentSelect.addEventListener("change", (e) => {
+    this.agentSelectEl = header.createEl("select", { cls: "clawdian-agent-select" });
+    this.populateAgentDropdown();
+    this.agentSelectEl.addEventListener("change", (e) => {
       this.plugin.settings.defaultAgent = e.target.value;
+      this.plugin.saveSettings();
     });
     this.messagesEl = container.createEl("div", { cls: "clawdian-messages" });
     this.connectPromptEl = this.messagesEl.createEl("div", {
@@ -354,6 +367,10 @@ var ChatView = class extends import_obsidian4.ItemView {
     this.client.onConnect = () => {
       console.log("[Clawdian] ChatView onConnect called");
       this.showConnected();
+      this.fetchAndUpdateAgents();
+    };
+    this.client.onAgentsUpdated = (agents) => {
+      this.populateAgentDropdown(agents);
     };
     this.client.onDisconnect = () => {
       console.log("[Clawdian] ChatView onDisconnect called");
@@ -385,6 +402,43 @@ var ChatView = class extends import_obsidian4.ItemView {
         }
         new import_obsidian4.Notice("Connection failed: " + err.message);
       }
+    }
+  }
+  async fetchAndUpdateAgents() {
+    const agents = await this.client.fetchAgents();
+    this.populateAgentDropdown(agents);
+  }
+  populateAgentDropdown(agents) {
+    if (!this.agentSelectEl)
+      return;
+    this.agentSelectEl.empty();
+    const agentsList = (agents == null ? void 0 : agents.length) ? agents : this.client.getAgents();
+    if (agentsList.length === 0) {
+      const defaultAgents = [
+        { id: "nexus", name: "Nexus", description: "Project coordinator" },
+        { id: "prism", name: "Prism", description: "Designer" },
+        { id: "orion", name: "Orion", description: "Developer" },
+        { id: "aristotowl", name: "Aristotowl", description: "Writer" }
+      ];
+      defaultAgents.forEach((agent) => {
+        const option = this.agentSelectEl.createEl("option", {
+          text: agent.name,
+          value: agent.id
+        });
+        if (agent.id === this.plugin.settings.defaultAgent) {
+          option.selected = true;
+        }
+      });
+    } else {
+      agentsList.forEach((agent) => {
+        const option = this.agentSelectEl.createEl("option", {
+          text: agent.name || agent.id,
+          value: agent.id
+        });
+        if (agent.id === this.plugin.settings.defaultAgent) {
+          option.selected = true;
+        }
+      });
     }
   }
   showConnected() {
@@ -682,9 +736,37 @@ var OpenClawClient = class {
     this.onDisconnect = null;
     this.onAuthError = null;
     this.onPairingRequired = null;
+    this.onAgentsUpdated = null;
+    this.agents = [];
     this.url = url;
     this.token = token;
     this.deviceManager = new DeviceIdentityManager();
+  }
+  getAgents() {
+    return this.agents;
+  }
+  async fetchAgents() {
+    const httpUrl = this.url.replace("ws://", "http://").replace("wss://", "https://");
+    try {
+      const response = await fetch(`${httpUrl}/agents/list`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${this.token}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const data = await response.json();
+      this.agents = data.agents || [];
+      if (this.onAgentsUpdated) {
+        this.onAgentsUpdated(this.agents);
+      }
+      return this.agents;
+    } catch (err) {
+      console.log("[Clawdian] Failed to fetch agents, using defaults:", err);
+      return [];
+    }
   }
   updateConfig(url, token) {
     this.url = url;
@@ -906,22 +988,34 @@ var OpenClawClient = class {
   clearDeviceToken() {
     this.deviceManager.clearDeviceToken();
   }
-  sendMessage(msg) {
-    return new Promise((resolve, reject) => {
-      if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-        reject(new Error("Not connected"));
-        return;
+  async sendMessage(msg) {
+    const httpUrl = this.url.replace("ws://", "http://").replace("wss://", "https://");
+    const body = {
+      tool: "message",
+      action: "send",
+      args: {
+        message: msg.content,
+        channel: "discord",
+        target: "neil02966"
       }
-      const request = {
-        type: "chat",
-        content: msg.content,
-        agent: msg.agent,
-        context: msg.context
-      };
-      console.log("[Clawdian] Sending chat message:", request);
-      this.ws.send(JSON.stringify(request));
-      resolve();
-    });
+    };
+    try {
+      const response = await fetch(`${httpUrl}/tools/invoke`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${this.token}`
+        },
+        body: JSON.stringify(body)
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+      }
+      console.log("[Clawdian] Message sent via HTTP");
+    } catch (err) {
+      console.error("[Clawdian] Send failed:", err);
+      throw err;
+    }
   }
   disconnect() {
     if (this.ws) {

@@ -5,7 +5,7 @@ import { PairingModal } from './components/PairingModal';
 export interface ClawdianSettings {
     gatewayUrl: string;
     gatewayToken: string;
-    defaultAgent: 'nexus' | 'prism' | 'orion' | 'aristotowl';
+    defaultAgent: string;
     includeVaultContext: boolean;
 }
 
@@ -128,19 +128,32 @@ export class ClawdianSettingTab extends PluginSettingTab {
         // Agent Selection
         containerEl.createEl('h3', { text: 'Preferences' });
 
-        new Setting(containerEl)
+        const agentSetting = new Setting(containerEl)
             .setName('Default Agent')
-            .setDesc('Which agent to chat with by default')
-            .addDropdown(dropdown => dropdown
-                .addOption('nexus', 'Nexus (Project Coordinator)')
-                .addOption('prism', 'Prism (Designer)')
-                .addOption('orion', 'Orion (Developer)')
-                .addOption('aristotowl', 'Aristotowl (Writer/Artist)')
-                .setValue(this.plugin.settings.defaultAgent)
-                .onChange(async (value: any) => {
-                    this.plugin.settings.defaultAgent = value;
-                    await this.plugin.saveSettings();
-                }));
+            .setDesc('Which agent to chat with by default');
+        
+        // Get agents from client or use defaults
+        const agents = this.plugin.client.getAgents();
+        const dropdown = agentSetting.addDropdown(dropdown => {
+            if (agents.length > 0) {
+                // Use fetched agents
+                agents.forEach(agent => {
+                    dropdown.addOption(agent.id, agent.name || agent.id);
+                });
+            } else {
+                // Fallback defaults
+                dropdown.addOption('nexus', 'Nexus');
+                dropdown.addOption('prism', 'Prism');
+                dropdown.addOption('orion', 'Orion');
+                dropdown.addOption('aristotowl', 'Aristotowl');
+            }
+            dropdown.setValue(this.plugin.settings.defaultAgent);
+            dropdown.onChange(async (value) => {
+                this.plugin.settings.defaultAgent = value;
+                await this.plugin.saveSettings();
+            });
+            return dropdown;
+        });
 
         new Setting(containerEl)
             .setName('Include vault context')

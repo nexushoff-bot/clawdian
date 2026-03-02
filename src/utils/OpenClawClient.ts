@@ -1,4 +1,4 @@
-import { requestUrl, RequestUrlParam } from 'obsidian';
+import { DeviceIdentityManager } from './DeviceIdentity';
 
 export interface ChatMessage {
     agent: string;
@@ -19,6 +19,13 @@ interface GatewayMessage {
     deviceToken?: string;
 }
 
+export interface AgentInfo {
+    id: string;
+    name: string;
+    description: string;
+    icon?: string;
+}
+
 export class OpenClawClient {
     private ws: WebSocket | null = null;
     private url: string;
@@ -34,11 +41,49 @@ export class OpenClawClient {
     onDisconnect: (() => void) | null = null;
     onAuthError: ((message: string) => void) | null = null;
     onPairingRequired: ((deviceId: string) => void) | null = null;
+    onAgentsUpdated: ((agents: AgentInfo[]) => void) | null = null;
+
+    private agents: AgentInfo[] = [];
 
     constructor(url: string, token: string) {
         this.url = url;
         this.token = token;
         this.deviceManager = new DeviceIdentityManager();
+    }
+
+    getAgents(): AgentInfo[] {
+        return this.agents;
+    }
+
+    async fetchAgents(): Promise<AgentInfo[]> {
+        const httpUrl = this.url.replace('ws://', 'http://').replace('wss://', 'https://');
+        
+        try {
+            // Try to fetch agents via HTTP API
+            const response = await fetch(`${httpUrl}/agents/list`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${this.token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+            this.agents = data.agents || [];
+            
+            if (this.onAgentsUpdated) {
+                this.onAgentsUpdated(this.agents);
+            }
+            
+            return this.agents;
+        } catch (err) {
+            console.log('[Clawdian] Failed to fetch agents, using defaults:', err);
+            // Return empty array - UI will handle defaults
+            return [];
+        }
     }
 
     updateConfig(url: string, token: string) {
