@@ -362,3 +362,14 @@
     white-space: pre-wrap;
     line-height: 1.4;
 }
+
+/* Darker text for better readability */
+.clawdian-message-user .clawdian-message-text,
+.clawdian-message-agent .clawdian-message-text {
+    color: #000000 !important; /* Almost black */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    user-select: text;
+    cursor: text;
+}
