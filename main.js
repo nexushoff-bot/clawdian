@@ -286,6 +286,7 @@ var ChatView = class extends import_obsidian4.ItemView {
     this.agentSelectEl = null;
     this.loadingEl = null;
     this.isLoading = false;
+    this.lastProcessedRunId = null;
     this.client = client;
     this.plugin = plugin;
   }
@@ -311,12 +312,6 @@ var ChatView = class extends import_obsidian4.ItemView {
       this.plugin.saveSettings();
     });
     this.messagesEl = container.createEl("div", { cls: "clawdian-messages" });
-    this.loadingEl = this.messagesEl.createEl("div", {
-      cls: "clawdian-loading",
-      attr: { style: "display: none;" }
-    });
-    const spinner = this.loadingEl.createEl("div", { cls: "clawdian-spinner" });
-    this.loadingEl.createEl("span", { text: "Waiting for agent response..." });
     this.connectPromptEl = this.messagesEl.createEl("div", {
       cls: "clawdian-connect-prompt"
     });
@@ -354,6 +349,12 @@ var ChatView = class extends import_obsidian4.ItemView {
         this.tryConnect();
       }).open();
     });
+    this.loadingEl = container.createEl("div", {
+      cls: "clawdian-loading",
+      attr: { style: "display: none;" }
+    });
+    const spinner = this.loadingEl.createEl("div", { cls: "clawdian-spinner" });
+    this.loadingEl.createEl("span", { text: "Waiting for agent response..." });
     this.inputContainerEl = container.createEl("div", {
       cls: "clawdian-input-container",
       attr: { style: "display: none;" }
@@ -601,7 +602,6 @@ var ChatView = class extends import_obsidian4.ItemView {
     this.isLoading = true;
     if (this.loadingEl) {
       this.loadingEl.style.display = "flex";
-      this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
     }
   }
   hideLoading() {

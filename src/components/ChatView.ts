@@ -16,6 +16,7 @@ export class ChatView extends ItemView {
     agentSelectEl: HTMLSelectElement | null = null;
     loadingEl: HTMLElement | null = null;
     isLoading = false;
+    lastProcessedRunId: string | null = null;
 
     constructor(leaf: WorkspaceLeaf, client: OpenClawClient, plugin: ClawdianPlugin) {
         super(leaf);
@@ -53,14 +54,6 @@ export class ChatView extends ItemView {
 
         // Messages area
         this.messagesEl = container.createEl('div', { cls: 'clawdian-messages' });
-
-        // Loading indicator (initially hidden)
-        this.loadingEl = this.messagesEl.createEl('div', {
-            cls: 'clawdian-loading',
-            attr: { style: 'display: none;' }
-        });
-        const spinner = this.loadingEl.createEl('div', { cls: 'clawdian-spinner' });
-        this.loadingEl.createEl('span', { text: 'Waiting for agent response...' });
 
         // Connect/Prompt section
         this.connectPromptEl = this.messagesEl.createEl('div', {
@@ -110,6 +103,14 @@ export class ChatView extends ItemView {
                 this.tryConnect();
             }).open();
         });
+
+        // Loading indicator (initially hidden) - above input
+        this.loadingEl = container.createEl('div', {
+            cls: 'clawdian-loading',
+            attr: { style: 'display: none;' }
+        });
+        const spinner = this.loadingEl.createEl('div', { cls: 'clawdian-spinner' });
+        this.loadingEl.createEl('span', { text: 'Waiting for agent response...' });
 
         // Input area (hidden initially)
         this.inputContainerEl = container.createEl('div', {
@@ -414,7 +415,6 @@ export class ChatView extends ItemView {
         this.isLoading = true;
         if (this.loadingEl) {
             this.loadingEl.style.display = 'flex';
-            this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
         }
     }
 

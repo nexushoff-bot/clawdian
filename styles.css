@@ -307,3 +307,58 @@
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+/* Improve text readability - darker colors */
+.clawdian-message-user .clawdian-message-text,
+.clawdian-message-agent .clawdian-message-text {
+    color: var(--text-normal);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    user-select: text;
+    cursor: text;
+}
+
+/* Agent messages - red theme to match OpenClaw */
+.clawdian-message-agent {
+    background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+    border: 1px solid #f44336;
+    margin-right: 20px;
+    align-self: flex-start;
+}
+
+.clawdian-message-agent .clawdian-message-sender {
+    color: #c62828;
+}
+
+/* Make entire message bubbles selectable */
+.clawdian-message {
+    user-select: text;
+    cursor: text;
+}
+
+/* Move loading spinner above input area */
+.clawdian-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    color: var(--text-muted);
+    font-style: italic;
+    border-top: 1px solid var(--background-modifier-border);
+    margin-top: 8px;
+}
+
+.clawdian-messages .clawdian-loading {
+    border-top: none;
+    margin-top: 0;
+    margin-bottom: 8px;
+}
+
+/* Ensure proper text wrapping */
+.clawdian-message-text {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    line-height: 1.4;
+}
