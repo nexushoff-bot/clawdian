@@ -375,8 +375,8 @@ export class OpenClawClient {
                 return;
             }
 
-            // Use isolated session key format for Obsidian
-            const sessionKey = msg.sessionId ? `agent:main:obsidian:${msg.sessionId}` : msg.agent;
+            // Use platform-specific session key for Obsidian
+            const sessionKey = msg.sessionId ? `obsidian:${msg.sessionId}` : msg.agent;
 
             const request = {
                 type: 'req',
