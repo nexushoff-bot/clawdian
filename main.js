@@ -1009,8 +1009,8 @@ var OpenClawClient = class {
         id: "msg-" + this.generateId(),
         method: "chat.send",
         params: {
-          sessionKey: `agent:${msg.agent}`,
-          // Use agent-specific session
+          sessionKey: msg.agent,
+          // Just the agent name
           message: msg.content,
           idempotencyKey: this.generateId()
         }

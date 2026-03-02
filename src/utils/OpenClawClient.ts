@@ -368,13 +368,13 @@ export class OpenClawClient {
                 return;
             }
 
-            // Try using agent name as session key
+            // Use just agent name as session key
             const request = {
                 type: 'req',
                 id: 'msg-' + this.generateId(),
                 method: 'chat.send',
                 params: {
-                    sessionKey: `agent:${msg.agent}`,  // Use agent-specific session
+                    sessionKey: msg.agent,  // Just the agent name
                     message: msg.content,
                     idempotencyKey: this.generateId()
                 }
