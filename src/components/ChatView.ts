@@ -126,7 +126,28 @@ export class ChatView extends ItemView {
         });
 
         // Setup callbacks BEFORE checking connection
-        this.client.onMessage = (msg) => this.addMessage('agent', msg);
+        this.client.onMessage = (text: string) => {
+            // Try to parse as JSON (chat events are structured)
+            try {
+                const data = JSON.parse(text);
+                if (data.type === 'event' && data.event === 'chat' && data.payload?.message) {
+                    // Extract text from structured chat response
+                    const message = data.payload.message;
+                    if (message.content && Array.isArray(message.content)) {
+                        const textContent = message.content
+                            .filter((item: any) => item.type === 'text')
+                            .map((item: any) => item.text)
+                            .join('');
+                        this.addMessage('agent', textContent);
+                        return;
+                    }
+                }
+            } catch (e) {
+                // Not JSON, treat as plain text
+            }
+            // Fallback to plain text handling
+            this.addMessage('agent', text);
+        };
         this.client.onConnect = () => {
             console.log('[Clawdian] ChatView onConnect called');
             this.showConnected();

@@ -365,7 +365,22 @@ var ChatView = class extends import_obsidian4.ItemView {
         this.sendMessage();
       }
     });
-    this.client.onMessage = (msg) => this.addMessage("agent", msg);
+    this.client.onMessage = (text) => {
+      var _a;
+      try {
+        const data = JSON.parse(text);
+        if (data.type === "event" && data.event === "chat" && ((_a = data.payload) == null ? void 0 : _a.message)) {
+          const message = data.payload.message;
+          if (message.content && Array.isArray(message.content)) {
+            const textContent = message.content.filter((item) => item.type === "text").map((item) => item.text).join("");
+            this.addMessage("agent", textContent);
+            return;
+          }
+        }
+      } catch (e) {
+      }
+      this.addMessage("agent", text);
+    };
     this.client.onConnect = () => {
       console.log("[Clawdian] ChatView onConnect called");
       this.showConnected();
