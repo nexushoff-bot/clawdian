@@ -7,6 +7,7 @@ export interface ClawdianSettings {
     gatewayToken: string;
     defaultAgent: string;
     includeVaultContext: boolean;
+    enableContextFiltering: boolean;
     autoConnect: boolean;
 }
 
@@ -15,6 +16,7 @@ export const DEFAULT_SETTINGS: ClawdianSettings = {
     gatewayToken: '',
     defaultAgent: '',
     includeVaultContext: true,
+    enableContextFiltering: true,
     autoConnect: false
 };
 
@@ -162,6 +164,16 @@ export class ClawdianSettingTab extends PluginSettingTab {
                 .setValue(this.plugin.settings.includeVaultContext)
                 .onChange(async (value) => {
                     this.plugin.settings.includeVaultContext = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('Smart context filtering')
+            .setDesc('Automatically exclude plugin/conversation files from context')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableContextFiltering)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableContextFiltering = value;
                     await this.plugin.saveSettings();
                 }));
 
