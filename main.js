@@ -381,14 +381,21 @@ var ChatView = class extends import_obsidian4.ItemView {
             return;
           }
         }
-        if (data.type === "event" && data.event === "chat" && ((_a = data.payload) == null ? void 0 : _a.message)) {
-          console.log("[Clawdian] Found wrapped chat event, extracting text...");
-          const message = data.payload.message;
-          if (message.content && Array.isArray(message.content)) {
-            const textContent = message.content.filter((item) => item.type === "text").map((item) => item.text).join("");
-            console.log("[Clawdian] Extracted text:", textContent);
-            this.addMessage("agent", textContent);
-            return;
+        if (data.type === "event" && data.event === "chat") {
+          console.log("[Clawdian] Found chat event, checking payload...");
+          const message = (_a = data.payload) == null ? void 0 : _a.message;
+          if (message) {
+            console.log("[Clawdian] Found message in payload, extracting text...");
+            if (message.content && Array.isArray(message.content)) {
+              const textContent = message.content.filter((item) => item.type === "text").map((item) => item.text).join("");
+              console.log("[Clawdian] Extracted text from chat event:", textContent);
+              this.addMessage("agent", textContent);
+              return;
+            } else {
+              console.log("[Clawdian] Message content not in expected array format");
+            }
+          } else {
+            console.log("[Clawdian] No message in chat event payload");
           }
         }
         console.log("[Clawdian] Message does not match expected formats");
@@ -567,6 +574,7 @@ var ChatView = class extends import_obsidian4.ItemView {
     }
   }
   addMessage(sender, text) {
+    console.log("[Clawdian] addMessage called with sender:", sender, "text:", text);
     const msgEl = this.messagesEl.createEl("div", {
       cls: `clawdian-message clawdian-message-${sender}`
     });
@@ -579,6 +587,7 @@ var ChatView = class extends import_obsidian4.ItemView {
       text
     });
     this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+    console.log("[Clawdian] Message added to UI");
   }
 };
 
@@ -888,20 +897,25 @@ var OpenClawClient = class {
    * Handle Gateway messages
    */
   async handleMessage(data) {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f;
     console.log("[Clawdian] Received:", data.type, data);
     switch (data.type) {
       case "event":
         if (data.event === "connect.challenge") {
           console.log("[Clawdian] Challenge received, signing...");
           await this.handleChallenge((_a = data.payload) == null ? void 0 : _a.nonce);
+        } else if (data.event === "chat" && ((_b = data.payload) == null ? void 0 : _b.message)) {
+          console.log("[Clawdian] Chat event received, calling onMessage");
+          if (this.onMessage) {
+            this.onMessage(JSON.stringify(data));
+          }
         }
         break;
       case "res":
-        if (((_b = data.payload) == null ? void 0 : _b.type) === "hello-ok") {
+        if (((_c = data.payload) == null ? void 0 : _c.type) === "hello-ok") {
           this.connected = true;
           console.log("[Clawdian] Connect successful (hello-ok)");
-          if ((_d = (_c = data.payload) == null ? void 0 : _c.auth) == null ? void 0 : _d.deviceToken) {
+          if ((_e = (_d = data.payload) == null ? void 0 : _d.auth) == null ? void 0 : _e.deviceToken) {
             this.deviceManager.saveDeviceToken(data.payload.auth.deviceToken);
             console.log("[Clawdian] Device token saved");
           }
@@ -952,7 +966,7 @@ var OpenClawClient = class {
         }
         break;
       case "message":
-        if (this.onMessage && ((_e = data.payload) == null ? void 0 : _e.content)) {
+        if (this.onMessage && ((_f = data.payload) == null ? void 0 : _f.content)) {
           this.onMessage(data.payload.content);
         } else if (this.onMessage && typeof data.payload === "string") {
           this.onMessage(data.payload);

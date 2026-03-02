@@ -203,6 +203,12 @@ export class OpenClawClient {
                 if (data.event === 'connect.challenge') {
                     console.log('[Clawdian] Challenge received, signing...');
                     await this.handleChallenge(data.payload?.nonce);
+                } else if (data.event === 'chat' && data.payload?.message) {
+                    console.log('[Clawdian] Chat event received, calling onMessage');
+                    // Send the full event data as JSON string to UI
+                    if (this.onMessage) {
+                        this.onMessage(JSON.stringify(data));
+                    }
                 }
                 break;
                 

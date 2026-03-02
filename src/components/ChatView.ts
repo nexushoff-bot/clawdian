@@ -149,17 +149,24 @@ export class ChatView extends ItemView {
                 }
                 
                 // Check for wrapped event format (fallback)
-                if (data.type === 'event' && data.event === 'chat' && data.payload?.message) {
-                    console.log('[Clawdian] Found wrapped chat event, extracting text...');
-                    const message = data.payload.message;
-                    if (message.content && Array.isArray(message.content)) {
-                        const textContent = message.content
-                            .filter((item: any) => item.type === 'text')
-                            .map((item: any) => item.text)
-                            .join('');
-                        console.log('[Clawdian] Extracted text:', textContent);
-                        this.addMessage('agent', textContent);
-                        return;
+                if (data.type === 'event' && data.event === 'chat') {
+                    console.log('[Clawdian] Found chat event, checking payload...');
+                    const message = data.payload?.message;
+                    if (message) {
+                        console.log('[Clawdian] Found message in payload, extracting text...');
+                        if (message.content && Array.isArray(message.content)) {
+                            const textContent = message.content
+                                .filter((item: any) => item.type === 'text')
+                                .map((item: any) => item.text)
+                                .join('');
+                            console.log('[Clawdian] Extracted text from chat event:', textContent);
+                            this.addMessage('agent', textContent);
+                            return;
+                        } else {
+                            console.log('[Clawdian] Message content not in expected array format');
+                        }
+                    } else {
+                        console.log('[Clawdian] No message in chat event payload');
                     }
                 }
                 
@@ -373,6 +380,7 @@ export class ChatView extends ItemView {
     }
 
     addMessage(sender: 'user' | 'agent', text: string) {
+        console.log('[Clawdian] addMessage called with sender:', sender, 'text:', text);
         const msgEl = this.messagesEl.createEl('div', {
             cls: `clawdian-message clawdian-message-${sender}`
         });
@@ -385,5 +393,6 @@ export class ChatView extends ItemView {
             text: text
         });
         this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+        console.log('[Clawdian] Message added to UI');
     }
 }
