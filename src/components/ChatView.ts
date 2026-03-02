@@ -127,25 +127,49 @@ export class ChatView extends ItemView {
 
         // Setup callbacks BEFORE checking connection
         this.client.onMessage = (text: string) => {
-            // Try to parse as JSON (chat events are structured)
+            console.log('[Clawdian] UI received message:', text);
+            // Try to parse as JSON (responses are direct payload format)
             try {
                 const data = JSON.parse(text);
+                console.log('[Clawdian] Parsed data:', data);
+                
+                // Check if this is a direct chat payload (not wrapped in event)
+                if (data.message && data.message.role === 'assistant' && data.message.content) {
+                    console.log('[Clawdian] Found direct chat payload, extracting text...');
+                    const message = data.message;
+                    if (message.content && Array.isArray(message.content)) {
+                        const textContent = message.content
+                            .filter((item: any) => item.type === 'text')
+                            .map((item: any) => item.text)
+                            .join('');
+                        console.log('[Clawdian] Extracted text:', textContent);
+                        this.addMessage('agent', textContent);
+                        return;
+                    }
+                }
+                
+                // Check for wrapped event format (fallback)
                 if (data.type === 'event' && data.event === 'chat' && data.payload?.message) {
-                    // Extract text from structured chat response
+                    console.log('[Clawdian] Found wrapped chat event, extracting text...');
                     const message = data.payload.message;
                     if (message.content && Array.isArray(message.content)) {
                         const textContent = message.content
                             .filter((item: any) => item.type === 'text')
                             .map((item: any) => item.text)
                             .join('');
+                        console.log('[Clawdian] Extracted text:', textContent);
                         this.addMessage('agent', textContent);
                         return;
                     }
                 }
+                
+                console.log('[Clawdian] Message does not match expected formats');
             } catch (e) {
+                console.log('[Clawdian] Failed to parse as JSON:', e);
                 // Not JSON, treat as plain text
             }
             // Fallback to plain text handling
+            console.log('[Clawdian] Using fallback text handling');
             this.addMessage('agent', text);
         };
         this.client.onConnect = () => {
