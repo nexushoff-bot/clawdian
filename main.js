@@ -1112,7 +1112,7 @@ var OpenClawClient = class {
         reject(new Error("Not connected"));
         return;
       }
-      const sessionKey = msg.sessionId ? `session:${msg.sessionId}` : msg.agent;
+      const sessionKey = msg.sessionId ? `agent:main:obsidian:${msg.sessionId}` : msg.agent;
       const request = {
         type: "req",
         id: "msg-" + this.generateId(),
