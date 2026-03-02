@@ -999,21 +999,15 @@ var OpenClawClient = class {
         reject(new Error("Not connected"));
         return;
       }
-      const request = {
-        type: "req",
-        id: this.generateId(),
-        method: "tools/invoke",
-        params: {
-          tool: "sessions_send",
-          args: {
-            sessionKey: `agent:${msg.agent}`,
-            message: msg.content,
-            context: msg.context
-          }
-        }
+      const message = {
+        type: "message",
+        agent: msg.agent,
+        content: msg.content,
+        context: msg.context,
+        timestamp: Date.now()
       };
-      console.log("[Clawdian] Sending message via WebSocket:", request);
-      this.ws.send(JSON.stringify(request));
+      console.log("[Clawdian] Sending message via WebSocket:", message);
+      this.ws.send(JSON.stringify(message));
       resolve();
     });
   }
