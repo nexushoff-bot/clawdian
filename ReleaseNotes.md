@@ -1,5 +1,12 @@
 # Release Notes
 
+## Release 0.2.0 - 2026-03-02
+
+- Dynamic agent list - agents are now fetched from OpenClaw Gateway
+- Fallback to default agents (Nexus, Prism, Orion, Aristotowl) if fetch fails
+- Agent list updates automatically when connecting to Gateway
+- Settings dropdown now shows available agents dynamically
+
 ## Release 0.1.0 - 2026-03-02
 
 - Initial release of Clawdian Obsidian plugin
