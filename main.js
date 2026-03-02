@@ -95,7 +95,7 @@ var PairingModal = class extends import_obsidian.Modal {
 var DEFAULT_SETTINGS = {
   gatewayUrl: "ws://127.0.0.1:18789",
   gatewayToken: "",
-  defaultAgent: "nexus",
+  defaultAgent: "",
   includeVaultContext: true
 };
 var ClawdianSettingTab = class extends import_obsidian2.PluginSettingTab {
@@ -175,10 +175,7 @@ var ClawdianSettingTab = class extends import_obsidian2.PluginSettingTab {
           dropdown2.addOption(agent.id, agent.name || agent.id);
         });
       } else {
-        dropdown2.addOption("nexus", "Nexus");
-        dropdown2.addOption("prism", "Prism");
-        dropdown2.addOption("orion", "Orion");
-        dropdown2.addOption("aristotowl", "Aristotowl");
+        dropdown2.addOption("", "No agents available");
       }
       dropdown2.setValue(this.plugin.settings.defaultAgent);
       dropdown2.onChange(async (value) => {
@@ -414,20 +411,10 @@ var ChatView = class extends import_obsidian4.ItemView {
     this.agentSelectEl.empty();
     const agentsList = (agents == null ? void 0 : agents.length) ? agents : this.client.getAgents();
     if (agentsList.length === 0) {
-      const defaultAgents = [
-        { id: "nexus", name: "Nexus", description: "Project coordinator" },
-        { id: "prism", name: "Prism", description: "Designer" },
-        { id: "orion", name: "Orion", description: "Developer" },
-        { id: "aristotowl", name: "Aristotowl", description: "Writer" }
-      ];
-      defaultAgents.forEach((agent) => {
-        const option = this.agentSelectEl.createEl("option", {
-          text: agent.name,
-          value: agent.id
-        });
-        if (agent.id === this.plugin.settings.defaultAgent) {
-          option.selected = true;
-        }
+      const option = this.agentSelectEl.createEl("option", {
+        text: "No agents available",
+        value: "",
+        attr: { disabled: "true", selected: "true" }
       });
     } else {
       agentsList.forEach((agent) => {
@@ -988,34 +975,29 @@ var OpenClawClient = class {
   clearDeviceToken() {
     this.deviceManager.clearDeviceToken();
   }
-  async sendMessage(msg) {
-    const httpUrl = this.url.replace("ws://", "http://").replace("wss://", "https://");
-    const body = {
-      tool: "message",
-      action: "send",
-      args: {
-        message: msg.content,
-        channel: "discord",
-        target: "neil02966"
+  sendMessage(msg) {
+    return new Promise((resolve, reject) => {
+      if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+        reject(new Error("Not connected"));
+        return;
       }
-    };
-    try {
-      const response = await fetch(`${httpUrl}/tools/invoke`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${this.token}`
-        },
-        body: JSON.stringify(body)
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-      }
-      console.log("[Clawdian] Message sent via HTTP");
-    } catch (err) {
-      console.error("[Clawdian] Send failed:", err);
-      throw err;
-    }
+      const request = {
+        type: "req",
+        id: this.generateId(),
+        method: "tools/invoke",
+        params: {
+          tool: "sessions_send",
+          args: {
+            sessionKey: `agent:${msg.agent}`,
+            message: msg.content,
+            context: msg.context
+          }
+        }
+      };
+      console.log("[Clawdian] Sending message via WebSocket:", request);
+      this.ws.send(JSON.stringify(request));
+      resolve();
+    });
   }
   disconnect() {
     if (this.ws) {

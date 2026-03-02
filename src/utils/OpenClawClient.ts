@@ -341,39 +341,32 @@ export class OpenClawClient {
         this.deviceManager.clearDeviceToken();
     }
 
-    async sendMessage(msg: ChatMessage): Promise<void> {
-        // Convert WebSocket URL to HTTP
-        const httpUrl = this.url.replace('ws://', 'http://').replace('wss://', 'https://');
-        
-        const body = {
-            tool: 'message',
-            action: 'send',
-            args: {
-                message: msg.content,
-                channel: 'discord',
-                target: 'neil02966'
+    sendMessage(msg: ChatMessage): Promise<void> {
+        return new Promise((resolve, reject) => {
+            if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+                reject(new Error('Not connected'));
+                return;
             }
-        };
-        
-        try {
-            const response = await fetch(`${httpUrl}/tools/invoke`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.token}`
-                },
-                body: JSON.stringify(body)
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-            }
-            
-            console.log('[Clawdian] Message sent via HTTP');
-        } catch (err) {
-            console.error('[Clawdian] Send failed:', err);
-            throw err;
-        }
+
+            // Send message using tools/invoke with sessions_send
+            const request = {
+                type: 'req',
+                id: this.generateId(),
+                method: 'tools/invoke',
+                params: {
+                    tool: 'sessions_send',
+                    args: {
+                        sessionKey: `agent:${msg.agent}`,
+                        message: msg.content,
+                        context: msg.context
+                    }
+                }
+            };
+
+            console.log('[Clawdian] Sending message via WebSocket:', request);
+            this.ws.send(JSON.stringify(request));
+            resolve();
+        });
     }
 
     disconnect() {

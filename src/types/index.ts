@@ -19,7 +19,7 @@ export interface VaultContext {
 export interface ClawdianSettings {
   gatewayUrl: string;
   gatewayToken: string;
-  defaultAgent: 'nexus' | 'prism' | 'orion' | 'aristotowl';
+  defaultAgent: string;
   includeVaultContext: boolean;
   autoConnect: boolean;
   messageHistorySize: number;
@@ -51,33 +51,6 @@ export interface AgentConfig {
   icon: string;
   systemPrompt?: string;
 }
-
-export const AGENTS: AgentConfig[] = [
-  {
-    id: 'nexus',
-    name: 'Nexus',
-    description: 'Project coordinator and marketing maestro',
-    icon: '🧠'
-  },
-  {
-    id: 'prism',
-    name: 'Prism',
-    description: 'Expert designer and UI/UX specialist',
-    icon: '💎'
-  },
-  {
-    id: 'orion',
-    name: 'Orion',
-    description: 'Expert software developer',
-    icon: '⭐'
-  },
-  {
-    id: 'aristotowl',
-    name: 'Aristotowl',
-    description: 'Expert writer and artist',
-    icon: '🦉'
-  }
-];
 
 // WebSocket states
 export enum ConnectionState {

@@ -191,21 +191,11 @@ export class ChatView extends ItemView {
         const agentsList = agents?.length ? agents : this.client.getAgents();
         
         if (agentsList.length === 0) {
-            // Fallback to default agents if none fetched yet
-            const defaultAgents = [
-                { id: 'nexus', name: 'Nexus', description: 'Project coordinator' },
-                { id: 'prism', name: 'Prism', description: 'Designer' },
-                { id: 'orion', name: 'Orion', description: 'Developer' },
-                { id: 'aristotowl', name: 'Aristotowl', description: 'Writer' }
-            ];
-            defaultAgents.forEach(agent => {
-                const option = this.agentSelectEl!.createEl('option', { 
-                    text: agent.name,
-                    value: agent.id 
-                });
-                if (agent.id === this.plugin.settings.defaultAgent) {
-                    option.selected = true;
-                }
+            // No agents available - show placeholder
+            const option = this.agentSelectEl!.createEl('option', {
+                text: 'No agents available',
+                value: '',
+                attr: { disabled: 'true', selected: 'true' }
             });
         } else {
             // Use fetched agents

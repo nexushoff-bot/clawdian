@@ -1,11 +1,10 @@
 {
-  "id": "clawdian",
-  "name": "Clawdian",
-  "version": "0.1.0",
-  "minAppVersion": "0.15.0",
-  "description": "Connect your vault to OpenClaw agents",
-  "author": "Neil Hoff",
-  "authorUrl": "",
-  "fundingUrl": "",
-  "isDesktopOnly": false
+	"id": "clawdian",
+	"name": "Clawdian",
+	"minAppVersion": "0.15.0",
+	"description": "Connect your vault to OpenClaw agents",
+	"author": "Neil Hoff",
+	"authorUrl": "",
+	"fundingUrl": "",
+	"isDesktopOnly": false
 }

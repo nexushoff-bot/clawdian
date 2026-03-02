@@ -12,7 +12,7 @@ export interface ClawdianSettings {
 export const DEFAULT_SETTINGS: ClawdianSettings = {
     gatewayUrl: 'ws://127.0.0.1:18789',
     gatewayToken: '',
-    defaultAgent: 'nexus',
+    defaultAgent: '',
     includeVaultContext: true
 };
 
@@ -140,12 +140,10 @@ export class ClawdianSettingTab extends PluginSettingTab {
                 agents.forEach(agent => {
                     dropdown.addOption(agent.id, agent.name || agent.id);
                 });
+
             } else {
-                // Fallback defaults
-                dropdown.addOption('nexus', 'Nexus');
-                dropdown.addOption('prism', 'Prism');
-                dropdown.addOption('orion', 'Orion');
-                dropdown.addOption('aristotowl', 'Aristotowl');
+                // No agents available
+                dropdown.addOption('', 'No agents available');
             }
             dropdown.setValue(this.plugin.settings.defaultAgent);
             dropdown.onChange(async (value) => {
