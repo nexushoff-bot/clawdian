@@ -25,6 +25,7 @@ export class ChatView extends ItemView {
         this.plugin = plugin;
         // Generate unique session ID for this chat instance
         this.sessionId = 'obsidian-chat-' + this.generateSessionId();
+        console.log('[Clawdian] Created isolated chat session:', this.sessionId);
     }
 
     getViewType(): string {
@@ -424,6 +425,7 @@ export class ChatView extends ItemView {
         }
 
         try {
+            console.log('[Clawdian] Sending message with session ID:', this.sessionId);
             await this.client.sendMessage({
                 agent: this.plugin.settings.defaultAgent,
                 content: text,

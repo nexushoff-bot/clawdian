@@ -295,6 +295,7 @@ var ChatView = class extends import_obsidian4.ItemView {
     this.client = client;
     this.plugin = plugin;
     this.sessionId = "obsidian-chat-" + this.generateSessionId();
+    console.log("[Clawdian] Created isolated chat session:", this.sessionId);
   }
   getViewType() {
     return VIEW_TYPE_CHAT;
@@ -607,6 +608,7 @@ var ChatView = class extends import_obsidian4.ItemView {
       console.log("[Clawdian] Vault context disabled in settings");
     }
     try {
+      console.log("[Clawdian] Sending message with session ID:", this.sessionId);
       await this.client.sendMessage({
         agent: this.plugin.settings.defaultAgent,
         content: text,
