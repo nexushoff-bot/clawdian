@@ -375,22 +375,35 @@ export class OpenClawClient {
                 return;
             }
 
-            // Use platform-specific session key for Obsidian
-            const sessionKey = msg.sessionId ? `obsidian:${msg.sessionId}` : msg.agent;
+            // Use "session" pseudo-channel format that works with OpenClaw
+            const sessionKey = `agent:main:session:${msg.sessionId || this.generateId()}`;
+
+            // Build the full prompt as a plain string
+            let fullPrompt = msg.content;
+
+            if (msg.context?.currentFile) {
+                let contextHeader = `Context: Currently viewing "${msg.context.currentFile}"`;
+                if (msg.context.fileContent) {
+                    // Optional: truncate to avoid token blow-up
+                    const excerpt = msg.context.fileContent.slice(0, 3000).trim();
+                    contextHeader += `\n\nFile excerpt:\n${excerpt}`;
+                }
+                fullPrompt = `${contextHeader}\n\n---\n\n${msg.content}`;
+            }
 
             const request = {
                 type: 'req',
                 id: 'msg-' + this.generateId(),
                 method: 'chat.send',
                 params: {
-                    sessionKey: sessionKey,
-                    message: msg.content,
+                    sessionKey,
+                    message: fullPrompt,           // ← must be string
                     idempotencyKey: this.generateId()
                 }
             };
 
-            console.log('[Clawdian] Sending message via WebSocket:', request);
-            this.ws!.send(JSON.stringify(request));
+            console.log('[Clawdian] Sending chat.send request:', JSON.stringify(request, null, 2));
+            this.ws.send(JSON.stringify(request));
             resolve();
         });
     }

@@ -136,6 +136,13 @@
 
 /* Connect Prompt */
 .clawdian-connect-prompt {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    text-align: center;
+    padding: 60px 20px;
     text-align: center;
     padding: 40px 20px;
 }
@@ -372,4 +379,66 @@
     white-space: pre-wrap;
     user-select: text;
     cursor: text;
+}
+
+/* Header with agent selector in top right */
+.clawdian-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.clawdian-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.clawdian-header-right .clawdian-agent-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.clawdian-header-right .clawdian-agent-select {
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    min-width: 120px;
+}
+
+/* Full-width input area */
+.clawdian-input-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+.clawdian-input {
+    flex: 1;
+    resize: none;
+    min-height: 60px;
+    padding: 8px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background: var(--background-primary);
+    font-size: 13px;
+    width: 100%;
+}
+
+.clawdian-send-btn {
+    align-self: flex-end;
+    padding: 8px 16px;
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
 }

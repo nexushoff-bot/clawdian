@@ -48,85 +48,44 @@ export class ChatView extends ItemView {
         // Header
         const header = container.createEl('div', { cls: 'clawdian-header' });
         header.createEl('span', { text: '🦞 Clawdian', cls: 'clawdian-title' });
-
-        this.agentSelectEl = header.createEl('select', { cls: 'clawdian-agent-select' });
-        this.populateAgentDropdown();
-        this.agentSelectEl.addEventListener('change', (e) => {
-            this.plugin.settings.defaultAgent = (e.target as HTMLSelectElement).value;
-            this.plugin.saveSettings();
-        });
+        
+        // Agent selector in header (top right)
+        const headerRight = header.createEl('div', { cls: 'clawdian-header-right' });
+        headerRight.createEl('label', { text: 'Agent:', cls: 'clawdian-agent-label' });
+        this.agentSelectEl = headerRight.createEl('select', { cls: 'clawdian-agent-select' });
 
         // Messages area
         this.messagesEl = container.createEl('div', { cls: 'clawdian-messages' });
 
-        // Connect/Prompt section
-        this.connectPromptEl = this.messagesEl.createEl('div', {
-            cls: 'clawdian-connect-prompt'
-        });
+        // Loading indicator
+        this.loadingEl = container.createEl('div', { cls: 'clawdian-loading' });
+        this.loadingEl.createEl('div', { cls: 'clawdian-spinner' });
+        this.loadingEl.createEl('span', { text: 'Waiting for response...', cls: 'clawdian-loading-text' });
+        this.loadingEl.style.display = 'none';
+
+        // Create connect prompt (shown when not connected)
+        this.connectPromptEl = container.createEl('div', { cls: 'clawdian-connect-prompt' });
         
-        const statusIcon = this.connectPromptEl.createEl('div', { cls: 'clawdian-status-icon' });
-        setIcon(statusIcon, 'plug');
-        
-        this.connectPromptEl.createEl('h3', { text: 'Not Connected', cls: 'clawdian-connect-title' });
-        this.connectPromptEl.createEl('p', { 
-            text: 'Click Connect to start chatting with your OpenClaw agents.',
-            cls: 'clawdian-connect-desc'
-        });
-        
-        // Device ID display (hidden initially)
-        this.deviceIdDisplayEl = this.connectPromptEl.createEl('div', {
-            cls: 'clawdian-device-id',
-            attr: { style: 'display: none;' }
-        });
-        
-        const btnContainer = this.connectPromptEl.createEl('div', { cls: 'clawdian-btn-container' });
-        
-        const connectBtn = btnContainer.createEl('button', {
+        const connectBtn = this.connectPromptEl.createEl('button', {
             cls: 'clawdian-connect-btn',
             text: 'Connect'
         });
-        connectBtn.addEventListener('click', async () => {
-            connectBtn.setText('Connecting...');
-            connectBtn.disabled = true;
-            await this.tryConnect();
-        });
-
-        const setupCodeBtn = btnContainer.createEl('button', {
-            cls: 'clawdian-setup-code-btn',
-            text: 'Use Setup Code'
-        });
-        setupCodeBtn.addEventListener('click', () => {
-            new SetupCodeModal(this.app, (url, token) => {
-                // Update plugin settings
-                this.plugin.settings.gatewayUrl = url;
-                this.plugin.settings.gatewayToken = token;
-                this.plugin.saveSettings();
-                
-                // Update client and connect
-                this.client.updateConfig(url, token);
-                this.tryConnect();
-            }).open();
-        });
-
-        // Loading indicator (initially hidden) - above input
-        this.loadingEl = container.createEl('div', {
-            cls: 'clawdian-loading',
-            attr: { style: 'display: none;' }
-        });
-        const spinner = this.loadingEl.createEl('div', { cls: 'clawdian-spinner' });
-        this.loadingEl.createEl('span', { text: 'Waiting for agent response...' });
-
-        // Input area (hidden initially)
-        this.inputContainerEl = container.createEl('div', {
-            cls: 'clawdian-input-container',
-            attr: { style: 'display: none;' }
-        });
+        connectBtn.addEventListener('click', () => this.tryConnect());
         
+        // Device ID display area (for pairing)
+        this.deviceIdDisplayEl = this.connectPromptEl.createEl('div', { cls: 'clawdian-device-id' });
+        this.deviceIdDisplayEl.style.display = 'none';
+
+        // Input container
+        this.inputContainerEl = container.createEl('div', { cls: 'clawdian-input-container' });
+
+        // Input area (full width)
         this.inputEl = this.inputContainerEl.createEl('textarea', {
             cls: 'clawdian-input',
-            placeholder: 'Type a message...'
+            attr: { placeholder: 'Type your message...' }
         });
 
+        // Send button
         const sendBtn = this.inputContainerEl.createEl('button', {
             cls: 'clawdian-send-btn',
             text: 'Send'
@@ -143,10 +102,25 @@ export class ChatView extends ItemView {
         // Setup callbacks BEFORE checking connection
         this.client.onMessage = (text: string) => {
             console.log('[Clawdian] UI received message:', text);
+            
+            // Filter messages by session key - only show Obsidian messages
+            const expectedSessionKey = `agent:main:session:${this.sessionId}`;
+            console.log('[Clawdian] Expected session key:', expectedSessionKey);
+            
             // Try to parse as JSON (responses are direct payload format)
             try {
                 const data = JSON.parse(text);
                 console.log('[Clawdian] Parsed data:', data);
+
+                // Filter by session key - only process messages for this Obsidian session
+                if (data.type === 'event' && data.event === 'chat' && data.payload?.sessionKey) {
+                    const messageSessionKey = data.payload.sessionKey;
+                    console.log('[Clawdian] Message session key:', messageSessionKey);
+                    if (messageSessionKey !== expectedSessionKey) {
+                        console.log('[Clawdian] Ignoring message for different session:', messageSessionKey);
+                        return; // Skip this message
+                    }
+                }
 
                 // Check if this is a direct chat payload (not wrapped in event)
                 if (data.message && data.message.role === 'assistant' && data.message.content) {
@@ -187,7 +161,8 @@ export class ChatView extends ItemView {
                             console.log('[Clawdian] Message content not in expected array format');
                         }
                     } else if (state !== 'final') {
-                        console.log('[Clawdian] Skipping non-final message (state:', state, ')');
+                        console.log('[Clawdian] Skipping non-final message (state:, state, )');
+                        return; // Skip delta messages entirely (state:', state, ')');
                     }
                 }
 
@@ -201,6 +176,7 @@ export class ChatView extends ItemView {
             this.hideLoading();
             this.addMessage('agent', text);
         };
+        
         this.client.onConnect = () => {
             console.log('[Clawdian] ChatView onConnect called');
             this.showConnected();
@@ -225,6 +201,9 @@ export class ChatView extends ItemView {
         if (this.client.isConnected()) {
             console.log('[Clawdian] Already connected, showing chat');
             this.showConnected();
+        } else {
+            console.log('[Clawdian] Not connected, showing connect prompt');
+            this.showDisconnected();
         }
     }
 
@@ -299,18 +278,14 @@ export class ChatView extends ItemView {
     }
 
     showDisconnected() {
+        console.log('[Clawdian] showDisconnected called');
         if (this.connectPromptEl) {
-            this.connectPromptEl.style.display = 'block';
+            this.connectPromptEl.style.display = 'flex';
             const connectBtn = this.connectPromptEl.querySelector('.clawdian-connect-btn') as HTMLButtonElement;
             if (connectBtn) {
                 connectBtn.setText('Connect');
                 connectBtn.disabled = false;
             }
-            // Reset to initial state
-            const title = this.connectPromptEl.querySelector('.clawdian-connect-title');
-            if (title) title.setText('Not Connected');
-            const desc = this.connectPromptEl.querySelector('.clawdian-connect-desc');
-            if (desc) desc.setText('Click Connect to start chatting with your OpenClaw agents.');
             if (this.deviceIdDisplayEl) {
                 this.deviceIdDisplayEl.style.display = 'none';
             }
@@ -322,15 +297,6 @@ export class ChatView extends ItemView {
 
     showPairingRequired(deviceId: string) {
         if (!this.connectPromptEl) return;
-        
-        // Update the connect prompt to show pairing instructions
-        const title = this.connectPromptEl.querySelector('.clawdian-connect-title');
-        if (title) title.setText('Pairing Required');
-        
-        const desc = this.connectPromptEl.querySelector('.clawdian-connect-desc');
-        if (desc) {
-            desc.setText('To authorize this device, run the command below in your terminal:');
-        }
         
         // Show device ID and command
         if (this.deviceIdDisplayEl) {

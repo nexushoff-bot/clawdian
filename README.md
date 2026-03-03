@@ -6,7 +6,7 @@ An Obsidian plugin that connects your vault to OpenClaw agents, enabling AI-powe
 
 Clawdian embeds a chat interface directly into Obsidian, allowing you to:
 
-- 💬 Chat with AI agents (Nexus, Prism, Orion, Aristotowl) inside your vault
+- 💬 Chat with AI agents inside your vault
 - 📄 Get context-aware responses based on your current note
 - 🔍 Include vault context automatically with messages
 - 🔐 Secure device-based authentication with OpenClaw Gateway

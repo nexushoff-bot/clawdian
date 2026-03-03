@@ -26,7 +26,7 @@ __export(main_exports, {
   default: () => ClawdianPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian6 = require("obsidian");
+var import_obsidian5 = require("obsidian");
 
 // src/settings.ts
 var import_obsidian2 = require("obsidian");
@@ -210,79 +210,9 @@ var ClawdianSettingTab = class extends import_obsidian2.PluginSettingTab {
 };
 
 // src/components/ChatView.ts
-var import_obsidian4 = require("obsidian");
-
-// src/components/SetupCodeModal.ts
 var import_obsidian3 = require("obsidian");
-var SetupCodeModal = class extends import_obsidian3.Modal {
-  constructor(app, onSetupComplete) {
-    super(app);
-    this.onSetupComplete = onSetupComplete;
-  }
-  onOpen() {
-    const { contentEl } = this;
-    contentEl.empty();
-    contentEl.createEl("h2", { text: "Connect with Setup Code" });
-    contentEl.createEl("p", {
-      text: "To connect to your OpenClaw Gateway, run /pair in your OpenClaw chat (Discord, Signal, etc.) and paste the setup code below."
-    });
-    let codeInput;
-    new import_obsidian3.Setting(contentEl).setName("Setup Code").setDesc("Paste the code from /pair command").addTextArea((text) => {
-      codeInput = text.inputEl;
-      text.setPlaceholder("eyJ1cmwiOiJ3c3M6Ly8...");
-      codeInput.rows = 4;
-      codeInput.style.fontFamily = "var(--font-monospace)";
-    });
-    new import_obsidian3.Setting(contentEl).addButton((btn) => {
-      btn.setButtonText("Connect").setCta().onClick(() => {
-        const code = codeInput.value.trim();
-        if (!code) {
-          new import_obsidian3.Notice("Please enter a setup code");
-          return;
-        }
-        try {
-          const data = this.decodeSetupCode(code);
-          if (!data.url || !data.token) {
-            new import_obsidian3.Notice("Invalid setup code: missing URL or token");
-            return;
-          }
-          this.onSetupComplete(data.url, data.token);
-          new import_obsidian3.Notice("\u2705 Connected!");
-          this.close();
-        } catch (err) {
-          new import_obsidian3.Notice("Invalid setup code: " + err.message);
-        }
-      });
-    }).addButton((btn) => {
-      btn.setButtonText("Cancel").onClick(() => this.close());
-    });
-    contentEl.createEl("h3", { text: "How to get a setup code:" });
-    const ol = contentEl.createEl("ol");
-    ol.createEl("li", { text: "Open your OpenClaw chat (Discord, Signal, etc.)" });
-    ol.createEl("li", { text: "Type: /pair" });
-    ol.createEl("li", { text: "Copy the setup code that appears" });
-    ol.createEl("li", { text: "Paste it here and click Connect" });
-  }
-  /**
-   * Decode base64 setup code
-   */
-  decodeSetupCode(code) {
-    try {
-      const padding = 4 - code.length % 4;
-      if (padding !== 4) {
-        code += "=".repeat(padding);
-      }
-      const json = atob(code);
-      return JSON.parse(json);
-    } catch (err) {
-      throw new Error("Failed to decode setup code");
-    }
-  }
-};
-
-// src/components/ChatView.ts
 var VIEW_TYPE_CHAT = "clawdian-chat-view";
-var ChatView = class extends import_obsidian4.ItemView {
+var ChatView = class extends import_obsidian3.ItemView {
   constructor(leaf, client, plugin) {
     super(leaf);
     this.connectPromptEl = null;
@@ -312,63 +242,26 @@ var ChatView = class extends import_obsidian4.ItemView {
     container.addClass("clawdian-chat-container");
     const header = container.createEl("div", { cls: "clawdian-header" });
     header.createEl("span", { text: "\u{1F99E} Clawdian", cls: "clawdian-title" });
-    this.agentSelectEl = header.createEl("select", { cls: "clawdian-agent-select" });
-    this.populateAgentDropdown();
-    this.agentSelectEl.addEventListener("change", (e) => {
-      this.plugin.settings.defaultAgent = e.target.value;
-      this.plugin.saveSettings();
-    });
+    const headerRight = header.createEl("div", { cls: "clawdian-header-right" });
+    headerRight.createEl("label", { text: "Agent:", cls: "clawdian-agent-label" });
+    this.agentSelectEl = headerRight.createEl("select", { cls: "clawdian-agent-select" });
     this.messagesEl = container.createEl("div", { cls: "clawdian-messages" });
-    this.connectPromptEl = this.messagesEl.createEl("div", {
-      cls: "clawdian-connect-prompt"
-    });
-    const statusIcon = this.connectPromptEl.createEl("div", { cls: "clawdian-status-icon" });
-    (0, import_obsidian4.setIcon)(statusIcon, "plug");
-    this.connectPromptEl.createEl("h3", { text: "Not Connected", cls: "clawdian-connect-title" });
-    this.connectPromptEl.createEl("p", {
-      text: "Click Connect to start chatting with your OpenClaw agents.",
-      cls: "clawdian-connect-desc"
-    });
-    this.deviceIdDisplayEl = this.connectPromptEl.createEl("div", {
-      cls: "clawdian-device-id",
-      attr: { style: "display: none;" }
-    });
-    const btnContainer = this.connectPromptEl.createEl("div", { cls: "clawdian-btn-container" });
-    const connectBtn = btnContainer.createEl("button", {
+    this.loadingEl = container.createEl("div", { cls: "clawdian-loading" });
+    this.loadingEl.createEl("div", { cls: "clawdian-spinner" });
+    this.loadingEl.createEl("span", { text: "Waiting for response...", cls: "clawdian-loading-text" });
+    this.loadingEl.style.display = "none";
+    this.connectPromptEl = container.createEl("div", { cls: "clawdian-connect-prompt" });
+    const connectBtn = this.connectPromptEl.createEl("button", {
       cls: "clawdian-connect-btn",
       text: "Connect"
     });
-    connectBtn.addEventListener("click", async () => {
-      connectBtn.setText("Connecting...");
-      connectBtn.disabled = true;
-      await this.tryConnect();
-    });
-    const setupCodeBtn = btnContainer.createEl("button", {
-      cls: "clawdian-setup-code-btn",
-      text: "Use Setup Code"
-    });
-    setupCodeBtn.addEventListener("click", () => {
-      new SetupCodeModal(this.app, (url, token) => {
-        this.plugin.settings.gatewayUrl = url;
-        this.plugin.settings.gatewayToken = token;
-        this.plugin.saveSettings();
-        this.client.updateConfig(url, token);
-        this.tryConnect();
-      }).open();
-    });
-    this.loadingEl = container.createEl("div", {
-      cls: "clawdian-loading",
-      attr: { style: "display: none;" }
-    });
-    const spinner = this.loadingEl.createEl("div", { cls: "clawdian-spinner" });
-    this.loadingEl.createEl("span", { text: "Waiting for agent response..." });
-    this.inputContainerEl = container.createEl("div", {
-      cls: "clawdian-input-container",
-      attr: { style: "display: none;" }
-    });
+    connectBtn.addEventListener("click", () => this.tryConnect());
+    this.deviceIdDisplayEl = this.connectPromptEl.createEl("div", { cls: "clawdian-device-id" });
+    this.deviceIdDisplayEl.style.display = "none";
+    this.inputContainerEl = container.createEl("div", { cls: "clawdian-input-container" });
     this.inputEl = this.inputContainerEl.createEl("textarea", {
       cls: "clawdian-input",
-      placeholder: "Type a message..."
+      attr: { placeholder: "Type your message..." }
     });
     const sendBtn = this.inputContainerEl.createEl("button", {
       cls: "clawdian-send-btn",
@@ -382,11 +275,21 @@ var ChatView = class extends import_obsidian4.ItemView {
       }
     });
     this.client.onMessage = (text) => {
-      var _a, _b;
+      var _a, _b, _c;
       console.log("[Clawdian] UI received message:", text);
+      const expectedSessionKey = `agent:main:session:${this.sessionId}`;
+      console.log("[Clawdian] Expected session key:", expectedSessionKey);
       try {
         const data = JSON.parse(text);
         console.log("[Clawdian] Parsed data:", data);
+        if (data.type === "event" && data.event === "chat" && ((_a = data.payload) == null ? void 0 : _a.sessionKey)) {
+          const messageSessionKey = data.payload.sessionKey;
+          console.log("[Clawdian] Message session key:", messageSessionKey);
+          if (messageSessionKey !== expectedSessionKey) {
+            console.log("[Clawdian] Ignoring message for different session:", messageSessionKey);
+            return;
+          }
+        }
         if (data.message && data.message.role === "assistant" && data.message.content) {
           console.log("[Clawdian] Found direct chat payload, extracting text...");
           const message = data.message;
@@ -400,8 +303,8 @@ var ChatView = class extends import_obsidian4.ItemView {
         }
         if (data.type === "event" && data.event === "chat") {
           console.log("[Clawdian] Found chat event, checking payload...");
-          const message = (_a = data.payload) == null ? void 0 : _a.message;
-          const state = (_b = data.payload) == null ? void 0 : _b.state;
+          const message = (_b = data.payload) == null ? void 0 : _b.message;
+          const state = (_c = data.payload) == null ? void 0 : _c.state;
           console.log("[Clawdian] Chat event state:", state);
           if (state === "final" && message) {
             console.log("[Clawdian] Processing final message, extracting text...");
@@ -415,7 +318,8 @@ var ChatView = class extends import_obsidian4.ItemView {
               console.log("[Clawdian] Message content not in expected array format");
             }
           } else if (state !== "final") {
-            console.log("[Clawdian] Skipping non-final message (state:", state, ")");
+            console.log("[Clawdian] Skipping non-final message (state:, state, )");
+            return;
           }
         }
         console.log("[Clawdian] Message does not match expected formats");
@@ -447,6 +351,9 @@ var ChatView = class extends import_obsidian4.ItemView {
     if (this.client.isConnected()) {
       console.log("[Clawdian] Already connected, showing chat");
       this.showConnected();
+    } else {
+      console.log("[Clawdian] Not connected, showing connect prompt");
+      this.showDisconnected();
     }
   }
   async tryConnect() {
@@ -462,7 +369,7 @@ var ChatView = class extends import_obsidian4.ItemView {
           connectBtn.setText("Connect");
           connectBtn.disabled = false;
         }
-        new import_obsidian4.Notice("Connection failed: " + err.message);
+        new import_obsidian3.Notice("Connection failed: " + err.message);
       }
     }
   }
@@ -506,19 +413,14 @@ var ChatView = class extends import_obsidian4.ItemView {
     this.addMessage("agent", "\u2705 Connected to OpenClaw!");
   }
   showDisconnected() {
+    console.log("[Clawdian] showDisconnected called");
     if (this.connectPromptEl) {
-      this.connectPromptEl.style.display = "block";
+      this.connectPromptEl.style.display = "flex";
       const connectBtn = this.connectPromptEl.querySelector(".clawdian-connect-btn");
       if (connectBtn) {
         connectBtn.setText("Connect");
         connectBtn.disabled = false;
       }
-      const title = this.connectPromptEl.querySelector(".clawdian-connect-title");
-      if (title)
-        title.setText("Not Connected");
-      const desc = this.connectPromptEl.querySelector(".clawdian-connect-desc");
-      if (desc)
-        desc.setText("Click Connect to start chatting with your OpenClaw agents.");
       if (this.deviceIdDisplayEl) {
         this.deviceIdDisplayEl.style.display = "none";
       }
@@ -530,13 +432,6 @@ var ChatView = class extends import_obsidian4.ItemView {
   showPairingRequired(deviceId) {
     if (!this.connectPromptEl)
       return;
-    const title = this.connectPromptEl.querySelector(".clawdian-connect-title");
-    if (title)
-      title.setText("Pairing Required");
-    const desc = this.connectPromptEl.querySelector(".clawdian-connect-desc");
-    if (desc) {
-      desc.setText("To authorize this device, run the command below in your terminal:");
-    }
     if (this.deviceIdDisplayEl) {
       this.deviceIdDisplayEl.empty();
       this.deviceIdDisplayEl.style.display = "block";
@@ -548,7 +443,7 @@ var ChatView = class extends import_obsidian4.ItemView {
       });
       copyBtn.addEventListener("click", () => {
         navigator.clipboard.writeText(`openclaw pairing approve ${deviceId}`);
-        new import_obsidian4.Notice("Command copied to clipboard!");
+        new import_obsidian3.Notice("Command copied to clipboard!");
       });
       this.deviceIdDisplayEl.createEl("div", {
         cls: "clawdian-device-id-label",
@@ -563,7 +458,7 @@ var ChatView = class extends import_obsidian4.ItemView {
   }
   async sendMessage() {
     if (!this.client.isConnected()) {
-      new import_obsidian4.Notice("Not connected. Click Connect first.");
+      new import_obsidian3.Notice("Not connected. Click Connect first.");
       return;
     }
     if (this.isLoading) {
@@ -654,7 +549,7 @@ var ChatView = class extends import_obsidian4.ItemView {
 };
 
 // src/utils/DeviceIdentity.ts
-var import_obsidian5 = require("obsidian");
+var import_obsidian4 = require("obsidian");
 var _DeviceIdentityManager = class {
   constructor() {
     this.identity = null;
@@ -702,7 +597,7 @@ var _DeviceIdentityManager = class {
    */
   generateDeviceId() {
     const random = Math.random().toString(36).substring(2, 10);
-    return `clawdian-${import_obsidian5.Platform.isMacOS ? "macos" : import_obsidian5.Platform.isWin ? "windows" : "linux"}-${random}`;
+    return `clawdian-${import_obsidian4.Platform.isMacOS ? "macos" : import_obsidian4.Platform.isWin ? "windows" : "linux"}-${random}`;
   }
   /**
    * Save identity to localStorage
@@ -1108,22 +1003,40 @@ var OpenClawClient = class {
   }
   sendMessage(msg) {
     return new Promise((resolve, reject) => {
+      var _a;
       if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
         reject(new Error("Not connected"));
         return;
       }
-      const sessionKey = msg.sessionId ? `obsidian:${msg.sessionId}` : msg.agent;
+      const sessionKey = `agent:main:session:${msg.sessionId || this.generateId()}`;
+      let fullPrompt = msg.content;
+      if ((_a = msg.context) == null ? void 0 : _a.currentFile) {
+        let contextHeader = `Context: Currently viewing "${msg.context.currentFile}"`;
+        if (msg.context.fileContent) {
+          const excerpt = msg.context.fileContent.slice(0, 3e3).trim();
+          contextHeader += `
+
+File excerpt:
+${excerpt}`;
+        }
+        fullPrompt = `${contextHeader}
+
+---
+
+${msg.content}`;
+      }
       const request = {
         type: "req",
         id: "msg-" + this.generateId(),
         method: "chat.send",
         params: {
           sessionKey,
-          message: msg.content,
+          message: fullPrompt,
+          // ← must be string
           idempotencyKey: this.generateId()
         }
       };
-      console.log("[Clawdian] Sending message via WebSocket:", request);
+      console.log("[Clawdian] Sending chat.send request:", JSON.stringify(request, null, 2));
       this.ws.send(JSON.stringify(request));
       resolve();
     });
@@ -1138,7 +1051,7 @@ var OpenClawClient = class {
 };
 
 // src/main.ts
-var ClawdianPlugin = class extends import_obsidian6.Plugin {
+var ClawdianPlugin = class extends import_obsidian5.Plugin {
   async onload() {
     await this.loadSettings();
     this.client = new OpenClawClient(
@@ -1160,12 +1073,18 @@ var ClawdianPlugin = class extends import_obsidian6.Plugin {
       callback: () => this.activateView()
     });
     this.addSettingTab(new ClawdianSettingTab(this.app, this));
+    if (this.settings.autoConnect) {
+      console.log("[Clawdian] Auto-connect enabled, attempting connection...");
+      this.tryConnect().catch((err) => {
+        console.log("[Clawdian] Auto-connect failed:", err.message);
+      });
+    }
     console.log("[Clawdian] Plugin loaded. Click \u{1F99E} to connect.");
   }
   setupClientCallbacks() {
     this.client.onConnect = () => {
       console.log("[Clawdian] Connected to Gateway");
-      new import_obsidian6.Notice("\u{1F99E} Connected to OpenClaw!");
+      new import_obsidian5.Notice("\u{1F99E} Connected to OpenClaw!");
     };
     this.client.onDisconnect = () => {
       console.log("[Clawdian] Disconnected from Gateway");
@@ -1190,7 +1109,7 @@ var ClawdianPlugin = class extends import_obsidian6.Plugin {
       return true;
     } catch (err) {
       console.error("[Clawdian] Connection failed:", err.message);
-      new import_obsidian6.Notice("\u274C Connection failed: " + err.message);
+      new import_obsidian5.Notice("\u274C Connection failed: " + err.message);
       const deviceId = this.client.getDeviceId();
       if (deviceId) {
         new PairingModal(this.app, deviceId, () => {

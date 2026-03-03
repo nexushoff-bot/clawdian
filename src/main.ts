@@ -42,6 +42,15 @@ export default class ClawdianPlugin extends Plugin {
         // Add settings tab
         this.addSettingTab(new ClawdianSettingTab(this.app, this));
 
+        // Auto-connect if enabled
+        if (this.settings.autoConnect) {
+            console.log('[Clawdian] Auto-connect enabled, attempting connection...');
+            this.tryConnect().catch((err: Error) => {
+                console.log('[Clawdian] Auto-connect failed:', err.message);
+                // Don't show error notice on startup auto-connect failure
+            });
+        }
+
         console.log('[Clawdian] Plugin loaded. Click 🦞 to connect.');
     }
 
