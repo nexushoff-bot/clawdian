@@ -252,6 +252,49 @@ Reload Obsidian: `Cmd/Ctrl + R`
 4. Run tests: `npm test`
 5. Submit a PR
 
+## Publishing to Community Plugins
+
+To share Clawdian with the Obsidian community, submit it to the official plugin directory.
+
+### Prerequisites
+
+Before submitting, ensure your repository has:
+- ✅ `README.md` - Plugin description and usage instructions
+- ✅ `LICENSE` - MIT or other open-source license
+- ✅ `manifest.json` - Plugin metadata
+
+### Step 1: Create a GitHub Release
+
+1. Update `version` in `manifest.json` following [Semantic Versioning](https://semver.org/)
+2. Create a GitHub release:
+   - Go to your repo → Releases → Draft a new release
+   - **Tag version**: Must match manifest version (no `v` prefix, e.g., `1.0.0`)
+   - Upload these assets:
+     - `main.js`
+     - `manifest.json`
+     - `styles.css` (optional)
+
+### Step 2: Submit to Community Plugins
+
+1. Fork [obsidian-releases](https://github.com/obsidianmd/obsidian-releases)
+2. Edit `community-plugins.json`, add your entry:
+   ```json
+   {
+     "id": "clawdian",
+     "name": "Clawdian",
+     "author": "Your Name",
+     "description": "Chat with OpenClaw AI agents inside Obsidian with vault context awareness",
+     "repo": "nexushoff-bot/clawdian",
+     "branch": "main"
+   }
+   ```
+3. Create a Pull Request
+4. Wait for Obsidian team review
+
+Once merged, users can install directly from Obsidian Settings → Community Plugins.
+
+For detailed instructions, see the [official docs](https://docs.obsidian.md/Plugins/Releasing/Submit+your+plugin).
+
 ## License
 
 MIT
