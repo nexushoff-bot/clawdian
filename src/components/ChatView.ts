@@ -392,8 +392,11 @@ export class ChatView extends ItemView {
 
         try {
             console.log('[Clawdian] Sending message with session ID:', this.sessionId);
+            // Use selected agent from dropdown, or fall back to default
+            const selectedAgent = this.agentSelectEl?.value || this.plugin.settings.defaultAgent;
+            console.log('[Clawdian] Using agent:', selectedAgent);
             await this.client.sendMessage({
-                agent: this.plugin.settings.defaultAgent,
+                agent: selectedAgent,
                 content: text,
                 context,
                 sessionId: this.sessionId  // Use unique session for this chat
@@ -426,9 +429,11 @@ export class ChatView extends ItemView {
         const msgEl = this.messagesEl.createEl('div', {
             cls: `clawdian-message clawdian-message-${sender}`
         });
+        // Use selected agent from dropdown for display name
+        const agentName = this.agentSelectEl?.options[this.agentSelectEl.selectedIndex]?.text || this.plugin.settings.defaultAgent;
         msgEl.createEl('div', {
             cls: 'clawdian-message-sender',
-            text: sender === 'user' ? 'You' : this.plugin.settings.defaultAgent
+            text: sender === 'user' ? 'You' : agentName
         });
         msgEl.createEl('div', {
             cls: 'clawdian-message-text',

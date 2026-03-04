@@ -457,6 +457,7 @@ var ChatView = class extends import_obsidian3.ItemView {
     }
   }
   async sendMessage() {
+    var _a;
     if (!this.client.isConnected()) {
       new import_obsidian3.Notice("Not connected. Click Connect first.");
       return;
@@ -504,8 +505,10 @@ var ChatView = class extends import_obsidian3.ItemView {
     }
     try {
       console.log("[Clawdian] Sending message with session ID:", this.sessionId);
+      const selectedAgent = ((_a = this.agentSelectEl) == null ? void 0 : _a.value) || this.plugin.settings.defaultAgent;
+      console.log("[Clawdian] Using agent:", selectedAgent);
       await this.client.sendMessage({
-        agent: this.plugin.settings.defaultAgent,
+        agent: selectedAgent,
         content: text,
         context,
         sessionId: this.sessionId
@@ -531,13 +534,15 @@ var ChatView = class extends import_obsidian3.ItemView {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
   }
   addMessage(sender, text) {
+    var _a, _b;
     console.log("[Clawdian] addMessage called with sender:", sender, "text:", text);
     const msgEl = this.messagesEl.createEl("div", {
       cls: `clawdian-message clawdian-message-${sender}`
     });
+    const agentName = ((_b = (_a = this.agentSelectEl) == null ? void 0 : _a.options[this.agentSelectEl.selectedIndex]) == null ? void 0 : _b.text) || this.plugin.settings.defaultAgent;
     msgEl.createEl("div", {
       cls: "clawdian-message-sender",
-      text: sender === "user" ? "You" : this.plugin.settings.defaultAgent
+      text: sender === "user" ? "You" : agentName
     });
     msgEl.createEl("div", {
       cls: "clawdian-message-text",
