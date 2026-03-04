@@ -355,33 +355,14 @@ export class ChatView extends ItemView {
             const activeFile = this.app.workspace.getActiveFile();
             console.log('[Clawdian] Active file:', activeFile?.path);
             if (activeFile) {
-                // Filter out plugin development and conversation files (if enabled)
-                let isRelevantFile = true;
-                const fileName = activeFile.name.toLowerCase();
-                
-                if (this.plugin.settings.enableContextFiltering) {
-                    isRelevantFile = !fileName.includes('plugin') &&
-                                   !fileName.includes('clawdian') &&
-                                   !fileName.includes('conversation') &&
-                                   !fileName.includes('chat') &&
-                                   !fileName.includes('log');
-                    console.log('[Clawdian] Context filtering enabled, file relevant:', isRelevantFile, 'fileName:', fileName);
-                } else {
-                    console.log('[Clawdian] Context filtering disabled, including all files');
-                }
-
-                if (isRelevantFile) {
-                    context.currentFile = activeFile.path;
-                    try {
-                        const content = await this.app.vault.read(activeFile);
-                        // Take first 2000 chars to avoid overwhelming
-                        context.fileContent = content.slice(0, 2000);
-                        console.log('[Clawdian] Context prepared - file:', context.currentFile, 'content length:', context.fileContent.length);
-                    } catch (e) {
-                        console.log('[Clawdian] Could not read file:', e);
-                    }
-                } else {
-                    console.log('[Clawdian] Skipping irrelevant file:', fileName);
+                context.currentFile = activeFile.path;
+                try {
+                    const content = await this.app.vault.read(activeFile);
+                    // Take first 3000 chars to provide good context
+                    context.fileContent = content.slice(0, 3000);
+                    console.log('[Clawdian] Context prepared - file:', context.currentFile, 'content length:', context.fileContent.length);
+                } catch (e) {
+                    console.log('[Clawdian] Could not read file:', e);
                 }
             } else {
                 console.log('[Clawdian] No active file found');

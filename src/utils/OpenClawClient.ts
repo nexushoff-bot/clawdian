@@ -381,6 +381,8 @@ export class OpenClawClient {
             // Build the full prompt as a plain string
             let fullPrompt = msg.content;
 
+            console.log('[Clawdian] Context received:', msg.context);
+
             if (msg.context?.currentFile) {
                 let contextHeader = `Context: Currently viewing "${msg.context.currentFile}"`;
                 if (msg.context.fileContent) {
@@ -389,6 +391,9 @@ export class OpenClawClient {
                     contextHeader += `\n\nFile excerpt:\n${excerpt}`;
                 }
                 fullPrompt = `${contextHeader}\n\n---\n\n${msg.content}`;
+                console.log('[Clawdian] Context prepended to message. File:', msg.context.currentFile);
+            } else {
+                console.log('[Clawdian] No context to prepend - currentFile is missing or empty');
             }
 
             const request = {

@@ -97,7 +97,6 @@ var DEFAULT_SETTINGS = {
   gatewayToken: "",
   defaultAgent: "",
   includeVaultContext: true,
-  enableContextFiltering: true,
   autoConnect: false
 };
 var ClawdianSettingTab = class extends import_obsidian2.PluginSettingTab {
@@ -188,10 +187,6 @@ var ClawdianSettingTab = class extends import_obsidian2.PluginSettingTab {
     });
     new import_obsidian2.Setting(containerEl).setName("Include vault context").setDesc("Send current file and vault info with messages").addToggle((toggle) => toggle.setValue(this.plugin.settings.includeVaultContext).onChange(async (value) => {
       this.plugin.settings.includeVaultContext = value;
-      await this.plugin.saveSettings();
-    }));
-    new import_obsidian2.Setting(containerEl).setName("Smart context filtering").setDesc("Automatically exclude plugin/conversation files from context").addToggle((toggle) => toggle.setValue(this.plugin.settings.enableContextFiltering).onChange(async (value) => {
-      this.plugin.settings.enableContextFiltering = value;
       await this.plugin.saveSettings();
     }));
     new import_obsidian2.Setting(containerEl).setName("Auto-connect on startup").setDesc("Automatically connect to Gateway when Obsidian starts").addToggle((toggle) => toggle.setValue(this.plugin.settings.autoConnect).onChange(async (value) => {
@@ -477,25 +472,13 @@ var ChatView = class extends import_obsidian3.ItemView {
       const activeFile = this.app.workspace.getActiveFile();
       console.log("[Clawdian] Active file:", activeFile == null ? void 0 : activeFile.path);
       if (activeFile) {
-        let isRelevantFile = true;
-        const fileName = activeFile.name.toLowerCase();
-        if (this.plugin.settings.enableContextFiltering) {
-          isRelevantFile = !fileName.includes("plugin") && !fileName.includes("clawdian") && !fileName.includes("conversation") && !fileName.includes("chat") && !fileName.includes("log");
-          console.log("[Clawdian] Context filtering enabled, file relevant:", isRelevantFile, "fileName:", fileName);
-        } else {
-          console.log("[Clawdian] Context filtering disabled, including all files");
-        }
-        if (isRelevantFile) {
-          context.currentFile = activeFile.path;
-          try {
-            const content = await this.app.vault.read(activeFile);
-            context.fileContent = content.slice(0, 2e3);
-            console.log("[Clawdian] Context prepared - file:", context.currentFile, "content length:", context.fileContent.length);
-          } catch (e) {
-            console.log("[Clawdian] Could not read file:", e);
-          }
-        } else {
-          console.log("[Clawdian] Skipping irrelevant file:", fileName);
+        context.currentFile = activeFile.path;
+        try {
+          const content = await this.app.vault.read(activeFile);
+          context.fileContent = content.slice(0, 3e3);
+          console.log("[Clawdian] Context prepared - file:", context.currentFile, "content length:", context.fileContent.length);
+        } catch (e) {
+          console.log("[Clawdian] Could not read file:", e);
         }
       } else {
         console.log("[Clawdian] No active file found");
@@ -1015,6 +998,7 @@ var OpenClawClient = class {
       }
       const sessionKey = `agent:main:session:${msg.sessionId || this.generateId()}`;
       let fullPrompt = msg.content;
+      console.log("[Clawdian] Context received:", msg.context);
       if ((_a = msg.context) == null ? void 0 : _a.currentFile) {
         let contextHeader = `Context: Currently viewing "${msg.context.currentFile}"`;
         if (msg.context.fileContent) {
@@ -1029,6 +1013,9 @@ ${excerpt}`;
 ---
 
 ${msg.content}`;
+        console.log("[Clawdian] Context prepended to message. File:", msg.context.currentFile);
+      } else {
+        console.log("[Clawdian] No context to prepend - currentFile is missing or empty");
       }
       const request = {
         type: "req",
