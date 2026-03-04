@@ -87,6 +87,13 @@ export class ChatView extends ItemView {
 
         // Context bar (file attachments) - always visible
         this.contextBarEl = container.createEl('div', { cls: 'clawdian-context-bar' });
+
+        // Register event listener for active file changes
+        this.registerEvent(this.app.workspace.on('active-leaf-change', () => {
+            this.updateCurrentFile();
+        }));
+
+        // Initialize context files
         this.initContextFiles();
 
         // Input container
@@ -357,6 +364,21 @@ export class ChatView extends ItemView {
             }
         }
         this.renderContextBar();
+    }
+
+    updateCurrentFile() {
+        // Update context bar when active file changes (only if no files manually added)
+        if (this.attachedFiles.length === 0 && this.plugin.settings.includeVaultContext) {
+            const activeFile = this.app.workspace.getActiveFile();
+            console.log('[Clawdian] updateCurrentFile - activeFile:', activeFile?.path);
+            if (activeFile && activeFile.extension === 'md') {
+                this.attachedFiles.push({
+                    path: activeFile.path,
+                    name: activeFile.name
+                });
+                this.renderContextBar();
+            }
+        }
     }
 
     renderContextBar() {

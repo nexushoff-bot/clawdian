@@ -274,6 +274,9 @@ var ChatView = class extends import_obsidian3.ItemView {
     this.deviceIdDisplayEl = this.connectPromptEl.createEl("div", { cls: "clawdian-device-id" });
     this.deviceIdDisplayEl.style.display = "none";
     this.contextBarEl = container.createEl("div", { cls: "clawdian-context-bar" });
+    this.registerEvent(this.app.workspace.on("active-leaf-change", () => {
+      this.updateCurrentFile();
+    }));
     this.initContextFiles();
     this.inputContainerEl = container.createEl("div", { cls: "clawdian-input-container" });
     this.inputEl = this.inputContainerEl.createEl("textarea", {
@@ -487,6 +490,19 @@ var ChatView = class extends import_obsidian3.ItemView {
       }
     }
     this.renderContextBar();
+  }
+  updateCurrentFile() {
+    if (this.attachedFiles.length === 0 && this.plugin.settings.includeVaultContext) {
+      const activeFile = this.app.workspace.getActiveFile();
+      console.log("[Clawdian] updateCurrentFile - activeFile:", activeFile == null ? void 0 : activeFile.path);
+      if (activeFile && activeFile.extension === "md") {
+        this.attachedFiles.push({
+          path: activeFile.path,
+          name: activeFile.name
+        });
+        this.renderContextBar();
+      }
+    }
   }
   renderContextBar() {
     if (!this.contextBarEl)
