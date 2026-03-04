@@ -375,8 +375,10 @@ export class OpenClawClient {
                 return;
             }
 
-            // Use "session" pseudo-channel format that works with OpenClaw
-            const sessionKey = `agent:main:session:${msg.sessionId || this.generateId()}`;
+            // Use the selected agent in the session key
+            const agentId = msg.agent || 'main';
+            const sessionKey = `agent:${agentId}:session:${msg.sessionId || this.generateId()}`;
+            console.log('[Clawdian] Using agent:', agentId, 'sessionKey:', sessionKey);
 
             // Build the full prompt as a plain string
             let fullPrompt = msg.content;

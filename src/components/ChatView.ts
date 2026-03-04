@@ -124,9 +124,10 @@ export class ChatView extends ItemView {
         this.client.onMessage = (text: string) => {
             console.log('[Clawdian] UI received message:', text);
             
-            // Filter messages by session key - only show Obsidian messages
-            const expectedSessionKey = `agent:main:session:${this.sessionId}`;
-            console.log('[Clawdian] Expected session key:', expectedSessionKey);
+            // Filter messages by session key - use the currently selected agent
+            const selectedAgent = this.agentSelectEl?.value || 'main';
+            const expectedSessionKey = `agent:${selectedAgent}:session:${this.sessionId}`;
+            console.log('[Clawdian] Expected session key:', expectedSessionKey, 'selected agent:', selectedAgent);
             
             // Try to parse as JSON (responses are direct payload format)
             try {

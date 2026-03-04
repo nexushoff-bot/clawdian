@@ -296,14 +296,15 @@ var ChatView = class extends import_obsidian3.ItemView {
       }
     });
     this.client.onMessage = (text) => {
-      var _a, _b, _c;
+      var _a, _b, _c, _d;
       console.log("[Clawdian] UI received message:", text);
-      const expectedSessionKey = `agent:main:session:${this.sessionId}`;
-      console.log("[Clawdian] Expected session key:", expectedSessionKey);
+      const selectedAgent = ((_a = this.agentSelectEl) == null ? void 0 : _a.value) || "main";
+      const expectedSessionKey = `agent:${selectedAgent}:session:${this.sessionId}`;
+      console.log("[Clawdian] Expected session key:", expectedSessionKey, "selected agent:", selectedAgent);
       try {
         const data = JSON.parse(text);
         console.log("[Clawdian] Parsed data:", data);
-        if (data.type === "event" && data.event === "chat" && ((_a = data.payload) == null ? void 0 : _a.sessionKey)) {
+        if (data.type === "event" && data.event === "chat" && ((_b = data.payload) == null ? void 0 : _b.sessionKey)) {
           const messageSessionKey = data.payload.sessionKey;
           console.log("[Clawdian] Message session key:", messageSessionKey);
           if (messageSessionKey !== expectedSessionKey) {
@@ -324,8 +325,8 @@ var ChatView = class extends import_obsidian3.ItemView {
         }
         if (data.type === "event" && data.event === "chat") {
           console.log("[Clawdian] Found chat event, checking payload...");
-          const message = (_b = data.payload) == null ? void 0 : _b.message;
-          const state = (_c = data.payload) == null ? void 0 : _c.state;
+          const message = (_c = data.payload) == null ? void 0 : _c.message;
+          const state = (_d = data.payload) == null ? void 0 : _d.state;
           console.log("[Clawdian] Chat event state:", state);
           if (state === "final" && message) {
             console.log("[Clawdian] Processing final message, extracting text...");
@@ -1112,7 +1113,9 @@ var OpenClawClient = class {
         reject(new Error("Not connected"));
         return;
       }
-      const sessionKey = `agent:main:session:${msg.sessionId || this.generateId()}`;
+      const agentId = msg.agent || "main";
+      const sessionKey = `agent:${agentId}:session:${msg.sessionId || this.generateId()}`;
+      console.log("[Clawdian] Using agent:", agentId, "sessionKey:", sessionKey);
       let fullPrompt = msg.content;
       console.log("[Clawdian] Context received:", msg.context);
       if ((_a = msg.context) == null ? void 0 : _a.currentFile) {
