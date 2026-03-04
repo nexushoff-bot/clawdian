@@ -516,8 +516,8 @@
 
 .clawdian-message-colored.clawdian-message-agent {
     background: linear-gradient(135deg, 
-        color-mix(in srgb, var(--agent-color) 25%, var(--background-primary)) 0%, 
-        color-mix(in srgb, var(--agent-color) 35%, var(--background-primary)) 100%);
+        color-mix(in srgb, var(--agent-color) 65%, var(--background-primary)) 0%, 
+        color-mix(in srgb, var(--agent-color) 75%, var(--background-primary)) 100%);
     border-color: var(--agent-color);
 }
 
