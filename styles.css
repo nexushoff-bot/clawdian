@@ -508,3 +508,32 @@
 .clawdian-context-file-remove:hover {
     color: var(--text-error);
 }
+
+/* Colored agent messages */
+.clawdian-message-colored {
+    --agent-color: #6366f1;
+}
+
+.clawdian-message-colored.clawdian-message-agent {
+    background: linear-gradient(135deg, 
+        color-mix(in srgb, var(--agent-color) 10%, transparent) 0%, 
+        color-mix(in srgb, var(--agent-color) 20%, transparent) 100%);
+    border-color: var(--agent-color);
+}
+
+.clawdian-message-colored .clawdian-message-sender {
+    color: var(--agent-color);
+}
+
+/* Settings styles */
+.clawdian-settings-desc {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-bottom: 12px;
+}
+
+.clawdian-settings-hint {
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: 12px;
+}

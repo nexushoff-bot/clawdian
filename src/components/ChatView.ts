@@ -2,7 +2,7 @@ import { ItemView, WorkspaceLeaf, Notice, setIcon, TFile, FuzzySuggestModal, App
 import { OpenClawClient, AgentInfo } from '../utils/OpenClawClient';
 import ClawdianPlugin from '../main';
 import { SetupCodeModal } from './SetupCodeModal';
-import { CONTEXT_SIZES } from '../settings';
+import { CONTEXT_SIZES, AGENT_COLORS, DEFAULT_AGENT_COLORS } from '../settings';
 
 export const VIEW_TYPE_CHAT = 'clawdian-chat-view';
 
@@ -256,6 +256,12 @@ export class ChatView extends ItemView {
         this.populateAgentDropdown(agents);
     }
 
+    getAgentColor(agentId: string): string {
+        return this.plugin.settings.agentColors[agentId] || 
+               DEFAULT_AGENT_COLORS[agentId] || 
+               AGENT_COLORS[0];
+    }
+
     populateAgentDropdown(agents?: AgentInfo[]) {
         if (!this.agentSelectEl) return;
         
@@ -279,8 +285,19 @@ export class ChatView extends ItemView {
                     text: agent.name || agent.id,
                     value: agent.id 
                 });
-                if (agent.id === this.plugin.settings.defaultAgent) {
+                // Use lastAgent if available, otherwise defaultAgent
+                const selectedAgent = this.plugin.settings.lastAgent || this.plugin.settings.defaultAgent;
+                if (agent.id === selectedAgent) {
                     option.selected = true;
+                }
+            });
+            
+            // Add change listener to save last agent
+            this.agentSelectEl.addEventListener('change', async () => {
+                const selectedValue = this.agentSelectEl?.value;
+                if (selectedValue) {
+                    this.plugin.settings.lastAgent = selectedValue;
+                    await this.plugin.saveSettings();
                 }
             });
         }
@@ -518,8 +535,18 @@ export class ChatView extends ItemView {
         const msgEl = this.messagesEl.createEl('div', {
             cls: `clawdian-message clawdian-message-${sender}`
         });
+        
         // Use selected agent from dropdown for display name
-        const agentName = this.agentSelectEl?.options[this.agentSelectEl.selectedIndex]?.text || this.plugin.settings.defaultAgent;
+        const agentId = this.agentSelectEl?.value || this.plugin.settings.defaultAgent;
+        const agentName = this.agentSelectEl?.options[this.agentSelectEl.selectedIndex]?.text || agentId;
+        
+        // Apply agent color for agent messages
+        if (sender === 'agent') {
+            const agentColor = this.getAgentColor(agentId);
+            msgEl.style.setProperty('--agent-color', agentColor);
+            msgEl.addClass('clawdian-message-colored');
+        }
+        
         msgEl.createEl('div', {
             cls: 'clawdian-message-sender',
             text: sender === 'user' ? 'You' : agentName

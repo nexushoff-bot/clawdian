@@ -2,10 +2,34 @@ import { PluginSettingTab, Setting, App, Notice } from 'obsidian';
 import ClawdianPlugin from './main';
 import { PairingModal } from './components/PairingModal';
 
+// Default color palette for agents
+export const AGENT_COLORS = [
+    '#6366f1', // Indigo (Nexus)
+    '#f97316', // Orange (Aristotowl)
+    '#10b981', // Emerald
+    '#ec4899', // Pink
+    '#8b5cf6', // Purple
+    '#06b6d4', // Cyan
+    '#f43f5e', // Rose
+    '#84cc16', // Lime
+    '#f59e0b', // Amber
+    '#14b8a6', // Teal
+];
+
+export const DEFAULT_AGENT_COLORS: Record<string, string> = {
+    'main': '#6366f1',      // Indigo
+    'nexus': '#6366f1',     // Indigo
+    'aristotowl': '#f97316', // Orange
+    'prism': '#ec4899',     // Pink
+    'orion': '#10b981',     // Emerald
+};
+
 export interface ClawdianSettings {
     gatewayUrl: string;
     gatewayToken: string;
     defaultAgent: string;
+    lastAgent: string;
+    agentColors: Record<string, string>;
     includeVaultContext: boolean;
     contextSize: 'small' | 'medium' | 'large' | 'max';
     autoConnect: boolean;
@@ -15,6 +39,8 @@ export const DEFAULT_SETTINGS: ClawdianSettings = {
     gatewayUrl: 'ws://127.0.0.1:18789',
     gatewayToken: '',
     defaultAgent: '',
+    lastAgent: '',
+    agentColors: {},
     includeVaultContext: true,
     contextSize: 'large',
     autoConnect: false
@@ -156,13 +182,46 @@ export class ClawdianSettingTab extends PluginSettingTab {
                 // No agents available
                 dropdown.addOption('', 'No agents available');
             }
-            dropdown.setValue(this.plugin.settings.defaultAgent);
+            // Use lastAgent if available, otherwise defaultAgent
+            dropdown.setValue(this.plugin.settings.lastAgent || this.plugin.settings.defaultAgent);
             dropdown.onChange(async (value) => {
                 this.plugin.settings.defaultAgent = value;
+                this.plugin.settings.lastAgent = value;
                 await this.plugin.saveSettings();
             });
             return dropdown;
         });
+
+        // Agent Colors Section
+        containerEl.createEl('h3', { text: 'Agent Colors' });
+        containerEl.createEl('p', { 
+            text: 'Customize the color for each agent. Colors are used in the chat interface.',
+            cls: 'clawdian-settings-desc'
+        });
+
+        if (agents.length > 0) {
+            agents.forEach(agent => {
+                const currentColor = this.plugin.settings.agentColors[agent.id] || 
+                                    DEFAULT_AGENT_COLORS[agent.id] || 
+                                    AGENT_COLORS[0];
+                
+                new Setting(containerEl)
+                    .setName(agent.name || agent.id)
+                    .setDesc(`Color for ${agent.name || agent.id}`)
+                    .addColorPicker(picker => {
+                        picker.setValue(currentColor);
+                        picker.onChange(async (value) => {
+                            this.plugin.settings.agentColors[agent.id] = value;
+                            await this.plugin.saveSettings();
+                        });
+                    });
+            });
+        } else {
+            containerEl.createEl('p', { 
+                text: 'Connect to see available agents',
+                cls: 'clawdian-settings-hint'
+            });
+        }
 
         new Setting(containerEl)
             .setName('Include vault context')

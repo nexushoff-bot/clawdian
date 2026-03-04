@@ -92,10 +92,46 @@ var PairingModal = class extends import_obsidian.Modal {
 };
 
 // src/settings.ts
+var AGENT_COLORS = [
+  "#6366f1",
+  // Indigo (Nexus)
+  "#f97316",
+  // Orange (Aristotowl)
+  "#10b981",
+  // Emerald
+  "#ec4899",
+  // Pink
+  "#8b5cf6",
+  // Purple
+  "#06b6d4",
+  // Cyan
+  "#f43f5e",
+  // Rose
+  "#84cc16",
+  // Lime
+  "#f59e0b",
+  // Amber
+  "#14b8a6"
+  // Teal
+];
+var DEFAULT_AGENT_COLORS = {
+  "main": "#6366f1",
+  // Indigo
+  "nexus": "#6366f1",
+  // Indigo
+  "aristotowl": "#f97316",
+  // Orange
+  "prism": "#ec4899",
+  // Pink
+  "orion": "#10b981"
+  // Emerald
+};
 var DEFAULT_SETTINGS = {
   gatewayUrl: "ws://127.0.0.1:18789",
   gatewayToken: "",
   defaultAgent: "",
+  lastAgent: "",
+  agentColors: {},
   includeVaultContext: true,
   contextSize: "large",
   autoConnect: false
@@ -185,13 +221,36 @@ var ClawdianSettingTab = class extends import_obsidian2.PluginSettingTab {
       } else {
         dropdown2.addOption("", "No agents available");
       }
-      dropdown2.setValue(this.plugin.settings.defaultAgent);
+      dropdown2.setValue(this.plugin.settings.lastAgent || this.plugin.settings.defaultAgent);
       dropdown2.onChange(async (value) => {
         this.plugin.settings.defaultAgent = value;
+        this.plugin.settings.lastAgent = value;
         await this.plugin.saveSettings();
       });
       return dropdown2;
     });
+    containerEl.createEl("h3", { text: "Agent Colors" });
+    containerEl.createEl("p", {
+      text: "Customize the color for each agent. Colors are used in the chat interface.",
+      cls: "clawdian-settings-desc"
+    });
+    if (agents.length > 0) {
+      agents.forEach((agent) => {
+        const currentColor = this.plugin.settings.agentColors[agent.id] || DEFAULT_AGENT_COLORS[agent.id] || AGENT_COLORS[0];
+        new import_obsidian2.Setting(containerEl).setName(agent.name || agent.id).setDesc(`Color for ${agent.name || agent.id}`).addColorPicker((picker) => {
+          picker.setValue(currentColor);
+          picker.onChange(async (value) => {
+            this.plugin.settings.agentColors[agent.id] = value;
+            await this.plugin.saveSettings();
+          });
+        });
+      });
+    } else {
+      containerEl.createEl("p", {
+        text: "Connect to see available agents",
+        cls: "clawdian-settings-hint"
+      });
+    }
     new import_obsidian2.Setting(containerEl).setName("Include vault context").setDesc("Send current file and vault info with messages").addToggle((toggle) => toggle.setValue(this.plugin.settings.includeVaultContext).onChange(async (value) => {
       this.plugin.settings.includeVaultContext = value;
       await this.plugin.saveSettings();
@@ -399,6 +458,9 @@ var ChatView = class extends import_obsidian3.ItemView {
     const agents = await this.client.fetchAgents();
     this.populateAgentDropdown(agents);
   }
+  getAgentColor(agentId) {
+    return this.plugin.settings.agentColors[agentId] || DEFAULT_AGENT_COLORS[agentId] || AGENT_COLORS[0];
+  }
   populateAgentDropdown(agents) {
     if (!this.agentSelectEl)
       return;
@@ -416,8 +478,17 @@ var ChatView = class extends import_obsidian3.ItemView {
           text: agent.name || agent.id,
           value: agent.id
         });
-        if (agent.id === this.plugin.settings.defaultAgent) {
+        const selectedAgent = this.plugin.settings.lastAgent || this.plugin.settings.defaultAgent;
+        if (agent.id === selectedAgent) {
           option.selected = true;
+        }
+      });
+      this.agentSelectEl.addEventListener("change", async () => {
+        var _a;
+        const selectedValue = (_a = this.agentSelectEl) == null ? void 0 : _a.value;
+        if (selectedValue) {
+          this.plugin.settings.lastAgent = selectedValue;
+          await this.plugin.saveSettings();
         }
       });
     }
@@ -618,12 +689,18 @@ ${truncated}`);
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
   }
   addMessage(sender, text) {
-    var _a, _b;
+    var _a, _b, _c;
     console.log("[Clawdian] addMessage called with sender:", sender, "text:", text);
     const msgEl = this.messagesEl.createEl("div", {
       cls: `clawdian-message clawdian-message-${sender}`
     });
-    const agentName = ((_b = (_a = this.agentSelectEl) == null ? void 0 : _a.options[this.agentSelectEl.selectedIndex]) == null ? void 0 : _b.text) || this.plugin.settings.defaultAgent;
+    const agentId = ((_a = this.agentSelectEl) == null ? void 0 : _a.value) || this.plugin.settings.defaultAgent;
+    const agentName = ((_c = (_b = this.agentSelectEl) == null ? void 0 : _b.options[this.agentSelectEl.selectedIndex]) == null ? void 0 : _c.text) || agentId;
+    if (sender === "agent") {
+      const agentColor = this.getAgentColor(agentId);
+      msgEl.style.setProperty("--agent-color", agentColor);
+      msgEl.addClass("clawdian-message-colored");
+    }
     msgEl.createEl("div", {
       cls: "clawdian-message-sender",
       text: sender === "user" ? "You" : agentName
