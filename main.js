@@ -274,6 +274,7 @@ var ChatView = class extends import_obsidian3.ItemView {
     this.deviceIdDisplayEl = this.connectPromptEl.createEl("div", { cls: "clawdian-device-id" });
     this.deviceIdDisplayEl.style.display = "none";
     this.contextBarEl = container.createEl("div", { cls: "clawdian-context-bar" });
+    this.contextBarEl.style.display = "none";
     this.registerEvent(this.app.workspace.on("active-leaf-change", () => {
       this.updateCurrentFile();
     }));
@@ -426,6 +427,9 @@ var ChatView = class extends import_obsidian3.ItemView {
       this.connectPromptEl.style.display = "none";
       console.log("[Clawdian] Hid connect prompt");
     }
+    if (this.contextBarEl) {
+      this.contextBarEl.style.display = "flex";
+    }
     if (this.inputContainerEl) {
       this.inputContainerEl.style.display = "flex";
       console.log("[Clawdian] Showed input container");
@@ -444,6 +448,9 @@ var ChatView = class extends import_obsidian3.ItemView {
       if (this.deviceIdDisplayEl) {
         this.deviceIdDisplayEl.style.display = "none";
       }
+    }
+    if (this.contextBarEl) {
+      this.contextBarEl.style.display = "none";
     }
     if (this.inputContainerEl) {
       this.inputContainerEl.style.display = "none";

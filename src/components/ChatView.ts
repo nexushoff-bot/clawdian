@@ -85,8 +85,9 @@ export class ChatView extends ItemView {
         this.deviceIdDisplayEl = this.connectPromptEl.createEl('div', { cls: 'clawdian-device-id' });
         this.deviceIdDisplayEl.style.display = 'none';
 
-        // Context bar (file attachments) - always visible
+        // Context bar (file attachments) - hidden until connected
         this.contextBarEl = container.createEl('div', { cls: 'clawdian-context-bar' });
+        this.contextBarEl.style.display = 'none';
 
         // Register event listener for active file changes
         this.registerEvent(this.app.workspace.on('active-leaf-change', () => {
@@ -290,6 +291,9 @@ export class ChatView extends ItemView {
             this.connectPromptEl.style.display = 'none';
             console.log('[Clawdian] Hid connect prompt');
         }
+        if (this.contextBarEl) {
+            this.contextBarEl.style.display = 'flex';
+        }
         if (this.inputContainerEl) {
             this.inputContainerEl.style.display = 'flex';
             console.log('[Clawdian] Showed input container');
@@ -309,6 +313,9 @@ export class ChatView extends ItemView {
             if (this.deviceIdDisplayEl) {
                 this.deviceIdDisplayEl.style.display = 'none';
             }
+        }
+        if (this.contextBarEl) {
+            this.contextBarEl.style.display = 'none';
         }
         if (this.inputContainerEl) {
             this.inputContainerEl.style.display = 'none';
