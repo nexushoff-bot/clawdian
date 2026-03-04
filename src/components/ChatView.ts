@@ -1,9 +1,16 @@
-import { ItemView, WorkspaceLeaf, Notice, setIcon } from 'obsidian';
+import { ItemView, WorkspaceLeaf, Notice, setIcon, TFile, FuzzySuggestModal, App } from 'obsidian';
 import { OpenClawClient, AgentInfo } from '../utils/OpenClawClient';
 import ClawdianPlugin from '../main';
 import { SetupCodeModal } from './SetupCodeModal';
+import { CONTEXT_SIZES } from '../settings';
 
 export const VIEW_TYPE_CHAT = 'clawdian-chat-view';
+
+interface AttachedFile {
+    path: string;
+    name: string;
+    content?: string;
+}
 
 export class ChatView extends ItemView {
     client: OpenClawClient;
@@ -15,6 +22,8 @@ export class ChatView extends ItemView {
     deviceIdDisplayEl: HTMLElement | null = null;
     agentSelectEl: HTMLSelectElement | null = null;
     loadingEl: HTMLElement | null = null;
+    contextBarEl: HTMLElement | null = null;
+    attachedFiles: AttachedFile[] = [];
     isLoading = false;
     lastProcessedRunId: string | null = null;
     sessionId: string;
@@ -53,6 +62,10 @@ export class ChatView extends ItemView {
         const headerRight = header.createEl('div', { cls: 'clawdian-header-right' });
         headerRight.createEl('label', { text: 'Agent:', cls: 'clawdian-agent-label' });
         this.agentSelectEl = headerRight.createEl('select', { cls: 'clawdian-agent-select' });
+
+        // Context bar (file attachments)
+        this.contextBarEl = container.createEl('div', { cls: 'clawdian-context-bar' });
+        this.renderContextBar();
 
         // Messages area
         this.messagesEl = container.createEl('div', { cls: 'clawdian-messages' });
@@ -329,6 +342,58 @@ export class ChatView extends ItemView {
         }
     }
 
+    renderContextBar() {
+        if (!this.contextBarEl) return;
+        this.contextBarEl.empty();
+
+        // Add file button
+        const addBtn = this.contextBarEl.createEl('button', {
+            cls: 'clawdian-context-add-btn',
+            text: '+ Add file'
+        });
+        addBtn.addEventListener('click', () => this.showFilePicker());
+
+        // Auto-add current file if not already attached and setting is enabled
+        if (this.plugin.settings.includeVaultContext && this.attachedFiles.length === 0) {
+            const activeFile = this.app.workspace.getActiveFile();
+            if (activeFile && activeFile.extension === 'md') {
+                this.attachedFiles.push({
+                    path: activeFile.path,
+                    name: activeFile.name
+                });
+            }
+        }
+
+        // Render attached files
+        const filesContainer = this.contextBarEl.createEl('div', { cls: 'clawdian-context-files' });
+        this.attachedFiles.forEach((file, index) => {
+            const fileChip = filesContainer.createEl('div', { cls: 'clawdian-context-file-chip' });
+            fileChip.createEl('span', { text: file.name, cls: 'clawdian-context-file-name' });
+            const removeBtn = fileChip.createEl('button', { cls: 'clawdian-context-file-remove', text: '×' });
+            removeBtn.addEventListener('click', () => {
+                this.attachedFiles.splice(index, 1);
+                this.renderContextBar();
+            });
+        });
+    }
+
+    showFilePicker() {
+        new FileSuggestModal(this.app, this).open();
+    }
+
+    async addFile(file: TFile) {
+        // Check if already attached
+        if (this.attachedFiles.some(f => f.path === file.path)) {
+            new Notice('File already attached');
+            return;
+        }
+        this.attachedFiles.push({
+            path: file.path,
+            name: file.name
+        });
+        this.renderContextBar();
+    }
+
     async sendMessage() {
         if (!this.client.isConnected()) {
             new Notice('Not connected. Click Connect first.');
@@ -348,27 +413,34 @@ export class ChatView extends ItemView {
         // Show loading spinner
         this.showLoading();
 
-        // Get vault context
+        // Get vault context from attached files
         const context: any = {};
-        console.log('[Clawdian] includeVaultContext setting:', this.plugin.settings.includeVaultContext);
-        if (this.plugin.settings.includeVaultContext) {
-            const activeFile = this.app.workspace.getActiveFile();
-            console.log('[Clawdian] Active file:', activeFile?.path);
-            if (activeFile) {
-                context.currentFile = activeFile.path;
+        const maxChars = CONTEXT_SIZES[this.plugin.settings.contextSize].chars;
+        
+        if (this.attachedFiles.length > 0) {
+            console.log('[Clawdian] Reading attached files:', this.attachedFiles.map(f => f.path));
+            const fileContents: string[] = [];
+            
+            for (const file of this.attachedFiles) {
                 try {
-                    const content = await this.app.vault.read(activeFile);
-                    // Take first 3000 chars to provide good context
-                    context.fileContent = content.slice(0, 3000);
-                    console.log('[Clawdian] Context prepared - file:', context.currentFile, 'content length:', context.fileContent.length);
+                    const tfile = this.app.vault.getAbstractFileByPath(file.path);
+                    if (tfile instanceof TFile) {
+                        const content = await this.app.vault.read(tfile);
+                        const truncated = maxChars === Infinity ? content : content.slice(0, maxChars);
+                        fileContents.push(`--- ${file.name} ---\n${truncated}`);
+                        console.log('[Clawdian] Read file:', file.path, 'length:', truncated.length);
+                    }
                 } catch (e) {
-                    console.log('[Clawdian] Could not read file:', e);
+                    console.log('[Clawdian] Could not read file:', file.path, e);
                 }
-            } else {
-                console.log('[Clawdian] No active file found');
+            }
+            
+            if (fileContents.length > 0) {
+                context.currentFile = this.attachedFiles.map(f => f.path).join(', ');
+                context.fileContent = fileContents.join('\n\n');
             }
         } else {
-            console.log('[Clawdian] Vault context disabled in settings');
+            console.log('[Clawdian] No files attached, skipping context');
         }
 
         try {
@@ -422,5 +494,28 @@ export class ChatView extends ItemView {
         });
         this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
         console.log('[Clawdian] Message added to UI');
+    }
+}
+
+// File picker modal
+class FileSuggestModal extends FuzzySuggestModal<TFile> {
+    chatView: ChatView;
+
+    constructor(app: App, chatView: ChatView) {
+        super(app);
+        this.chatView = chatView;
+        this.setPlaceholder('Search files to add...');
+    }
+
+    getItems(): TFile[] {
+        return this.app.vault.getMarkdownFiles();
+    }
+
+    getItemText(file: TFile): string {
+        return file.basename;
+    }
+
+    onChooseItem(file: TFile, evt: MouseEvent | KeyboardEvent): void {
+        this.chatView.addFile(file);
     }
 }

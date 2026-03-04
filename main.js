@@ -97,7 +97,14 @@ var DEFAULT_SETTINGS = {
   gatewayToken: "",
   defaultAgent: "",
   includeVaultContext: true,
+  contextSize: "large",
   autoConnect: false
+};
+var CONTEXT_SIZES = {
+  "small": { label: "Small (500 chars)", chars: 500 },
+  "medium": { label: "Medium (1500 chars)", chars: 1500 },
+  "large": { label: "Large (3000 chars)", chars: 3e3 },
+  "max": { label: "Max (entire file)", chars: Infinity }
 };
 var ClawdianSettingTab = class extends import_obsidian2.PluginSettingTab {
   constructor(app, plugin) {
@@ -189,6 +196,17 @@ var ClawdianSettingTab = class extends import_obsidian2.PluginSettingTab {
       this.plugin.settings.includeVaultContext = value;
       await this.plugin.saveSettings();
     }));
+    new import_obsidian2.Setting(containerEl).setName("Context size").setDesc("Maximum characters from file to include as context").addDropdown((dropdown2) => {
+      dropdown2.addOption("small", "Small (500 chars)");
+      dropdown2.addOption("medium", "Medium (1500 chars)");
+      dropdown2.addOption("large", "Large (3000 chars)");
+      dropdown2.addOption("max", "Max (entire file)");
+      dropdown2.setValue(this.plugin.settings.contextSize);
+      dropdown2.onChange(async (value) => {
+        this.plugin.settings.contextSize = value;
+        await this.plugin.saveSettings();
+      });
+    });
     new import_obsidian2.Setting(containerEl).setName("Auto-connect on startup").setDesc("Automatically connect to Gateway when Obsidian starts").addToggle((toggle) => toggle.setValue(this.plugin.settings.autoConnect).onChange(async (value) => {
       this.plugin.settings.autoConnect = value;
       await this.plugin.saveSettings();
@@ -215,6 +233,8 @@ var ChatView = class extends import_obsidian3.ItemView {
     this.deviceIdDisplayEl = null;
     this.agentSelectEl = null;
     this.loadingEl = null;
+    this.contextBarEl = null;
+    this.attachedFiles = [];
     this.isLoading = false;
     this.lastProcessedRunId = null;
     this.client = client;
@@ -240,6 +260,8 @@ var ChatView = class extends import_obsidian3.ItemView {
     const headerRight = header.createEl("div", { cls: "clawdian-header-right" });
     headerRight.createEl("label", { text: "Agent:", cls: "clawdian-agent-label" });
     this.agentSelectEl = headerRight.createEl("select", { cls: "clawdian-agent-select" });
+    this.contextBarEl = container.createEl("div", { cls: "clawdian-context-bar" });
+    this.renderContextBar();
     this.messagesEl = container.createEl("div", { cls: "clawdian-messages" });
     this.loadingEl = container.createEl("div", { cls: "clawdian-loading" });
     this.loadingEl.createEl("div", { cls: "clawdian-spinner" });
@@ -451,6 +473,49 @@ var ChatView = class extends import_obsidian3.ItemView {
       connectBtn.disabled = false;
     }
   }
+  renderContextBar() {
+    if (!this.contextBarEl)
+      return;
+    this.contextBarEl.empty();
+    const addBtn = this.contextBarEl.createEl("button", {
+      cls: "clawdian-context-add-btn",
+      text: "+ Add file"
+    });
+    addBtn.addEventListener("click", () => this.showFilePicker());
+    if (this.plugin.settings.includeVaultContext && this.attachedFiles.length === 0) {
+      const activeFile = this.app.workspace.getActiveFile();
+      if (activeFile && activeFile.extension === "md") {
+        this.attachedFiles.push({
+          path: activeFile.path,
+          name: activeFile.name
+        });
+      }
+    }
+    const filesContainer = this.contextBarEl.createEl("div", { cls: "clawdian-context-files" });
+    this.attachedFiles.forEach((file, index) => {
+      const fileChip = filesContainer.createEl("div", { cls: "clawdian-context-file-chip" });
+      fileChip.createEl("span", { text: file.name, cls: "clawdian-context-file-name" });
+      const removeBtn = fileChip.createEl("button", { cls: "clawdian-context-file-remove", text: "\xD7" });
+      removeBtn.addEventListener("click", () => {
+        this.attachedFiles.splice(index, 1);
+        this.renderContextBar();
+      });
+    });
+  }
+  showFilePicker() {
+    new FileSuggestModal(this.app, this).open();
+  }
+  async addFile(file) {
+    if (this.attachedFiles.some((f) => f.path === file.path)) {
+      new import_obsidian3.Notice("File already attached");
+      return;
+    }
+    this.attachedFiles.push({
+      path: file.path,
+      name: file.name
+    });
+    this.renderContextBar();
+  }
   async sendMessage() {
     var _a;
     if (!this.client.isConnected()) {
@@ -467,24 +532,30 @@ var ChatView = class extends import_obsidian3.ItemView {
     this.inputEl.value = "";
     this.showLoading();
     const context = {};
-    console.log("[Clawdian] includeVaultContext setting:", this.plugin.settings.includeVaultContext);
-    if (this.plugin.settings.includeVaultContext) {
-      const activeFile = this.app.workspace.getActiveFile();
-      console.log("[Clawdian] Active file:", activeFile == null ? void 0 : activeFile.path);
-      if (activeFile) {
-        context.currentFile = activeFile.path;
+    const maxChars = CONTEXT_SIZES[this.plugin.settings.contextSize].chars;
+    if (this.attachedFiles.length > 0) {
+      console.log("[Clawdian] Reading attached files:", this.attachedFiles.map((f) => f.path));
+      const fileContents = [];
+      for (const file of this.attachedFiles) {
         try {
-          const content = await this.app.vault.read(activeFile);
-          context.fileContent = content.slice(0, 3e3);
-          console.log("[Clawdian] Context prepared - file:", context.currentFile, "content length:", context.fileContent.length);
+          const tfile = this.app.vault.getAbstractFileByPath(file.path);
+          if (tfile instanceof import_obsidian3.TFile) {
+            const content = await this.app.vault.read(tfile);
+            const truncated = maxChars === Infinity ? content : content.slice(0, maxChars);
+            fileContents.push(`--- ${file.name} ---
+${truncated}`);
+            console.log("[Clawdian] Read file:", file.path, "length:", truncated.length);
+          }
         } catch (e) {
-          console.log("[Clawdian] Could not read file:", e);
+          console.log("[Clawdian] Could not read file:", file.path, e);
         }
-      } else {
-        console.log("[Clawdian] No active file found");
+      }
+      if (fileContents.length > 0) {
+        context.currentFile = this.attachedFiles.map((f) => f.path).join(", ");
+        context.fileContent = fileContents.join("\n\n");
       }
     } else {
-      console.log("[Clawdian] Vault context disabled in settings");
+      console.log("[Clawdian] No files attached, skipping context");
     }
     try {
       console.log("[Clawdian] Sending message with session ID:", this.sessionId);
@@ -533,6 +604,22 @@ var ChatView = class extends import_obsidian3.ItemView {
     });
     this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
     console.log("[Clawdian] Message added to UI");
+  }
+};
+var FileSuggestModal = class extends import_obsidian3.FuzzySuggestModal {
+  constructor(app, chatView) {
+    super(app);
+    this.chatView = chatView;
+    this.setPlaceholder("Search files to add...");
+  }
+  getItems() {
+    return this.app.vault.getMarkdownFiles();
+  }
+  getItemText(file) {
+    return file.basename;
+  }
+  onChooseItem(file, evt) {
+    this.chatView.addFile(file);
   }
 };
 

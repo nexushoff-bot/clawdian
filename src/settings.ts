@@ -7,6 +7,7 @@ export interface ClawdianSettings {
     gatewayToken: string;
     defaultAgent: string;
     includeVaultContext: boolean;
+    contextSize: 'small' | 'medium' | 'large' | 'max';
     autoConnect: boolean;
 }
 
@@ -15,7 +16,15 @@ export const DEFAULT_SETTINGS: ClawdianSettings = {
     gatewayToken: '',
     defaultAgent: '',
     includeVaultContext: true,
+    contextSize: 'large',
     autoConnect: false
+};
+
+export const CONTEXT_SIZES: Record<string, { label: string; chars: number }> = {
+    'small': { label: 'Small (500 chars)', chars: 500 },
+    'medium': { label: 'Medium (1500 chars)', chars: 1500 },
+    'large': { label: 'Large (3000 chars)', chars: 3000 },
+    'max': { label: 'Max (entire file)', chars: Infinity }
 };
 
 export class ClawdianSettingTab extends PluginSettingTab {
@@ -164,6 +173,21 @@ export class ClawdianSettingTab extends PluginSettingTab {
                     this.plugin.settings.includeVaultContext = value;
                     await this.plugin.saveSettings();
                 }));
+
+        new Setting(containerEl)
+            .setName('Context size')
+            .setDesc('Maximum characters from file to include as context')
+            .addDropdown(dropdown => {
+                dropdown.addOption('small', 'Small (500 chars)');
+                dropdown.addOption('medium', 'Medium (1500 chars)');
+                dropdown.addOption('large', 'Large (3000 chars)');
+                dropdown.addOption('max', 'Max (entire file)');
+                dropdown.setValue(this.plugin.settings.contextSize);
+                dropdown.onChange(async (value: 'small' | 'medium' | 'large' | 'max') => {
+                    this.plugin.settings.contextSize = value;
+                    await this.plugin.saveSettings();
+                });
+            });
 
         new Setting(containerEl)
             .setName('Auto-connect on startup')
