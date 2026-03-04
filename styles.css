@@ -523,6 +523,7 @@
 
 .clawdian-message-colored .clawdian-message-sender {
     color: var(--agent-color);
+    font-weight: 600;
 }
 
 /* Ensure text is readable in dark mode */
