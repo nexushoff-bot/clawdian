@@ -85,12 +85,12 @@ export class ChatView extends ItemView {
         this.deviceIdDisplayEl = this.connectPromptEl.createEl('div', { cls: 'clawdian-device-id' });
         this.deviceIdDisplayEl.style.display = 'none';
 
+        // Context bar (file attachments) - always visible
+        this.contextBarEl = container.createEl('div', { cls: 'clawdian-context-bar' });
+        this.initContextFiles();
+
         // Input container
         this.inputContainerEl = container.createEl('div', { cls: 'clawdian-input-container' });
-
-        // Context bar (file attachments) - above input
-        this.contextBarEl = this.inputContainerEl.createEl('div', { cls: 'clawdian-context-bar' });
-        this.initContextFiles();
 
         // Input area (full width)
         this.inputEl = this.inputContainerEl.createEl('textarea', {
@@ -344,13 +344,16 @@ export class ChatView extends ItemView {
 
     initContextFiles() {
         // Auto-add current file if setting is enabled and no files attached
+        console.log('[Clawdian] initContextFiles - includeVaultContext:', this.plugin.settings.includeVaultContext, 'attachedFiles:', this.attachedFiles.length);
         if (this.plugin.settings.includeVaultContext && this.attachedFiles.length === 0) {
             const activeFile = this.app.workspace.getActiveFile();
+            console.log('[Clawdian] initContextFiles - activeFile:', activeFile?.path);
             if (activeFile && activeFile.extension === 'md') {
                 this.attachedFiles.push({
                     path: activeFile.path,
                     name: activeFile.name
                 });
+                console.log('[Clawdian] initContextFiles - added file:', activeFile.path);
             }
         }
         this.renderContextBar();

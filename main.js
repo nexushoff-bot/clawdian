@@ -273,9 +273,9 @@ var ChatView = class extends import_obsidian3.ItemView {
     connectBtn.addEventListener("click", () => this.tryConnect());
     this.deviceIdDisplayEl = this.connectPromptEl.createEl("div", { cls: "clawdian-device-id" });
     this.deviceIdDisplayEl.style.display = "none";
-    this.inputContainerEl = container.createEl("div", { cls: "clawdian-input-container" });
-    this.contextBarEl = this.inputContainerEl.createEl("div", { cls: "clawdian-context-bar" });
+    this.contextBarEl = container.createEl("div", { cls: "clawdian-context-bar" });
     this.initContextFiles();
+    this.inputContainerEl = container.createEl("div", { cls: "clawdian-input-container" });
     this.inputEl = this.inputContainerEl.createEl("textarea", {
       cls: "clawdian-input",
       attr: { placeholder: "Type your message..." }
@@ -474,13 +474,16 @@ var ChatView = class extends import_obsidian3.ItemView {
     }
   }
   initContextFiles() {
+    console.log("[Clawdian] initContextFiles - includeVaultContext:", this.plugin.settings.includeVaultContext, "attachedFiles:", this.attachedFiles.length);
     if (this.plugin.settings.includeVaultContext && this.attachedFiles.length === 0) {
       const activeFile = this.app.workspace.getActiveFile();
+      console.log("[Clawdian] initContextFiles - activeFile:", activeFile == null ? void 0 : activeFile.path);
       if (activeFile && activeFile.extension === "md") {
         this.attachedFiles.push({
           path: activeFile.path,
           name: activeFile.name
         });
+        console.log("[Clawdian] initContextFiles - added file:", activeFile.path);
       }
     }
     this.renderContextBar();
