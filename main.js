@@ -285,6 +285,7 @@ var ClawdianSettingTab = class extends import_obsidian2.PluginSettingTab {
 var import_obsidian3 = require("obsidian");
 var VIEW_TYPE_CHAT = "clawdian-chat-view";
 var ChatView = class extends import_obsidian3.ItemView {
+  // 60 seconds timeout for LLM responses
   constructor(leaf, client, plugin) {
     super(leaf);
     this.connectPromptEl = null;
@@ -296,6 +297,8 @@ var ChatView = class extends import_obsidian3.ItemView {
     this.attachedFiles = [];
     this.isLoading = false;
     this.lastProcessedRunId = null;
+    this.responseTimeout = null;
+    this.RESPONSE_TIMEOUT_MS = 6e4;
     this.client = client;
     this.plugin = plugin;
     this.sessionId = "obsidian-chat-" + this.generateSessionId();
@@ -678,11 +681,21 @@ ${truncated}`);
     if (this.loadingEl) {
       this.loadingEl.style.display = "flex";
     }
+    this.responseTimeout = setTimeout(() => {
+      if (this.isLoading) {
+        this.hideLoading();
+        this.addMessage("agent", "\u26A0\uFE0F Response timed out. The agent may be busy or offline. Try again.");
+      }
+    }, this.RESPONSE_TIMEOUT_MS);
   }
   hideLoading() {
     this.isLoading = false;
     if (this.loadingEl) {
       this.loadingEl.style.display = "none";
+    }
+    if (this.responseTimeout) {
+      clearTimeout(this.responseTimeout);
+      this.responseTimeout = null;
     }
   }
   generateSessionId() {

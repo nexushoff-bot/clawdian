@@ -27,6 +27,8 @@ export class ChatView extends ItemView {
     isLoading = false;
     lastProcessedRunId: string | null = null;
     sessionId: string;
+    responseTimeout: ReturnType<typeof setTimeout> | null = null;
+    readonly RESPONSE_TIMEOUT_MS = 60000; // 60 seconds timeout for LLM responses
 
     constructor(leaf: WorkspaceLeaf, client: OpenClawClient, plugin: ClawdianPlugin) {
         super(leaf);
@@ -517,12 +519,24 @@ export class ChatView extends ItemView {
         if (this.loadingEl) {
             this.loadingEl.style.display = 'flex';
         }
+        // Set timeout for response
+        this.responseTimeout = setTimeout(() => {
+            if (this.isLoading) {
+                this.hideLoading();
+                this.addMessage('agent', '⚠️ Response timed out. The agent may be busy or offline. Try again.');
+            }
+        }, this.RESPONSE_TIMEOUT_MS);
     }
 
     hideLoading() {
         this.isLoading = false;
         if (this.loadingEl) {
             this.loadingEl.style.display = 'none';
+        }
+        // Clear the timeout if response was received
+        if (this.responseTimeout) {
+            clearTimeout(this.responseTimeout);
+            this.responseTimeout = null;
         }
     }
 
