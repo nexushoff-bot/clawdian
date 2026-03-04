@@ -516,13 +516,18 @@
 
 .clawdian-message-colored.clawdian-message-agent {
     background: linear-gradient(135deg, 
-        color-mix(in srgb, var(--agent-color) 10%, transparent) 0%, 
-        color-mix(in srgb, var(--agent-color) 20%, transparent) 100%);
+        color-mix(in srgb, var(--agent-color) 25%, var(--background-primary)) 0%, 
+        color-mix(in srgb, var(--agent-color) 35%, var(--background-primary)) 100%);
     border-color: var(--agent-color);
 }
 
 .clawdian-message-colored .clawdian-message-sender {
     color: var(--agent-color);
+}
+
+/* Ensure text is readable in dark mode */
+.clawdian-message-colored .clawdian-message-text {
+    color: var(--text-normal);
 }
 
 /* Settings styles */
