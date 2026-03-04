@@ -63,10 +63,6 @@ export class ChatView extends ItemView {
         headerRight.createEl('label', { text: 'Agent:', cls: 'clawdian-agent-label' });
         this.agentSelectEl = headerRight.createEl('select', { cls: 'clawdian-agent-select' });
 
-        // Context bar (file attachments)
-        this.contextBarEl = container.createEl('div', { cls: 'clawdian-context-bar' });
-        this.renderContextBar();
-
         // Messages area
         this.messagesEl = container.createEl('div', { cls: 'clawdian-messages' });
 
@@ -91,6 +87,10 @@ export class ChatView extends ItemView {
 
         // Input container
         this.inputContainerEl = container.createEl('div', { cls: 'clawdian-input-container' });
+
+        // Context bar (file attachments) - above input
+        this.contextBarEl = this.inputContainerEl.createEl('div', { cls: 'clawdian-context-bar' });
+        this.initContextFiles();
 
         // Input area (full width)
         this.inputEl = this.inputContainerEl.createEl('textarea', {
@@ -342,6 +342,20 @@ export class ChatView extends ItemView {
         }
     }
 
+    initContextFiles() {
+        // Auto-add current file if setting is enabled and no files attached
+        if (this.plugin.settings.includeVaultContext && this.attachedFiles.length === 0) {
+            const activeFile = this.app.workspace.getActiveFile();
+            if (activeFile && activeFile.extension === 'md') {
+                this.attachedFiles.push({
+                    path: activeFile.path,
+                    name: activeFile.name
+                });
+            }
+        }
+        this.renderContextBar();
+    }
+
     renderContextBar() {
         if (!this.contextBarEl) return;
         this.contextBarEl.empty();
@@ -352,17 +366,6 @@ export class ChatView extends ItemView {
             text: '+ Add file'
         });
         addBtn.addEventListener('click', () => this.showFilePicker());
-
-        // Auto-add current file if not already attached and setting is enabled
-        if (this.plugin.settings.includeVaultContext && this.attachedFiles.length === 0) {
-            const activeFile = this.app.workspace.getActiveFile();
-            if (activeFile && activeFile.extension === 'md') {
-                this.attachedFiles.push({
-                    path: activeFile.path,
-                    name: activeFile.name
-                });
-            }
-        }
 
         // Render attached files
         const filesContainer = this.contextBarEl.createEl('div', { cls: 'clawdian-context-files' });

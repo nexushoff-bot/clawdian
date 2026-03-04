@@ -260,8 +260,6 @@ var ChatView = class extends import_obsidian3.ItemView {
     const headerRight = header.createEl("div", { cls: "clawdian-header-right" });
     headerRight.createEl("label", { text: "Agent:", cls: "clawdian-agent-label" });
     this.agentSelectEl = headerRight.createEl("select", { cls: "clawdian-agent-select" });
-    this.contextBarEl = container.createEl("div", { cls: "clawdian-context-bar" });
-    this.renderContextBar();
     this.messagesEl = container.createEl("div", { cls: "clawdian-messages" });
     this.loadingEl = container.createEl("div", { cls: "clawdian-loading" });
     this.loadingEl.createEl("div", { cls: "clawdian-spinner" });
@@ -276,6 +274,8 @@ var ChatView = class extends import_obsidian3.ItemView {
     this.deviceIdDisplayEl = this.connectPromptEl.createEl("div", { cls: "clawdian-device-id" });
     this.deviceIdDisplayEl.style.display = "none";
     this.inputContainerEl = container.createEl("div", { cls: "clawdian-input-container" });
+    this.contextBarEl = this.inputContainerEl.createEl("div", { cls: "clawdian-context-bar" });
+    this.initContextFiles();
     this.inputEl = this.inputContainerEl.createEl("textarea", {
       cls: "clawdian-input",
       attr: { placeholder: "Type your message..." }
@@ -473,15 +473,7 @@ var ChatView = class extends import_obsidian3.ItemView {
       connectBtn.disabled = false;
     }
   }
-  renderContextBar() {
-    if (!this.contextBarEl)
-      return;
-    this.contextBarEl.empty();
-    const addBtn = this.contextBarEl.createEl("button", {
-      cls: "clawdian-context-add-btn",
-      text: "+ Add file"
-    });
-    addBtn.addEventListener("click", () => this.showFilePicker());
+  initContextFiles() {
     if (this.plugin.settings.includeVaultContext && this.attachedFiles.length === 0) {
       const activeFile = this.app.workspace.getActiveFile();
       if (activeFile && activeFile.extension === "md") {
@@ -491,6 +483,17 @@ var ChatView = class extends import_obsidian3.ItemView {
         });
       }
     }
+    this.renderContextBar();
+  }
+  renderContextBar() {
+    if (!this.contextBarEl)
+      return;
+    this.contextBarEl.empty();
+    const addBtn = this.contextBarEl.createEl("button", {
+      cls: "clawdian-context-add-btn",
+      text: "+ Add file"
+    });
+    addBtn.addEventListener("click", () => this.showFilePicker());
     const filesContainer = this.contextBarEl.createEl("div", { cls: "clawdian-context-files" });
     this.attachedFiles.forEach((file, index) => {
       const fileChip = filesContainer.createEl("div", { cls: "clawdian-context-file-chip" });
