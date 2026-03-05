@@ -31,8 +31,6 @@ export interface ClawdianSettings {
     lastAgent: string;
     agentColors: Record<string, string>;
     includeVaultContext: boolean;
-    includeChatHistory: boolean;
-    chatHistoryDepth: number;
     contextSize: 'small' | 'medium' | 'large' | 'max';
     autoConnect: boolean;
 }
@@ -44,8 +42,6 @@ export const DEFAULT_SETTINGS: ClawdianSettings = {
     lastAgent: '',
     agentColors: {},
     includeVaultContext: true,
-    includeChatHistory: true,
-    chatHistoryDepth: 5,
     contextSize: 'large',
     autoConnect: false
 };
@@ -268,32 +264,6 @@ export class ClawdianSettingTab extends PluginSettingTab {
                 dropdown.setValue(this.plugin.settings.contextSize);
                 dropdown.onChange(async (value: 'small' | 'medium' | 'large' | 'max') => {
                     this.plugin.settings.contextSize = value;
-                    await this.plugin.saveSettings();
-                });
-            });
-
-        new Setting(containerEl)
-            .setName('Include chat history')
-            .setDesc('Include previous messages as context')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.includeChatHistory)
-                .onChange(async (value) => {
-                    this.plugin.settings.includeChatHistory = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        new Setting(containerEl)
-            .setName('Chat history depth')
-            .setDesc('Number of previous messages to include')
-            .addDropdown(dropdown => {
-                dropdown.addOption('1', 'Last 1 message');
-                dropdown.addOption('3', 'Last 3 messages');
-                dropdown.addOption('5', 'Last 5 messages');
-                dropdown.addOption('10', 'Last 10 messages');
-                dropdown.addOption('20', 'Last 20 messages');
-                dropdown.setValue(this.plugin.settings.chatHistoryDepth.toString());
-                dropdown.onChange(async (value) => {
-                    this.plugin.settings.chatHistoryDepth = parseInt(value);
                     await this.plugin.saveSettings();
                 });
             });

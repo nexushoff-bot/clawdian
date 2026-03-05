@@ -133,6 +133,8 @@ var DEFAULT_SETTINGS = {
   lastAgent: "",
   agentColors: {},
   includeVaultContext: true,
+  includeChatHistory: true,
+  chatHistoryDepth: 5,
   contextSize: "large",
   autoConnect: false
 };
@@ -281,6 +283,22 @@ var ClawdianSettingTab = class extends import_obsidian2.PluginSettingTab {
         await this.plugin.saveSettings();
       });
     });
+    new import_obsidian2.Setting(containerEl).setName("Include chat history").setDesc("Include previous messages as context").addToggle((toggle) => toggle.setValue(this.plugin.settings.includeChatHistory).onChange(async (value) => {
+      this.plugin.settings.includeChatHistory = value;
+      await this.plugin.saveSettings();
+    }));
+    new import_obsidian2.Setting(containerEl).setName("Chat history depth").setDesc("Number of previous messages to include").addDropdown((dropdown) => {
+      dropdown.addOption("1", "Last 1 message");
+      dropdown.addOption("3", "Last 3 messages");
+      dropdown.addOption("5", "Last 5 messages");
+      dropdown.addOption("10", "Last 10 messages");
+      dropdown.addOption("20", "Last 20 messages");
+      dropdown.setValue(this.plugin.settings.chatHistoryDepth.toString());
+      dropdown.onChange(async (value) => {
+        this.plugin.settings.chatHistoryDepth = parseInt(value);
+        await this.plugin.saveSettings();
+      });
+    });
     containerEl.createEl("h3", { text: "Advanced" });
     new import_obsidian2.Setting(containerEl).setName("Reset Device Identity").setDesc("Clear stored device identity and token").addButton((btn) => {
       btn.setButtonText("Reset").setWarning().onClick(() => {
@@ -311,6 +329,8 @@ var ChatView = class extends import_obsidian3.ItemView {
     this.currentAgentId = "";
     this.sessionIds = /* @__PURE__ */ new Map();
     // Store session ID per agent
+    this.agentMessages = /* @__PURE__ */ new Map();
+    // Store messages per agent
     this.responseTimeout = null;
     this.RESPONSE_TIMEOUT_MS = 6e4;
     this.client = client;

@@ -29,6 +29,7 @@ export class ChatView extends ItemView {
     sessionId: string;
     currentAgentId: string = '';
     sessionIds: Map<string, string> = new Map(); // Store session ID per agent
+    agentMessages: Map<string, Array<{sender: 'user' | 'agent', text: string}>> = new Map(); // Store messages per agent
     responseTimeout: ReturnType<typeof setTimeout> | null = null;
     readonly RESPONSE_TIMEOUT_MS = 60000; // 60 seconds timeout for LLM responses
 
