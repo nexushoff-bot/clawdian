@@ -27,6 +27,8 @@ export class ChatView extends ItemView {
     isLoading = false;
     lastProcessedRunId: string | null = null;
     sessionId: string;
+    currentAgentId: string = '';
+    sessionIds: Map<string, string> = new Map(); // Store session ID per agent
     responseTimeout: ReturnType<typeof setTimeout> | null = null;
     readonly RESPONSE_TIMEOUT_MS = 60000; // 60 seconds timeout for LLM responses
 
@@ -292,17 +294,20 @@ export class ChatView extends ItemView {
                 }
             });
             
-            // Add change listener to save last agent and reset session
+            // Add change listener to save last agent and switch session
             this.agentSelectEl.addEventListener('change', async () => {
                 const selectedValue = this.agentSelectEl?.value;
                 if (selectedValue) {
+                    const previousAgent = this.currentAgentId;
                     this.plugin.settings.lastAgent = selectedValue;
                     await this.plugin.saveSettings();
-                    // Generate new session ID when agent changes to avoid mixing conversations
-                    this.sessionId = 'obsidian-chat-' + this.generateSessionId();
-                    console.log('[Clawdian] Agent changed, new session ID:', this.sessionId);
-                    // Clear messages for new agent conversation
-                    this.messagesEl.empty();
+                    // Switch to this agent's session (create if not exists)
+                    if (!this.sessionIds.has(selectedValue)) {
+                        this.sessionIds.set(selectedValue, 'obsidian-chat-' + this.generateSessionId());
+                    }
+                    this.sessionId = this.sessionIds.get(selectedValue)!;
+                    this.currentAgentId = selectedValue;
+                    console.log('[Clawdian] Switched to agent:', selectedValue, 'session:', this.sessionId);
                 }
             });
         }

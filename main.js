@@ -308,6 +308,9 @@ var ChatView = class extends import_obsidian3.ItemView {
     this.attachedFiles = [];
     this.isLoading = false;
     this.lastProcessedRunId = null;
+    this.currentAgentId = "";
+    this.sessionIds = /* @__PURE__ */ new Map();
+    // Store session ID per agent
     this.responseTimeout = null;
     this.RESPONSE_TIMEOUT_MS = 6e4;
     this.client = client;
@@ -500,11 +503,15 @@ var ChatView = class extends import_obsidian3.ItemView {
         var _a;
         const selectedValue = (_a = this.agentSelectEl) == null ? void 0 : _a.value;
         if (selectedValue) {
+          const previousAgent = this.currentAgentId;
           this.plugin.settings.lastAgent = selectedValue;
           await this.plugin.saveSettings();
-          this.sessionId = "obsidian-chat-" + this.generateSessionId();
-          console.log("[Clawdian] Agent changed, new session ID:", this.sessionId);
-          this.messagesEl.empty();
+          if (!this.sessionIds.has(selectedValue)) {
+            this.sessionIds.set(selectedValue, "obsidian-chat-" + this.generateSessionId());
+          }
+          this.sessionId = this.sessionIds.get(selectedValue);
+          this.currentAgentId = selectedValue;
+          console.log("[Clawdian] Switched to agent:", selectedValue, "session:", this.sessionId);
         }
       });
     }
