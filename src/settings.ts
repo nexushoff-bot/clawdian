@@ -67,19 +67,17 @@ export class ClawdianSettingTab extends PluginSettingTab {
 
         containerEl.createEl('h2', { text: 'Clawdian Settings' });
 
-        // Connection Status
-        const statusSection = containerEl.createEl('div', { cls: 'clawdian-settings-section' });
-        statusSection.createEl('h3', { text: 'Connection Status' });
-        
         const deviceId = this.plugin.client.getDeviceId();
         const isConnected = this.plugin.client.isConnected();
+        const agents = this.plugin.client.getAgents();
 
-        new Setting(statusSection)
-            .setName('Status')
-            .setDesc(isConnected ? '✅ Connected' : '❌ Disconnected');
+        // ==================== Connection Status ====================
+        containerEl.createEl('h3', { text: 'Connection Status' });
         
-        // Add connect/disconnect button
-        new Setting(statusSection)
+        // Status + Connect/Disconnect button in same row
+        new Setting(containerEl)
+            .setName('Status')
+            .setDesc(isConnected ? '✅ Connected' : '❌ Disconnected')
             .addButton(btn => {
                 if (isConnected) {
                     btn.setButtonText('Disconnect')
@@ -99,8 +97,19 @@ export class ClawdianSettingTab extends PluginSettingTab {
                 }
             });
 
+        // Auto-connect on startup (moved to Connection Status section)
+        new Setting(containerEl)
+            .setName('Auto-connect on startup')
+            .setDesc('Automatically connect to Gateway when Obsidian starts')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.autoConnect)
+                .onChange(async (value) => {
+                    this.plugin.settings.autoConnect = value;
+                    await this.plugin.saveSettings();
+                }));
+
         if (deviceId) {
-            new Setting(statusSection)
+            new Setting(containerEl)
                 .setName('Device ID')
                 .setDesc(deviceId)
                 .addButton(btn => {
@@ -112,7 +121,7 @@ export class ClawdianSettingTab extends PluginSettingTab {
                 });
         }
 
-        // Gateway URL
+        // ==================== Gateway Configuration ====================
         containerEl.createEl('h3', { text: 'Gateway Configuration' });
         
         new Setting(containerEl)
@@ -126,7 +135,6 @@ export class ClawdianSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        // Manual Token (fallback)
         new Setting(containerEl)
             .setName('Gateway Token (optional)')
             .setDesc('Only needed if auto-pairing fails')
@@ -148,10 +156,9 @@ export class ClawdianSettingTab extends PluginSettingTab {
                         );
                         this.plugin.client.connect().then(() => {
                             new Notice('✅ Connected successfully!');
-                            this.display(); // Refresh
+                            this.display();
                         }).catch((err: Error) => {
                             new Notice('❌ Connection failed: ' + err.message);
-                            // Show pairing modal if needed
                             if (deviceId) {
                                 new PairingModal(this.app, deviceId, () => {
                                     this.plugin.client.clearDeviceToken();
@@ -162,66 +169,68 @@ export class ClawdianSettingTab extends PluginSettingTab {
                     });
             });
 
-        // Agent Selection
+        // ==================== Preferences ====================
         containerEl.createEl('h3', { text: 'Preferences' });
 
+        // Default Agent
         const agentSetting = new Setting(containerEl)
             .setName('Default Agent')
             .setDesc('Which agent to chat with by default');
         
-        // Get agents from client or use defaults
-        const agents = this.plugin.client.getAgents();
-        const dropdown = agentSetting.addDropdown(dropdown => {
+        agentSetting.addDropdown(dropdown => {
             if (agents.length > 0) {
-                // Use fetched agents
                 agents.forEach(agent => {
                     dropdown.addOption(agent.id, agent.name || agent.id);
                 });
-
             } else {
-                // No agents available
                 dropdown.addOption('', 'No agents available');
             }
-            // Use lastAgent if available, otherwise defaultAgent
             dropdown.setValue(this.plugin.settings.lastAgent || this.plugin.settings.defaultAgent);
             dropdown.onChange(async (value) => {
                 this.plugin.settings.defaultAgent = value;
                 this.plugin.settings.lastAgent = value;
                 await this.plugin.saveSettings();
+                this.display(); // Refresh to update color picker
             });
             return dropdown;
         });
 
-        // Agent Colors Section
-        containerEl.createEl('h3', { text: 'Agent Colors' });
-        containerEl.createEl('p', { 
-            text: 'Customize the color for each agent. Colors are used in the chat interface.',
-            cls: 'clawdian-settings-desc'
-        });
-
+        // Agent Color - single row with dropdown + color picker
         if (agents.length > 0) {
-            agents.forEach(agent => {
-                const currentColor = this.plugin.settings.agentColors[agent.id] || 
-                                    DEFAULT_AGENT_COLORS[agent.id] || 
-                                    AGENT_COLORS[0];
-                
-                new Setting(containerEl)
-                    .setName(agent.name || agent.id)
-                    .setDesc(`Color for ${agent.name || agent.id}`)
-                    .addColorPicker(picker => {
-                        picker.setValue(currentColor);
-                        picker.onChange(async (value) => {
-                            this.plugin.settings.agentColors[agent.id] = value;
-                            await this.plugin.saveSettings();
-                        });
-                    });
+            const colorSetting = new Setting(containerEl)
+                .setName('Agent Color')
+                .setDesc('Select an agent and customize its chat color');
+            
+            // Dropdown to select agent
+            const selectedAgentId = agents[0]?.id || '';
+            
+            colorSetting.addDropdown(dropdown => {
+                agents.forEach(agent => {
+                    dropdown.addOption(agent.id, agent.name || agent.id);
+                });
+                dropdown.setValue(selectedAgentId);
+                dropdown.onChange(async (value) => {
+                    // Refresh to update color picker with new agent
+                    this.display();
+                });
+                return dropdown;
             });
-        } else {
-            containerEl.createEl('p', { 
-                text: 'Connect to see available agents',
-                cls: 'clawdian-settings-hint'
+
+            // Color picker for selected agent
+            colorSetting.addColorPicker(picker => {
+                const color = this.plugin.settings.agentColors[selectedAgentId] || 
+                             DEFAULT_AGENT_COLORS[selectedAgentId] || 
+                             AGENT_COLORS[0];
+                picker.setValue(color);
+                picker.onChange(async (value) => {
+                    this.plugin.settings.agentColors[selectedAgentId] = value;
+                    await this.plugin.saveSettings();
+                });
             });
         }
+
+        // ==================== Context ====================
+        containerEl.createEl('h3', { text: 'Context' });
 
         new Setting(containerEl)
             .setName('Include vault context')
@@ -248,17 +257,7 @@ export class ClawdianSettingTab extends PluginSettingTab {
                 });
             });
 
-        new Setting(containerEl)
-            .setName('Auto-connect on startup')
-            .setDesc('Automatically connect to Gateway when Obsidian starts')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.autoConnect)
-                .onChange(async (value) => {
-                    this.plugin.settings.autoConnect = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        // Reset
+        // ==================== Advanced ====================
         containerEl.createEl('h3', { text: 'Advanced' });
         
         new Setting(containerEl)

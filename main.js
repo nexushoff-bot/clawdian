@@ -148,15 +148,15 @@ var ClawdianSettingTab = class extends import_obsidian2.PluginSettingTab {
     this.plugin = plugin;
   }
   display() {
+    var _a;
     const { containerEl } = this;
     containerEl.empty();
     containerEl.createEl("h2", { text: "Clawdian Settings" });
-    const statusSection = containerEl.createEl("div", { cls: "clawdian-settings-section" });
-    statusSection.createEl("h3", { text: "Connection Status" });
     const deviceId = this.plugin.client.getDeviceId();
     const isConnected = this.plugin.client.isConnected();
-    new import_obsidian2.Setting(statusSection).setName("Status").setDesc(isConnected ? "\u2705 Connected" : "\u274C Disconnected");
-    new import_obsidian2.Setting(statusSection).addButton((btn) => {
+    const agents = this.plugin.client.getAgents();
+    containerEl.createEl("h3", { text: "Connection Status" });
+    new import_obsidian2.Setting(containerEl).setName("Status").setDesc(isConnected ? "\u2705 Connected" : "\u274C Disconnected").addButton((btn) => {
       if (isConnected) {
         btn.setButtonText("Disconnect").onClick(() => {
           this.plugin.client.disconnect();
@@ -171,8 +171,12 @@ var ClawdianSettingTab = class extends import_obsidian2.PluginSettingTab {
         });
       }
     });
+    new import_obsidian2.Setting(containerEl).setName("Auto-connect on startup").setDesc("Automatically connect to Gateway when Obsidian starts").addToggle((toggle) => toggle.setValue(this.plugin.settings.autoConnect).onChange(async (value) => {
+      this.plugin.settings.autoConnect = value;
+      await this.plugin.saveSettings();
+    }));
     if (deviceId) {
-      new import_obsidian2.Setting(statusSection).setName("Device ID").setDesc(deviceId).addButton((btn) => {
+      new import_obsidian2.Setting(containerEl).setName("Device ID").setDesc(deviceId).addButton((btn) => {
         btn.setButtonText("Copy").onClick(() => {
           navigator.clipboard.writeText(deviceId);
           new import_obsidian2.Notice("Device ID copied!");
@@ -212,64 +216,61 @@ var ClawdianSettingTab = class extends import_obsidian2.PluginSettingTab {
     });
     containerEl.createEl("h3", { text: "Preferences" });
     const agentSetting = new import_obsidian2.Setting(containerEl).setName("Default Agent").setDesc("Which agent to chat with by default");
-    const agents = this.plugin.client.getAgents();
-    const dropdown = agentSetting.addDropdown((dropdown2) => {
+    agentSetting.addDropdown((dropdown) => {
       if (agents.length > 0) {
         agents.forEach((agent) => {
-          dropdown2.addOption(agent.id, agent.name || agent.id);
+          dropdown.addOption(agent.id, agent.name || agent.id);
         });
       } else {
-        dropdown2.addOption("", "No agents available");
+        dropdown.addOption("", "No agents available");
       }
-      dropdown2.setValue(this.plugin.settings.lastAgent || this.plugin.settings.defaultAgent);
-      dropdown2.onChange(async (value) => {
+      dropdown.setValue(this.plugin.settings.lastAgent || this.plugin.settings.defaultAgent);
+      dropdown.onChange(async (value) => {
         this.plugin.settings.defaultAgent = value;
         this.plugin.settings.lastAgent = value;
         await this.plugin.saveSettings();
+        this.display();
       });
-      return dropdown2;
-    });
-    containerEl.createEl("h3", { text: "Agent Colors" });
-    containerEl.createEl("p", {
-      text: "Customize the color for each agent. Colors are used in the chat interface.",
-      cls: "clawdian-settings-desc"
+      return dropdown;
     });
     if (agents.length > 0) {
-      agents.forEach((agent) => {
-        const currentColor = this.plugin.settings.agentColors[agent.id] || DEFAULT_AGENT_COLORS[agent.id] || AGENT_COLORS[0];
-        new import_obsidian2.Setting(containerEl).setName(agent.name || agent.id).setDesc(`Color for ${agent.name || agent.id}`).addColorPicker((picker) => {
-          picker.setValue(currentColor);
-          picker.onChange(async (value) => {
-            this.plugin.settings.agentColors[agent.id] = value;
-            await this.plugin.saveSettings();
-          });
+      const colorSetting = new import_obsidian2.Setting(containerEl).setName("Agent Color").setDesc("Select an agent and customize its chat color");
+      const selectedAgentId = ((_a = agents[0]) == null ? void 0 : _a.id) || "";
+      colorSetting.addDropdown((dropdown) => {
+        agents.forEach((agent) => {
+          dropdown.addOption(agent.id, agent.name || agent.id);
+        });
+        dropdown.setValue(selectedAgentId);
+        dropdown.onChange(async (value) => {
+          this.display();
+        });
+        return dropdown;
+      });
+      colorSetting.addColorPicker((picker) => {
+        const color = this.plugin.settings.agentColors[selectedAgentId] || DEFAULT_AGENT_COLORS[selectedAgentId] || AGENT_COLORS[0];
+        picker.setValue(color);
+        picker.onChange(async (value) => {
+          this.plugin.settings.agentColors[selectedAgentId] = value;
+          await this.plugin.saveSettings();
         });
       });
-    } else {
-      containerEl.createEl("p", {
-        text: "Connect to see available agents",
-        cls: "clawdian-settings-hint"
-      });
     }
+    containerEl.createEl("h3", { text: "Context" });
     new import_obsidian2.Setting(containerEl).setName("Include vault context").setDesc("Send current file and vault info with messages").addToggle((toggle) => toggle.setValue(this.plugin.settings.includeVaultContext).onChange(async (value) => {
       this.plugin.settings.includeVaultContext = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(containerEl).setName("Context size").setDesc("Maximum characters from file to include as context").addDropdown((dropdown2) => {
-      dropdown2.addOption("small", "Small (500 chars)");
-      dropdown2.addOption("medium", "Medium (1500 chars)");
-      dropdown2.addOption("large", "Large (3000 chars)");
-      dropdown2.addOption("max", "Max (entire file)");
-      dropdown2.setValue(this.plugin.settings.contextSize);
-      dropdown2.onChange(async (value) => {
+    new import_obsidian2.Setting(containerEl).setName("Context size").setDesc("Maximum characters from file to include as context").addDropdown((dropdown) => {
+      dropdown.addOption("small", "Small (500 chars)");
+      dropdown.addOption("medium", "Medium (1500 chars)");
+      dropdown.addOption("large", "Large (3000 chars)");
+      dropdown.addOption("max", "Max (entire file)");
+      dropdown.setValue(this.plugin.settings.contextSize);
+      dropdown.onChange(async (value) => {
         this.plugin.settings.contextSize = value;
         await this.plugin.saveSettings();
       });
     });
-    new import_obsidian2.Setting(containerEl).setName("Auto-connect on startup").setDesc("Automatically connect to Gateway when Obsidian starts").addToggle((toggle) => toggle.setValue(this.plugin.settings.autoConnect).onChange(async (value) => {
-      this.plugin.settings.autoConnect = value;
-      await this.plugin.saveSettings();
-    }));
     containerEl.createEl("h3", { text: "Advanced" });
     new import_obsidian2.Setting(containerEl).setName("Reset Device Identity").setDesc("Clear stored device identity and token").addButton((btn) => {
       btn.setButtonText("Reset").setWarning().onClick(() => {
