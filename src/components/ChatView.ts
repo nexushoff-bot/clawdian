@@ -124,23 +124,21 @@ export class ChatView extends ItemView {
 
         // Setup callbacks BEFORE checking connection
         this.client.onMessage = (text: string) => {
+            console.log('[Clawdian] Chat event received, calling onMessage');
             console.log('[Clawdian] UI received message:', text);
-            
-            // Filter messages by session key - use the currently selected agent
-            const selectedAgent = this.agentSelectEl?.value || 'main';
-            const expectedSessionKey = `agent:${selectedAgent}:session:${this.sessionId}`;
-            console.log('[Clawdian] Expected session key:', expectedSessionKey, 'selected agent:', selectedAgent);
             
             // Try to parse as JSON (responses are direct payload format)
             try {
                 const data = JSON.parse(text);
                 console.log('[Clawdian] Parsed data:', data);
 
-                // Filter by session key - only process messages for this Obsidian session
+                // Filter by session ID - check if message is for this view's session
                 if (data.type === 'event' && data.event === 'chat' && data.payload?.sessionKey) {
                     const messageSessionKey = data.payload.sessionKey;
-                    console.log('[Clawdian] Message session key:', messageSessionKey);
-                    if (messageSessionKey !== expectedSessionKey) {
+                    // Extract session ID from key (format: agent:{agent}:session:{sessionId})
+                    const messageSessionId = messageSessionKey.split(':session:')[1];
+                    console.log('[Clawdian] Message session ID:', messageSessionId, 'expected:', this.sessionId);
+                    if (messageSessionId !== this.sessionId) {
                         console.log('[Clawdian] Ignoring message for different session:', messageSessionKey);
                         return; // Skip this message
                     }
@@ -294,12 +292,17 @@ export class ChatView extends ItemView {
                 }
             });
             
-            // Add change listener to save last agent
+            // Add change listener to save last agent and reset session
             this.agentSelectEl.addEventListener('change', async () => {
                 const selectedValue = this.agentSelectEl?.value;
                 if (selectedValue) {
                     this.plugin.settings.lastAgent = selectedValue;
                     await this.plugin.saveSettings();
+                    // Generate new session ID when agent changes to avoid mixing conversations
+                    this.sessionId = 'obsidian-chat-' + this.generateSessionId();
+                    console.log('[Clawdian] Agent changed, new session ID:', this.sessionId);
+                    // Clear messages for new agent conversation
+                    this.messagesEl.empty();
                 }
             });
         }
