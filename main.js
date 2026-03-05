@@ -713,21 +713,41 @@ ${truncated}`);
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
   }
   addMessage(sender, text) {
-    var _a, _b, _c;
+    var _a, _b, _c, _d, _e;
     console.log("[Clawdian] addMessage called with sender:", sender, "text:", text);
     const agentId = ((_a = this.agentSelectEl) == null ? void 0 : _a.value) || this.plugin.settings.defaultAgent;
     const agentName = ((_c = (_b = this.agentSelectEl) == null ? void 0 : _b.options[this.agentSelectEl.selectedIndex]) == null ? void 0 : _c.text) || agentId;
     const agentColor = this.getAgentColor(agentId);
     const agents = this.client.getAgents();
     const agent = agents.find((a) => a.id === agentId);
-    const avatar = (agent == null ? void 0 : agent.icon) || agentName.charAt(0).toUpperCase();
+    let avatar = agentName.charAt(0).toUpperCase();
+    let useImageAvatar = false;
+    if ((_d = agent == null ? void 0 : agent.identity) == null ? void 0 : _d.emoji) {
+      avatar = agent.identity.emoji;
+    } else if ((_e = agent == null ? void 0 : agent.identity) == null ? void 0 : _e.avatar) {
+      avatar = agent.identity.avatar;
+      useImageAvatar = true;
+    } else if (agent == null ? void 0 : agent.icon) {
+      avatar = agent.icon;
+    }
     const msgContainer = this.messagesEl.createEl("div", {
       cls: `clawdian-message-container clawdian-message-container-${sender}`
     });
     if (sender === "agent") {
       msgContainer.style.setProperty("--agent-color", agentColor);
       const avatarEl = msgContainer.createEl("div", { cls: "clawdian-avatar" });
-      avatarEl.setText(avatar);
+      if (useImageAvatar) {
+        const img = avatarEl.createEl("img", {
+          cls: "clawdian-avatar-img",
+          attr: { src: avatar, alt: agentName }
+        });
+        img.onerror = () => {
+          avatarEl.empty();
+          avatarEl.setText(agentName.charAt(0).toUpperCase());
+        };
+      } else {
+        avatarEl.setText(avatar);
+      }
       avatarEl.style.backgroundColor = agentColor;
       const messageBlock = msgContainer.createEl("div", { cls: "clawdian-message-block" });
       messageBlock.createEl("div", {
@@ -992,7 +1012,9 @@ var OpenClawClient = class {
         type: "req",
         id: requestId,
         method: "agents.list",
-        params: {}
+        params: {
+          verbose: true
+        }
       };
       console.log("[Clawdian] Requesting agents list via WebSocket:", request);
       this.ws.send(JSON.stringify(request));

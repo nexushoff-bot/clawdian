@@ -552,10 +552,22 @@ export class ChatView extends ItemView {
         const agentName = this.agentSelectEl?.options[this.agentSelectEl.selectedIndex]?.text || agentId;
         const agentColor = this.getAgentColor(agentId);
         
-        // Get agent icon/emoji or use first letter of name
+        // Get agent identity info for avatar
         const agents = this.client.getAgents();
         const agent = agents.find(a => a.id === agentId);
-        const avatar = agent?.icon || agentName.charAt(0).toUpperCase();
+        
+        // Determine avatar: priority -> emoji > icon > first letter of name
+        let avatar = agentName.charAt(0).toUpperCase();
+        let useImageAvatar = false;
+        
+        if (agent?.identity?.emoji) {
+            avatar = agent.identity.emoji;
+        } else if (agent?.identity?.avatar) {
+            avatar = agent.identity.avatar;
+            useImageAvatar = true;
+        } else if (agent?.icon) {
+            avatar = agent.icon;
+        }
         
         // Create message container
         const msgContainer = this.messagesEl.createEl('div', {
@@ -568,7 +580,20 @@ export class ChatView extends ItemView {
             
             // Avatar
             const avatarEl = msgContainer.createEl('div', { cls: 'clawdian-avatar' });
-            avatarEl.setText(avatar);
+            if (useImageAvatar) {
+                // Use image for avatar
+                const img = avatarEl.createEl('img', {
+                    cls: 'clawdian-avatar-img',
+                    attr: { src: avatar, alt: agentName }
+                });
+                img.onerror = () => {
+                    // Fallback to first letter if image fails to load
+                    avatarEl.empty();
+                    avatarEl.setText(agentName.charAt(0).toUpperCase());
+                };
+            } else {
+                avatarEl.setText(avatar);
+            }
             avatarEl.style.backgroundColor = agentColor;
             
             // Message block (name + bubble)

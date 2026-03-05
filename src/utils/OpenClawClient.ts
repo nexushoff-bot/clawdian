@@ -25,6 +25,12 @@ export interface AgentInfo {
     name: string;
     description: string;
     icon?: string;
+    identity?: {
+        name?: string;
+        avatar?: string;
+        emoji?: string;
+        creature?: string;
+    };
 }
 
 export class OpenClawClient {
@@ -94,12 +100,14 @@ export class OpenClawClient {
                 }
             };
 
-            // Send agents list request
+            // Send agents list request with verbose=true to get identity info
             const request = {
                 type: 'req',
                 id: requestId,
                 method: 'agents.list',
-                params: {}
+                params: {
+                    verbose: true
+                }
             };
 
             console.log('[Clawdian] Requesting agents list via WebSocket:', request);
