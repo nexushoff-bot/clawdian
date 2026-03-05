@@ -100,14 +100,12 @@ export class OpenClawClient {
                 }
             };
 
-            // Send agents list request with verbose=true to get identity info
+            // Send agents list request
             const request = {
                 type: 'req',
                 id: requestId,
                 method: 'agents.list',
-                params: {
-                    verbose: true
-                }
+                params: {}
             };
 
             console.log('[Clawdian] Requesting agents list via WebSocket:', request);

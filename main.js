@@ -1012,9 +1012,7 @@ var OpenClawClient = class {
         type: "req",
         id: requestId,
         method: "agents.list",
-        params: {
-          verbose: true
-        }
+        params: {}
       };
       console.log("[Clawdian] Requesting agents list via WebSocket:", request);
       this.ws.send(JSON.stringify(request));
