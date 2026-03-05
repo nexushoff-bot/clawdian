@@ -22,14 +22,13 @@ interface GatewayMessage {
 
 export interface AgentInfo {
     id: string;
-    name: string;
-    description: string;
-    icon?: string;
+    name?: string;
     identity?: {
         name?: string;
-        avatar?: string;
+        theme?: string;
         emoji?: string;
-        creature?: string;
+        avatar?: string;
+        avatarUrl?: string;
     };
 }
 

@@ -713,7 +713,7 @@ ${truncated}`);
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
   }
   addMessage(sender, text) {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f;
     console.log("[Clawdian] addMessage called with sender:", sender, "text:", text);
     const agentId = ((_a = this.agentSelectEl) == null ? void 0 : _a.value) || this.plugin.settings.defaultAgent;
     const agentName = ((_c = (_b = this.agentSelectEl) == null ? void 0 : _b.options[this.agentSelectEl.selectedIndex]) == null ? void 0 : _c.text) || agentId;
@@ -724,11 +724,12 @@ ${truncated}`);
     let useImageAvatar = false;
     if ((_d = agent == null ? void 0 : agent.identity) == null ? void 0 : _d.emoji) {
       avatar = agent.identity.emoji;
-    } else if ((_e = agent == null ? void 0 : agent.identity) == null ? void 0 : _e.avatar) {
+    } else if ((_e = agent == null ? void 0 : agent.identity) == null ? void 0 : _e.avatarUrl) {
+      avatar = agent.identity.avatarUrl;
+      useImageAvatar = true;
+    } else if ((_f = agent == null ? void 0 : agent.identity) == null ? void 0 : _f.avatar) {
       avatar = agent.identity.avatar;
       useImageAvatar = true;
-    } else if (agent == null ? void 0 : agent.icon) {
-      avatar = agent.icon;
     }
     const msgContainer = this.messagesEl.createEl("div", {
       cls: `clawdian-message-container clawdian-message-container-${sender}`

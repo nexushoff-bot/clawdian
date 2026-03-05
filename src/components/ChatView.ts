@@ -556,17 +556,18 @@ export class ChatView extends ItemView {
         const agents = this.client.getAgents();
         const agent = agents.find(a => a.id === agentId);
         
-        // Determine avatar: priority -> emoji > icon > first letter of name
+        // Determine avatar: priority -> emoji > avatarUrl > avatar > first letter of name
         let avatar = agentName.charAt(0).toUpperCase();
         let useImageAvatar = false;
         
         if (agent?.identity?.emoji) {
             avatar = agent.identity.emoji;
+        } else if (agent?.identity?.avatarUrl) {
+            avatar = agent.identity.avatarUrl;
+            useImageAvatar = true;
         } else if (agent?.identity?.avatar) {
             avatar = agent.identity.avatar;
             useImageAvatar = true;
-        } else if (agent?.icon) {
-            avatar = agent.icon;
         }
         
         // Create message container
