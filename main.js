@@ -705,24 +705,40 @@ ${truncated}`);
   addMessage(sender, text) {
     var _a, _b, _c;
     console.log("[Clawdian] addMessage called with sender:", sender, "text:", text);
-    const msgEl = this.messagesEl.createEl("div", {
-      cls: `clawdian-message clawdian-message-${sender}`
-    });
     const agentId = ((_a = this.agentSelectEl) == null ? void 0 : _a.value) || this.plugin.settings.defaultAgent;
     const agentName = ((_c = (_b = this.agentSelectEl) == null ? void 0 : _b.options[this.agentSelectEl.selectedIndex]) == null ? void 0 : _c.text) || agentId;
+    const agentColor = this.getAgentColor(agentId);
+    const agents = this.client.getAgents();
+    const agent = agents.find((a) => a.id === agentId);
+    const avatar = (agent == null ? void 0 : agent.icon) || agentName.charAt(0).toUpperCase();
+    const msgContainer = this.messagesEl.createEl("div", {
+      cls: `clawdian-message-container clawdian-message-container-${sender}`
+    });
     if (sender === "agent") {
-      const agentColor = this.getAgentColor(agentId);
-      msgEl.style.setProperty("--agent-color", agentColor);
-      msgEl.addClass("clawdian-message-colored");
+      msgContainer.style.setProperty("--agent-color", agentColor);
+      const avatarEl = msgContainer.createEl("div", { cls: "clawdian-avatar" });
+      avatarEl.setText(avatar);
+      avatarEl.style.backgroundColor = agentColor;
+      const messageBlock = msgContainer.createEl("div", { cls: "clawdian-message-block" });
+      messageBlock.createEl("div", {
+        cls: "clawdian-message-sender",
+        text: agentName
+      });
+      messageBlock.createEl("div", {
+        cls: "clawdian-message-bubble",
+        text
+      });
+    } else {
+      const messageBlock = msgContainer.createEl("div", { cls: "clawdian-message-block clawdian-user-block" });
+      messageBlock.createEl("div", {
+        cls: "clawdian-message-sender clawdian-user-sender",
+        text: "You"
+      });
+      messageBlock.createEl("div", {
+        cls: "clawdian-message-bubble clawdian-user-bubble",
+        text
+      });
     }
-    msgEl.createEl("div", {
-      cls: "clawdian-message-sender",
-      text: sender === "user" ? "You" : agentName
-    });
-    msgEl.createEl("div", {
-      cls: "clawdian-message-text",
-      text
-    });
     this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
     console.log("[Clawdian] Message added to UI");
   }
