@@ -55,6 +55,8 @@ export const CONTEXT_SIZES: Record<string, { label: string; chars: number }> = {
 
 export class ClawdianSettingTab extends PluginSettingTab {
     plugin: ClawdianPlugin;
+    selectedColorAgentId: string = ''; // Track selected agent for color picker
+    colorPickerEl: any = null; // Reference to color picker for updates
 
     constructor(app: App, plugin: ClawdianPlugin) {
         super(app, plugin);
@@ -70,6 +72,11 @@ export class ClawdianSettingTab extends PluginSettingTab {
         const deviceId = this.plugin.client.getDeviceId();
         const isConnected = this.plugin.client.isConnected();
         const agents = this.plugin.client.getAgents();
+        
+        // Initialize selected agent for color picker
+        if (!this.selectedColorAgentId && agents.length > 0) {
+            this.selectedColorAgentId = agents[0].id;
+        }
 
         // ==================== Connection Status ====================
         containerEl.createEl('h3', { text: 'Connection Status' });
@@ -201,29 +208,33 @@ export class ClawdianSettingTab extends PluginSettingTab {
                 .setName('Agent Color')
                 .setDesc('Select an agent and customize its chat color');
             
-            // Dropdown to select agent
-            const selectedAgentId = agents[0]?.id || '';
-            
             colorSetting.addDropdown(dropdown => {
                 agents.forEach(agent => {
                     dropdown.addOption(agent.id, agent.name || agent.id);
                 });
-                dropdown.setValue(selectedAgentId);
+                dropdown.setValue(this.selectedColorAgentId);
                 dropdown.onChange(async (value) => {
-                    // Refresh to update color picker with new agent
-                    this.display();
+                    this.selectedColorAgentId = value;
+                    // Update color picker directly without refresh
+                    const color = this.plugin.settings.agentColors[value] || 
+                                 DEFAULT_AGENT_COLORS[value] || 
+                                 AGENT_COLORS[0];
+                    if (this.colorPickerEl) {
+                        this.colorPickerEl.setValue(color);
+                    }
                 });
                 return dropdown;
             });
 
             // Color picker for selected agent
             colorSetting.addColorPicker(picker => {
-                const color = this.plugin.settings.agentColors[selectedAgentId] || 
-                             DEFAULT_AGENT_COLORS[selectedAgentId] || 
+                const color = this.plugin.settings.agentColors[this.selectedColorAgentId] || 
+                             DEFAULT_AGENT_COLORS[this.selectedColorAgentId] || 
                              AGENT_COLORS[0];
                 picker.setValue(color);
+                this.colorPickerEl = picker; // Store reference for updates
                 picker.onChange(async (value) => {
-                    this.plugin.settings.agentColors[selectedAgentId] = value;
+                    this.plugin.settings.agentColors[this.selectedColorAgentId] = value;
                     await this.plugin.saveSettings();
                 });
             });

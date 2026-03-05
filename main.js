@@ -143,18 +143,24 @@ var CONTEXT_SIZES = {
   "max": { label: "Max (entire file)", chars: Infinity }
 };
 var ClawdianSettingTab = class extends import_obsidian2.PluginSettingTab {
+  // Reference to color picker for updates
   constructor(app, plugin) {
     super(app, plugin);
+    this.selectedColorAgentId = "";
+    // Track selected agent for color picker
+    this.colorPickerEl = null;
     this.plugin = plugin;
   }
   display() {
-    var _a;
     const { containerEl } = this;
     containerEl.empty();
     containerEl.createEl("h2", { text: "Clawdian Settings" });
     const deviceId = this.plugin.client.getDeviceId();
     const isConnected = this.plugin.client.isConnected();
     const agents = this.plugin.client.getAgents();
+    if (!this.selectedColorAgentId && agents.length > 0) {
+      this.selectedColorAgentId = agents[0].id;
+    }
     containerEl.createEl("h3", { text: "Connection Status" });
     new import_obsidian2.Setting(containerEl).setName("Status").setDesc(isConnected ? "\u2705 Connected" : "\u274C Disconnected").addButton((btn) => {
       if (isConnected) {
@@ -235,22 +241,26 @@ var ClawdianSettingTab = class extends import_obsidian2.PluginSettingTab {
     });
     if (agents.length > 0) {
       const colorSetting = new import_obsidian2.Setting(containerEl).setName("Agent Color").setDesc("Select an agent and customize its chat color");
-      const selectedAgentId = ((_a = agents[0]) == null ? void 0 : _a.id) || "";
       colorSetting.addDropdown((dropdown) => {
         agents.forEach((agent) => {
           dropdown.addOption(agent.id, agent.name || agent.id);
         });
-        dropdown.setValue(selectedAgentId);
+        dropdown.setValue(this.selectedColorAgentId);
         dropdown.onChange(async (value) => {
-          this.display();
+          this.selectedColorAgentId = value;
+          const color = this.plugin.settings.agentColors[value] || DEFAULT_AGENT_COLORS[value] || AGENT_COLORS[0];
+          if (this.colorPickerEl) {
+            this.colorPickerEl.setValue(color);
+          }
         });
         return dropdown;
       });
       colorSetting.addColorPicker((picker) => {
-        const color = this.plugin.settings.agentColors[selectedAgentId] || DEFAULT_AGENT_COLORS[selectedAgentId] || AGENT_COLORS[0];
+        const color = this.plugin.settings.agentColors[this.selectedColorAgentId] || DEFAULT_AGENT_COLORS[this.selectedColorAgentId] || AGENT_COLORS[0];
         picker.setValue(color);
+        this.colorPickerEl = picker;
         picker.onChange(async (value) => {
-          this.plugin.settings.agentColors[selectedAgentId] = value;
+          this.plugin.settings.agentColors[this.selectedColorAgentId] = value;
           await this.plugin.saveSettings();
         });
       });
