@@ -630,6 +630,96 @@ export class ChatView extends ItemView {
         }
     }
 
+    updateLoadingText() {
+        if (!this.loadingEl) return;
+        const agentId = this.agentSelectEl?.value || this.plugin.settings.defaultAgent;
+        const agentName = this.agentSelectEl?.options[this.agentSelectEl.selectedIndex]?.text || agentId || 'Agent';
+        const loadingText = this.loadingEl.querySelector('.clawdian-loading-text');
+        if (loadingText) {
+            loadingText.setText(`${agentName} is thinking...`);
+        }
+    }
+
+    startStreamingMessage() {
+        // Create a new message element for streaming
+        const agentId = this.agentSelectEl?.value || this.plugin.settings.defaultAgent;
+        const agentName = this.agentSelectEl?.options[this.agentSelectEl.selectedIndex]?.text || agentId;
+        const agentColor = this.getAgentColor(agentId);
+        
+        // Get agent identity info for avatar
+        const agents = this.client.getAgents();
+        const agent = agents.find(a => a.id === agentId);
+        
+        // Determine avatar
+        let avatar = agentName.charAt(0).toUpperCase();
+        let useImageAvatar = false;
+        
+        if (agent?.identity?.emoji) {
+            avatar = agent.identity.emoji;
+        } else if (agent?.identity?.avatarUrl) {
+            avatar = agent.identity.avatarUrl;
+            useImageAvatar = true;
+        } else if (agent?.identity?.avatar) {
+            avatar = agent.identity.avatar;
+            useImageAvatar = true;
+        }
+        
+        // Create message container
+        const msgContainer = this.messagesEl.createEl('div', {
+            cls: 'clawdian-message-container clawdian-message-container-agent clawdian-streaming'
+        });
+        msgContainer.style.setProperty('--agent-color', agentColor);
+        
+        // Avatar
+        const avatarEl = msgContainer.createEl('div', { cls: 'clawdian-avatar' });
+        if (useImageAvatar) {
+            const img = avatarEl.createEl('img', {
+                cls: 'clawdian-avatar-img',
+                attr: { src: avatar, alt: agentName }
+            });
+            img.onerror = () => {
+                avatarEl.empty();
+                avatarEl.setText(agentName.charAt(0).toUpperCase());
+            };
+        } else {
+            avatarEl.setText(avatar);
+        }
+        avatarEl.style.backgroundColor = agentColor;
+        
+        // Message block
+        const messageBlock = msgContainer.createEl('div', { cls: 'clawdian-message-block' });
+        messageBlock.createEl('div', {
+            cls: 'clawdian-message-sender',
+            text: agentName
+        });
+        
+        // Create bubble with streaming text
+        const bubble = messageBlock.createEl('div', {
+            cls: 'clawdian-message-bubble clawdian-streaming-bubble',
+            text: '▋' // Cursor
+        });
+        
+        this.currentStreamingMessage = bubble;
+        this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+    }
+
+    updateStreamingMessage(text: string) {
+        if (this.currentStreamingMessage) {
+            // Add cursor at the end to show it's still typing
+            this.currentStreamingMessage.setText(text + '▋');
+            this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+        }
+    }
+
+    finishStreamingMessage(text: string) {
+        if (this.currentStreamingMessage) {
+            // Remove cursor and set final text
+            this.currentStreamingMessage.setText(text);
+            this.currentStreamingMessage.parentElement?.parentElement?.removeClass('clawdian-streaming');
+            this.currentStreamingMessage = null;
+        }
+    }
+
     startStatusPolling() {
         // Clear any existing polling
         this.stopStatusPolling();
