@@ -426,3 +426,30 @@
     0%, 50% { opacity: 1; }
     51%, 100% { opacity: 0; }
 }
+
+/* Pairing Modal Styles */
+.clawdian-pairing-code-container {
+    margin: 16px 0;
+}
+
+.clawdian-pairing-code {
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    padding: 16px;
+    font-family: var(--font-monospace);
+    font-size: 12px;
+    word-break: break-all;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.clawdian-retry-btn {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    margin-top: 16px;
+    cursor: pointer;
+}
