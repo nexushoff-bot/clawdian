@@ -373,7 +373,7 @@ export class OpenClawClient {
         this.deviceManager.clearDeviceToken();
     }
 
-    sendMessage(msg: ChatMessage): Promise<void> {
+    sendMessage(msg: ChatMessage): Promise<string> {
         return new Promise((resolve, reject) => {
             if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
                 reject(new Error('Not connected'));
@@ -416,7 +416,7 @@ export class OpenClawClient {
 
             console.log('[Clawdian] Sending chat.send request:', JSON.stringify(request, null, 2));
             this.ws.send(JSON.stringify(request));
-            resolve();
+            resolve(request.id);
         });
     }
 

@@ -300,6 +300,27 @@ var ClawdianSettingTab = class extends import_obsidian2.PluginSettingTab {
       });
     });
     containerEl.createEl("h3", { text: "Advanced" });
+    new import_obsidian2.Setting(containerEl).setName("Test Session Status").setDesc("Test the sessions.get API call").addButton((btn) => {
+      btn.setButtonText("Test").onClick(async () => {
+        if (!this.plugin.client.isConnected()) {
+          new import_obsidian2.Notice("Not connected");
+          return;
+        }
+        new import_obsidian2.Notice("Testing session status...");
+        try {
+          const testRunId = await this.plugin.client.sendMessage({
+            agent: this.plugin.settings.lastAgent || "main",
+            content: "Hello, this is a test.",
+            sessionId: "test-session-" + Date.now()
+          });
+          new import_obsidian2.Notice(`Message sent, runId: ${testRunId}`);
+          const status = await this.plugin.client.getSessionStatus(testRunId);
+          new import_obsidian2.Notice(`Session status: ${status || "no status"}`);
+        } catch (err) {
+          new import_obsidian2.Notice("Error: " + err.message);
+        }
+      });
+    });
     new import_obsidian2.Setting(containerEl).setName("Reset Device Identity").setDesc("Clear stored device identity and token").addButton((btn) => {
       btn.setButtonText("Reset").setWarning().onClick(() => {
         this.plugin.client["deviceManager"].clearIdentity();
@@ -1357,7 +1378,7 @@ ${msg.content}`;
       };
       console.log("[Clawdian] Sending chat.send request:", JSON.stringify(request, null, 2));
       this.ws.send(JSON.stringify(request));
-      resolve();
+      resolve(request.id);
     });
   }
   disconnect() {

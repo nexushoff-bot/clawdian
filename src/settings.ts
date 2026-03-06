@@ -301,6 +301,36 @@ export class ClawdianSettingTab extends PluginSettingTab {
         // ==================== Advanced ====================
         containerEl.createEl('h3', { text: 'Advanced' });
         
+        // Test Session Status Button (temporary for testing)
+        new Setting(containerEl)
+            .setName('Test Session Status')
+            .setDesc('Test the sessions.get API call')
+            .addButton(btn => {
+                btn.setButtonText('Test')
+                    .onClick(async () => {
+                        if (!this.plugin.client.isConnected()) {
+                            new Notice('Not connected');
+                            return;
+                        }
+                        new Notice('Testing session status...');
+                        try {
+                            // Send a test message first
+                            const testRunId = await this.plugin.client.sendMessage({
+                                agent: this.plugin.settings.lastAgent || 'main',
+                                content: 'Hello, this is a test.',
+                                sessionId: 'test-session-' + Date.now()
+                            });
+                            new Notice(`Message sent, runId: ${testRunId}`);
+                            
+                            // Now check status
+                            const status = await this.plugin.client.getSessionStatus(testRunId);
+                            new Notice(`Session status: ${status || 'no status'}`);
+                        } catch (err: any) {
+                            new Notice('Error: ' + err.message);
+                        }
+                    });
+            });
+
         new Setting(containerEl)
             .setName('Reset Device Identity')
             .setDesc('Clear stored device identity and token')
