@@ -80,7 +80,8 @@ export class ChatView extends ItemView {
         // Loading indicator
         this.loadingEl = container.createEl('div', { cls: 'clawdian-loading' });
         this.loadingEl.createEl('div', { cls: 'clawdian-spinner' });
-        this.loadingEl.createEl('span', { text: 'Waiting for response...', cls: 'clawdian-loading-text' });
+        const loadingText = this.loadingEl.createEl('span', { cls: 'clawdian-loading-text' });
+        this.updateLoadingText();
         this.loadingEl.style.display = 'none';
 
         // Create connect prompt (shown when not connected)
@@ -144,36 +145,46 @@ export class ChatView extends ItemView {
                 // Handle streaming events from agent
                 if (data.type === 'event' && data.event === 'agent') {
                     const payload = data.payload;
-                    console.log('[Clawdian] Agent event:', payload);
+                    console.log('[Clawdian] Agent event received:', JSON.stringify(payload, null, 2));
                     
-                    // Check if it's an assistant stream
-                    if (payload.stream === 'assistant') {
-                        const delta = payload.data?.delta || '';
-                        const isFinal = payload.state === 'final';
-                        
-                        // Filter by session ID
-                        if (payload.sessionKey) {
-                            const messageSessionId = payload.sessionKey.split(':session:')[1];
-                            if (messageSessionId !== this.sessionId) {
-                                console.log('[Clawdian] Ignoring message for different session');
-                                return;
-                            }
+                    // Check if it's an assistant message (streaming or final)
+                    const isAssistant = payload.stream === 'assistant' || payload.data?.text;
+                    const delta = payload.data?.delta || '';
+                    const fullText = payload.data?.text || '';
+                    const isFinal = payload.state === 'final';
+                    
+                    console.log('[Clawdian] isAssistant:', isAssistant, 'delta:', delta, 'fullText length:', fullText.length, 'isFinal:', isFinal);
+                    
+                    // Filter by session ID
+                    if (payload.sessionKey) {
+                        const messageSessionId = payload.sessionKey.split(':session:')[1];
+                        if (messageSessionId !== this.sessionId) {
+                            console.log('[Clawdian] Ignoring message for different session');
+                            return;
                         }
-                        
+                    }
+                    
+                    // Handle assistant messages
+                    if (isAssistant && (delta || fullText)) {
                         // Start streaming if not already
-                        if (!this.isStreaming && delta) {
+                        if (!this.isStreaming) {
                             this.isStreaming = true;
                             this.streamingText = '';
                             this.hideLoading();
                             this.startStreamingMessage();
+                            console.log('[Clawdian] Started streaming message');
                         }
                         
-                        // Append delta to accumulated text
-                        if (delta && this.isStreaming) {
+                        // Append delta if available, otherwise use fullText
+                        if (delta) {
                             this.streamingText += delta;
-                            this.updateStreamingMessage(this.streamingText);
-                            console.log('[Clawdian] Streaming delta:', delta, 'total length:', this.streamingText.length);
+                        } else if (fullText && !this.streamingText) {
+                            // No delta but have fullText - this might be a single-shot message
+                            this.streamingText = fullText;
                         }
+                        
+                        this.updateStreamingMessage(this.streamingText);
+                        console.log('[Clawdian] Updated streaming text, length:', this.streamingText.length);
                         
                         // If final, finish streaming
                         if (isFinal) {
@@ -182,9 +193,6 @@ export class ChatView extends ItemView {
                             if (this.currentStreamingMessage) {
                                 this.finishStreamingMessage(this.streamingText);
                             }
-                            this.streamingText = '';
-                            this.currentStreamingMessage = null;
-                            this.hideLoading();
                             
                             // Store message for chat history
                             const agentId = this.agentSelectEl?.value || this.plugin.settings.defaultAgent;
@@ -192,6 +200,10 @@ export class ChatView extends ItemView {
                                 this.agentMessages.set(agentId, []);
                             }
                             this.agentMessages.get(agentId)!.push({ sender: 'agent', text: this.streamingText });
+                            
+                            this.streamingText = '';
+                            this.currentStreamingMessage = null;
+                            this.hideLoading();
                         }
                         return;
                     }
@@ -399,7 +411,7 @@ export class ChatView extends ItemView {
             this.inputContainerEl.style.display = 'flex';
             console.log('[Clawdian] Showed input container');
         }
-        this.addMessage('agent', '✅ Connected to OpenClaw!');
+        this.showInfoText('✅ Connected to OpenClaw');
     }
 
     showDisconnected() {
