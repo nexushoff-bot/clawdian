@@ -25,6 +25,8 @@ export class ChatView extends ItemView {
     contextBarEl: HTMLElement | null = null;
     attachedFiles: AttachedFile[] = [];
     isLoading = false;
+    isStreaming = false;
+    currentStreamingMessage: HTMLElement | null = null;
     lastProcessedRunId: string | null = null;
     sessionId: string;
     currentAgentId: string = '';
@@ -137,6 +139,49 @@ export class ChatView extends ItemView {
             try {
                 const data = JSON.parse(text);
                 console.log('[Clawdian] Parsed data:', data);
+
+                // Handle streaming events from agent
+                if (data.type === 'event' && data.event === 'agent' && data.payload?.stream === 'assistant') {
+                    const payload = data.payload;
+                    const delta = payload.data?.delta || '';
+                    const fullText = payload.data?.text || '';
+                    const isFinal = payload.state === 'final';
+                    
+                    console.log('[Clawdian] Stream event, delta:', delta, 'isFinal:', isFinal);
+                    
+                    // Filter by session ID - check if message is for this view's session
+                    if (payload.sessionKey) {
+                        const messageSessionKey = payload.sessionKey;
+                        // Extract session ID from key (format: agent:{agent}:session:{sessionId})
+                        const messageSessionId = messageSessionKey.split(':session:')[1];
+                        console.log('[Clawdian] Message session ID:', messageSessionId, 'expected:', this.sessionId);
+                        if (messageSessionId !== this.sessionId) {
+                            console.log('[Clawdian] Ignoring message for different session:', messageSessionKey);
+                            return; // Skip this message
+                        }
+                    }
+                    
+                    if (delta || fullText) {
+                        // Start streaming if not already
+                        if (!this.isStreaming) {
+                            this.isStreaming = true;
+                            this.hideLoading();
+                            // Create a new message element for streaming
+                            this.startStreamingMessage();
+                        }
+                        
+                        // Update the streaming message with the full text
+                        this.updateStreamingMessage(fullText);
+                        
+                        // If final, stop streaming
+                        if (isFinal) {
+                            this.isStreaming = false;
+                            this.currentStreamingMessage = null;
+                            this.hideLoading();
+                        }
+                    }
+                    return;
+                }
 
                 // Filter by session ID - check if message is for this view's session
                 if (data.type === 'event' && data.event === 'chat' && data.payload?.sessionKey) {
