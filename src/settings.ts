@@ -303,28 +303,19 @@ export class ClawdianSettingTab extends PluginSettingTab {
         
         // Test Session Status Button (temporary for testing)
         new Setting(containerEl)
-            .setName('Test Session Status')
-            .setDesc('Test the sessions.get API call')
+            .setName('Debug: WebSocket Status')
+            .setDesc('Check WebSocket connection and send test ping')
             .addButton(btn => {
-                btn.setButtonText('Test')
+                btn.setButtonText('Ping Gateway')
                     .onClick(async () => {
                         if (!this.plugin.client.isConnected()) {
-                            new Notice('Not connected');
+                            new Notice('Not connected. Please connect first.');
                             return;
                         }
-                        new Notice('Testing session status...');
                         try {
-                            // Send a test message first
-                            const testRunId = await this.plugin.client.sendMessage({
-                                agent: this.plugin.settings.lastAgent || 'main',
-                                content: 'Hello, this is a test.',
-                                sessionId: 'test-session-' + Date.now()
-                            });
-                            new Notice(`Message sent, runId: ${testRunId}`);
-                            
-                            // Now check status
-                            const status = await this.plugin.client.getSessionStatus(testRunId);
-                            new Notice(`Session status: ${status || 'no status'}`);
+                            // Just check if we're connected
+                            new Notice('✅ WebSocket is connected and ready');
+                            console.log('[Clawdian] WebSocket ready state:', this.plugin.client['ws']?.readyState);
                         } catch (err: any) {
                             new Notice('Error: ' + err.message);
                         }

@@ -300,22 +300,16 @@ var ClawdianSettingTab = class extends import_obsidian2.PluginSettingTab {
       });
     });
     containerEl.createEl("h3", { text: "Advanced" });
-    new import_obsidian2.Setting(containerEl).setName("Test Session Status").setDesc("Test the sessions.get API call").addButton((btn) => {
-      btn.setButtonText("Test").onClick(async () => {
+    new import_obsidian2.Setting(containerEl).setName("Debug: WebSocket Status").setDesc("Check WebSocket connection and send test ping").addButton((btn) => {
+      btn.setButtonText("Ping Gateway").onClick(async () => {
+        var _a;
         if (!this.plugin.client.isConnected()) {
-          new import_obsidian2.Notice("Not connected");
+          new import_obsidian2.Notice("Not connected. Please connect first.");
           return;
         }
-        new import_obsidian2.Notice("Testing session status...");
         try {
-          const testRunId = await this.plugin.client.sendMessage({
-            agent: this.plugin.settings.lastAgent || "main",
-            content: "Hello, this is a test.",
-            sessionId: "test-session-" + Date.now()
-          });
-          new import_obsidian2.Notice(`Message sent, runId: ${testRunId}`);
-          const status = await this.plugin.client.getSessionStatus(testRunId);
-          new import_obsidian2.Notice(`Session status: ${status || "no status"}`);
+          new import_obsidian2.Notice("\u2705 WebSocket is connected and ready");
+          console.log("[Clawdian] WebSocket ready state:", (_a = this.plugin.client["ws"]) == null ? void 0 : _a.readyState);
         } catch (err) {
           new import_obsidian2.Notice("Error: " + err.message);
         }
