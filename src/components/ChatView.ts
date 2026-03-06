@@ -27,6 +27,7 @@ export class ChatView extends ItemView {
     isLoading = false;
     isStreaming = false;
     currentStreamingMessage: HTMLElement | null = null;
+    streamingText: string = '';
     lastProcessedRunId: string | null = null;
     sessionId: string;
     currentAgentId: string = '';
@@ -141,46 +142,69 @@ export class ChatView extends ItemView {
                 console.log('[Clawdian] Parsed data:', data);
 
                 // Handle streaming events from agent
-                if (data.type === 'event' && data.event === 'agent' && data.payload?.stream === 'assistant') {
+                if (data.type === 'event' && data.event === 'agent') {
                     const payload = data.payload;
-                    const delta = payload.data?.delta || '';
-                    const fullText = payload.data?.text || '';
-                    const isFinal = payload.state === 'final';
+                    console.log('[Clawdian] Agent event:', payload);
                     
-                    console.log('[Clawdian] Stream event, delta:', delta, 'isFinal:', isFinal);
-                    
-                    // Filter by session ID - check if message is for this view's session
-                    if (payload.sessionKey) {
-                        const messageSessionKey = payload.sessionKey;
-                        // Extract session ID from key (format: agent:{agent}:session:{sessionId})
-                        const messageSessionId = messageSessionKey.split(':session:')[1];
-                        console.log('[Clawdian] Message session ID:', messageSessionId, 'expected:', this.sessionId);
-                        if (messageSessionId !== this.sessionId) {
-                            console.log('[Clawdian] Ignoring message for different session:', messageSessionKey);
-                            return; // Skip this message
+                    // Check if it's an assistant stream
+                    if (payload.stream === 'assistant') {
+                        const delta = payload.data?.delta || '';
+                        const isFinal = payload.state === 'final';
+                        
+                        // Filter by session ID
+                        if (payload.sessionKey) {
+                            const messageSessionId = payload.sessionKey.split(':session:')[1];
+                            if (messageSessionId !== this.sessionId) {
+                                console.log('[Clawdian] Ignoring message for different session');
+                                return;
+                            }
                         }
-                    }
-                    
-                    if (delta || fullText) {
+                        
                         // Start streaming if not already
-                        if (!this.isStreaming) {
+                        if (!this.isStreaming && delta) {
                             this.isStreaming = true;
+                            this.streamingText = '';
                             this.hideLoading();
-                            // Create a new message element for streaming
                             this.startStreamingMessage();
                         }
                         
-                        // Update the streaming message with the full text
-                        this.updateStreamingMessage(fullText);
+                        // Append delta to accumulated text
+                        if (delta && this.isStreaming) {
+                            this.streamingText += delta;
+                            this.updateStreamingMessage(this.streamingText);
+                            console.log('[Clawdian] Streaming delta:', delta, 'total length:', this.streamingText.length);
+                        }
                         
-                        // If final, stop streaming
+                        // If final, finish streaming
                         if (isFinal) {
+                            console.log('[Clawdian] Stream complete, final text length:', this.streamingText.length);
                             this.isStreaming = false;
+                            if (this.currentStreamingMessage) {
+                                this.finishStreamingMessage(this.streamingText);
+                            }
+                            this.streamingText = '';
                             this.currentStreamingMessage = null;
                             this.hideLoading();
+                            
+                            // Store message for chat history
+                            const agentId = this.agentSelectEl?.value || this.plugin.settings.defaultAgent;
+                            if (!this.agentMessages.has(agentId)) {
+                                this.agentMessages.set(agentId, []);
+                            }
+                            this.agentMessages.get(agentId)!.push({ sender: 'agent', text: this.streamingText });
                         }
+                        return;
                     }
-                    return;
+                    
+                    // Check for error state
+                    if (payload.state === 'error') {
+                        this.isStreaming = false;
+                        this.streamingText = '';
+                        this.currentStreamingMessage = null;
+                        this.hideLoading();
+                        this.showErrorText('⚠️ ' + (payload.error || 'An error occurred'));
+                        return;
+                    }
                 }
 
                 // Filter by session ID - check if message is for this view's session
