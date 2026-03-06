@@ -314,7 +314,7 @@ var ClawdianSettingTab = class extends import_obsidian2.PluginSettingTab {
 var import_obsidian3 = require("obsidian");
 var VIEW_TYPE_CHAT = "clawdian-chat-view";
 var ChatView = class extends import_obsidian3.ItemView {
-  // 60 seconds timeout for LLM responses
+  // Poll status every 60 seconds
   constructor(leaf, client, plugin) {
     super(leaf);
     this.connectPromptEl = null;
@@ -332,7 +332,11 @@ var ChatView = class extends import_obsidian3.ItemView {
     this.agentMessages = /* @__PURE__ */ new Map();
     // Store messages per agent
     this.responseTimeout = null;
+    this.statusPollingInterval = null;
+    this.currentRunId = null;
     this.RESPONSE_TIMEOUT_MS = 6e4;
+    // 60 seconds timeout for LLM responses
+    this.STATUS_POLLING_MS = 6e4;
     this.client = client;
     this.plugin = plugin;
     this.sessionId = "obsidian-chat-" + this.generateSessionId();
@@ -721,22 +725,59 @@ ${truncated}`);
     if (this.loadingEl) {
       this.loadingEl.style.display = "flex";
     }
-    this.responseTimeout = setTimeout(() => {
-      if (this.isLoading) {
-        this.hideLoading();
-        this.addMessage("agent", "\u26A0\uFE0F Response timed out. The agent may be busy or offline. Try again.");
-      }
-    }, this.RESPONSE_TIMEOUT_MS);
+    this.startStatusPolling();
   }
   hideLoading() {
     this.isLoading = false;
     if (this.loadingEl) {
       this.loadingEl.style.display = "none";
     }
+    this.stopStatusPolling();
     if (this.responseTimeout) {
       clearTimeout(this.responseTimeout);
       this.responseTimeout = null;
     }
+  }
+  startStatusPolling() {
+    this.stopStatusPolling();
+    this.statusPollingInterval = setInterval(() => {
+      this.checkSessionStatus();
+    }, this.STATUS_POLLING_MS);
+  }
+  stopStatusPolling() {
+    if (this.statusPollingInterval) {
+      clearInterval(this.statusPollingInterval);
+      this.statusPollingInterval = null;
+    }
+  }
+  async checkSessionStatus() {
+    if (!this.currentRunId || !this.client.isConnected())
+      return;
+    try {
+      const status = await this.client.getSessionStatus(this.currentRunId);
+      if (status) {
+        this.showInfoText(`\u23F3 Agent is ${status}...`);
+      }
+    } catch (err) {
+      console.log("[Clawdian] Status check failed:", err);
+    }
+  }
+  showInfoText(text) {
+    const infoEl = this.messagesEl.createEl("div", {
+      cls: "clawdian-info-text",
+      text
+    });
+    setTimeout(() => {
+      infoEl.remove();
+    }, 5e3);
+    this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+  }
+  showErrorText(text) {
+    const errorEl = this.messagesEl.createEl("div", {
+      cls: "clawdian-error-text",
+      text
+    });
+    this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
   }
   generateSessionId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
@@ -1325,6 +1366,41 @@ ${msg.content}`;
       this.ws = null;
     }
     this.connected = false;
+  }
+  async getSessionStatus(runId) {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      return null;
+    }
+    return new Promise((resolve) => {
+      const requestId = this.generateId();
+      const timeout = setTimeout(() => {
+        resolve(null);
+      }, 5e3);
+      const originalHandler = this.handleMessage.bind(this);
+      this.handleMessage = async (data) => {
+        var _a;
+        if (data.id === requestId) {
+          clearTimeout(timeout);
+          this.handleMessage = originalHandler;
+          if ((_a = data.payload) == null ? void 0 : _a.state) {
+            resolve(data.payload.state);
+          } else {
+            resolve(null);
+          }
+        } else {
+          originalHandler(data);
+        }
+      };
+      const request = {
+        type: "req",
+        id: requestId,
+        method: "sessions.get",
+        params: {
+          runId
+        }
+      };
+      this.ws.send(JSON.stringify(request));
+    });
   }
 };
 

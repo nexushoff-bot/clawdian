@@ -427,4 +427,45 @@ export class OpenClawClient {
         }
         this.connected = false;
     }
+
+    async getSessionStatus(runId: string): Promise<string | null> {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+            return null;
+        }
+
+        return new Promise((resolve) => {
+            const requestId = this.generateId();
+            const timeout = setTimeout(() => {
+                resolve(null);
+            }, 5000);
+
+            const originalHandler = this.handleMessage.bind(this);
+            
+            this.handleMessage = async (data) => {
+                if (data.id === requestId) {
+                    clearTimeout(timeout);
+                    this.handleMessage = originalHandler;
+                    
+                    if (data.payload?.state) {
+                        resolve(data.payload.state);
+                    } else {
+                        resolve(null);
+                    }
+                } else {
+                    originalHandler(data);
+                }
+            };
+
+            const request = {
+                type: 'req',
+                id: requestId,
+                method: 'sessions.get',
+                params: {
+                    runId: runId
+                }
+            };
+
+            this.ws!.send(JSON.stringify(request));
+        });
+    }
 }

@@ -31,7 +31,10 @@ export class ChatView extends ItemView {
     sessionIds: Map<string, string> = new Map(); // Store session ID per agent
     agentMessages: Map<string, Array<{sender: 'user' | 'agent', text: string}>> = new Map(); // Store messages per agent
     responseTimeout: ReturnType<typeof setTimeout> | null = null;
+    statusPollingInterval: ReturnType<typeof setInterval> | null = null;
+    currentRunId: string | null = null;
     readonly RESPONSE_TIMEOUT_MS = 60000; // 60 seconds timeout for LLM responses
+    readonly STATUS_POLLING_MS = 60000; // Poll status every 60 seconds
 
     constructor(leaf: WorkspaceLeaf, client: OpenClawClient, plugin: ClawdianPlugin) {
         super(leaf);
@@ -528,13 +531,8 @@ export class ChatView extends ItemView {
         if (this.loadingEl) {
             this.loadingEl.style.display = 'flex';
         }
-        // Set timeout for response
-        this.responseTimeout = setTimeout(() => {
-            if (this.isLoading) {
-                this.hideLoading();
-                this.addMessage('agent', '⚠️ Response timed out. The agent may be busy or offline. Try again.');
-            }
-        }, this.RESPONSE_TIMEOUT_MS);
+        // Start status polling every minute
+        this.startStatusPolling();
     }
 
     hideLoading() {
@@ -542,11 +540,63 @@ export class ChatView extends ItemView {
         if (this.loadingEl) {
             this.loadingEl.style.display = 'none';
         }
+        // Stop status polling
+        this.stopStatusPolling();
         // Clear the timeout if response was received
         if (this.responseTimeout) {
             clearTimeout(this.responseTimeout);
             this.responseTimeout = null;
         }
+    }
+
+    startStatusPolling() {
+        // Clear any existing polling
+        this.stopStatusPolling();
+        
+        // Start polling after 1 minute
+        this.statusPollingInterval = setInterval(() => {
+            this.checkSessionStatus();
+        }, this.STATUS_POLLING_MS);
+    }
+
+    stopStatusPolling() {
+        if (this.statusPollingInterval) {
+            clearInterval(this.statusPollingInterval);
+            this.statusPollingInterval = null;
+        }
+    }
+
+    async checkSessionStatus() {
+        if (!this.currentRunId || !this.client.isConnected()) return;
+        
+        try {
+            const status = await this.client.getSessionStatus(this.currentRunId);
+            if (status) {
+                this.showInfoText(`⏳ Agent is ${status}...`);
+            }
+        } catch (err) {
+            console.log('[Clawdian] Status check failed:', err);
+        }
+    }
+
+    showInfoText(text: string) {
+        const infoEl = this.messagesEl.createEl('div', {
+            cls: 'clawdian-info-text',
+            text: text
+        });
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            infoEl.remove();
+        }, 5000);
+        this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+    }
+
+    showErrorText(text: string) {
+        const errorEl = this.messagesEl.createEl('div', {
+            cls: 'clawdian-error-text',
+            text: text
+        });
+        this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
     }
 
     private generateSessionId(): string {
