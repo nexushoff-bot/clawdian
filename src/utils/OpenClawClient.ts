@@ -108,8 +108,9 @@ export class OpenClawClient {
                 this.ws = new WebSocket(this.url);
                 
                 this.ws.onopen = () => {
-                    console.log('[Clawdian] WebSocket connected, waiting for challenge...');
-                    // Don't send anything yet - wait for connect.challenge
+                    console.log('[Clawdian] WebSocket connected, sending connect...');
+                    // Send connect request immediately with token auth
+                    this.sendConnectRequest();
                 };
 
                 this.ws.onmessage = (event) => {
@@ -140,13 +141,20 @@ export class OpenClawClient {
         });
     }
 
+    private handleConnectChallenge(nonce: string) {
+        // For token auth, we may need to respond to challenge
+        // But gateway token should work without device signing
+        console.log('[Clawdian] Received challenge, responding with connect...');
+        this.sendConnectRequest();
+    }
+
     private handleMessage(data: GatewayMessage) {
         console.log('[Clawdian] Received:', data.type, data.event || '', data);
         
         // Handle connect.challenge event
         if (data.type === 'event' && data.event === 'connect.challenge') {
-            console.log('[Clawdian] Challenge received, sending connect request...');
-            this.sendConnectRequest(data.payload?.nonce);
+            console.log('[Clawdian] Challenge received, responding...');
+            this.handleConnectChallenge(data.payload?.nonce);
             return;
         }
         
@@ -203,7 +211,7 @@ export class OpenClawClient {
         }
     }
 
-    private sendConnectRequest(nonce: string) {
+    private sendConnectRequest() {
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
             console.error('[Clawdian] WebSocket not ready');
             return;
@@ -217,6 +225,7 @@ export class OpenClawClient {
                 minProtocol: 3,
                 maxProtocol: 3,
                 client: {
+                    id: 'clawdian',
                     version: '1.0.1',
                     platform: this.getPlatform(),
                     mode: 'ui'
@@ -225,12 +234,11 @@ export class OpenClawClient {
                 scopes: ['operator.read', 'operator.write', 'operator.admin'],
                 auth: {
                     token: this.token
-                },
-                nonce: nonce
+                }
             }
         };
 
-        console.log('[Clawdian] Sending connect request');
+        console.log('[Clawdian] Sending connect request:', JSON.stringify(request, null, 2));
         this.ws.send(JSON.stringify(request));
     }
 
