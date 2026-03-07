@@ -35,6 +35,7 @@ export class ChatView extends ItemView {
     responseTimeout: ReturnType<typeof setTimeout> | null = null;
     statusPollingInterval: ReturnType<typeof setInterval> | null = null;
     currentRunId: string | null = null;
+    hasShownConnected = false;  // Track if connected message was shown
     readonly RESPONSE_TIMEOUT_MS = 60000;
     readonly STATUS_POLLING_MS = 60000;
 
@@ -134,68 +135,51 @@ export class ChatView extends ItemView {
             try {
                 const data = JSON.parse(text);
                 
-                // Handle streaming events
+                // Handle agent events - just show final message
                 if (data.type === 'event' && data.event === 'agent') {
                     const payload = data.payload;
-                    const isAssistant = payload.stream === 'assistant' || payload.data?.text;
-                    const delta = payload.data?.delta || '';
-                    const fullText = payload.data?.text || '';
-                    const isFinal = payload.state === 'final';
                     
+                    // Filter by session ID
                     if (payload.sessionKey) {
                         const messageSessionId = payload.sessionKey.split(':session:')[1];
                         if (messageSessionId !== this.sessionId) return;
                     }
                     
-                    if (isAssistant && (delta || fullText)) {
-                        if (!this.isStreaming) {
-                            this.isStreaming = true;
-                            this.streamingText = '';
-                            this.hideLoading();
-                            this.startStreamingMessage();
-                        }
-                        
-                        if (delta) {
-                            this.streamingText += delta;
-                        } else if (fullText && !this.streamingText) {
-                            this.streamingText = fullText;
-                        }
-                        
-                        this.updateStreamingMessage(this.streamingText);
-                        
-                        if (isFinal) {
-                            this.isStreaming = false;
-                            if (this.currentStreamingMessage) {
-                                this.finishStreamingMessage(this.streamingText);
-                            }
-                            const agentId = this.agentSelectEl?.value || this.plugin.settings.defaultAgent;
-                            if (!this.agentMessages.has(agentId)) {
-                                this.agentMessages.set(agentId, []);
-                            }
-                            this.agentMessages.get(agentId)!.push({ sender: 'agent', text: this.streamingText });
-                            this.streamingText = '';
-                            this.currentStreamingMessage = null;
-                            this.hideLoading();
-                        }
+                    // Only process final messages
+                    if (payload.state === 'final' && payload.data?.text) {
+                        this.hideLoading();
+                        this.addMessage('agent', payload.data.text);
                         return;
                     }
                     
+                    // Handle errors
                     if (payload.state === 'error') {
-                        this.isStreaming = false;
-                        this.streamingText = '';
-                        this.currentStreamingMessage = null;
                         this.hideLoading();
                         this.showErrorText('⚠️ ' + (payload.error || 'An error occurred'));
                     }
+                    return;
                 }
 
                 // Handle chat events
-                if (data.type === 'event' && data.event === 'chat' && data.payload?.sessionKey) {
-                    const messageSessionId = data.payload.sessionKey.split(':session:')[1];
-                    if (messageSessionId !== this.sessionId) return;
+                if (data.type === 'event' && data.event === 'chat') {
+                    if (data.payload?.sessionKey) {
+                        const messageSessionId = data.payload.sessionKey.split(':session:')[1];
+                        if (messageSessionId !== this.sessionId) return;
+                    }
+                    
+                    // Handle final chat messages
+                    if (data.payload?.state === 'final' && data.payload?.message?.content) {
+                        const textContent = data.payload.message.content
+                            .filter((item: any) => item.type === 'text')
+                            .map((item: any) => item.text)
+                            .join('');
+                        this.hideLoading();
+                        this.addMessage('agent', textContent);
+                    }
+                    return;
                 }
 
-                // Handle direct message
+                // Handle direct message (fallback)
                 if (data.message?.role === 'assistant' && data.message?.content) {
                     const textContent = data.message.content
                         .filter((item: any) => item.type === 'text')
@@ -205,6 +189,7 @@ export class ChatView extends ItemView {
                     this.addMessage('agent', textContent);
                 }
             } catch (e) {
+                // Plain text fallback
                 this.hideLoading();
                 this.addMessage('agent', text);
             }
@@ -295,7 +280,11 @@ export class ChatView extends ItemView {
         if (this.connectPromptEl) this.connectPromptEl.style.display = 'none';
         if (this.contextBarEl) this.contextBarEl.style.display = 'flex';
         if (this.inputContainerEl) this.inputContainerEl.style.display = 'flex';
-        this.showInfoText('✅ Connected to OpenClaw');
+        // Only show connected message once per session
+        if (!this.hasShownConnected) {
+            this.showInfoText('✅ Connected to OpenClaw');
+            this.hasShownConnected = true;
+        }
     }
 
     showDisconnected() {
