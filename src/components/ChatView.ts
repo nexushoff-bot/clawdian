@@ -383,13 +383,17 @@ export class ChatView extends ItemView {
 
         try {
             const selectedAgent = this.agentSelectEl?.value || this.plugin.settings.defaultAgent;
-            await this.client.sendMessage({
+            const runId = await this.client.sendMessage({
                 agent: selectedAgent,
                 content: text,
                 context,
                 sessionId: this.sessionId
             });
+            // Store runId for status polling
+            this.currentRunId = runId;
+            console.log('[Clawdian] Message sent, runId:', runId);
         } catch (err) {
+            this.hideLoading();
             this.addMessage('agent', '⚠️ Failed to send. Connection lost?');
         }
     }
@@ -397,17 +401,28 @@ export class ChatView extends ItemView {
     showLoading() {
         this.isLoading = true;
         if (this.loadingEl) this.loadingEl.style.display = 'flex';
+        // Start status polling every 60 seconds
         this.startStatusPolling();
+        // Set a timeout to show a message if taking too long
+        this.responseTimeout = setTimeout(() => {
+            if (this.isLoading) {
+                this.showInfoText('⏳ Agent is still thinking... This may take a while.');
+            }
+        }, this.RESPONSE_TIMEOUT_MS);
     }
 
     hideLoading() {
         this.isLoading = false;
         if (this.loadingEl) this.loadingEl.style.display = 'none';
+        // Stop status polling
         this.stopStatusPolling();
+        // Clear the timeout
         if (this.responseTimeout) {
             clearTimeout(this.responseTimeout);
             this.responseTimeout = null;
         }
+        // Clear the runId
+        this.currentRunId = null;
     }
 
     updateLoadingText() {
