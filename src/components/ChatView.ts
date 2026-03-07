@@ -237,6 +237,11 @@ export class ChatView extends ItemView {
         }
         
         await this.plugin.tryConnect();
+        
+        // Check if we're now connected (modal might have connected us)
+        if (this.client.isConnected()) {
+            this.showConnected();
+        }
     }
 
     async fetchAndUpdateAgents() {

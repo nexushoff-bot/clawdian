@@ -108,12 +108,8 @@ export class OpenClawClient {
                 this.ws = new WebSocket(this.url);
                 
                 this.ws.onopen = () => {
-                    console.log('[Clawdian] WebSocket connected, sending auth...');
-                    // Send auth immediately with token
-                    this.ws!.send(JSON.stringify({
-                        type: 'auth',
-                        token: this.token
-                    }));
+                    console.log('[Clawdian] WebSocket connected, waiting for challenge...');
+                    // Don't send anything yet - wait for connect.challenge
                 };
 
                 this.ws.onmessage = (event) => {
@@ -145,12 +141,41 @@ export class OpenClawClient {
     }
 
     private handleMessage(data: GatewayMessage) {
-        console.log('[Clawdian] Received:', data.type, data);
+        console.log('[Clawdian] Received:', data.type, data.event || '', data);
+        
+        // Handle connect.challenge event
+        if (data.type === 'event' && data.event === 'connect.challenge') {
+            console.log('[Clawdian] Challenge received, sending connect request...');
+            this.sendConnectRequest(data.payload?.nonce);
+            return;
+        }
         
         switch (data.type) {
             case 'event':
                 if (data.event === 'agent' || data.event === 'chat') {
                     this.onMessage?.(JSON.stringify(data));
+                }
+                break;
+                
+            case 'res':
+                // Handle connect response (hello-ok)
+                if (data.payload?.type === 'hello-ok' || data.ok === true) {
+                    this.connected = true;
+                    console.log('[Clawdian] Connected successfully');
+                    this.onConnect?.();
+                    this.connectionResolve?.();
+                    this.connectionResolve = null;
+                    this.connectionReject = null;
+                } else if (data.error) {
+                    const errorMsg = data.error.message || data.error || 'Connection failed';
+                    console.error('[Clawdian] Connection error:', errorMsg);
+                    this.onAuthError?.(errorMsg);
+                    this.connectionReject?.(new Error(errorMsg));
+                    this.connectionResolve = null;
+                    this.connectionReject = null;
+                } else if (data.payload?.agents) {
+                    this.agents = data.payload.agents;
+                    this.onAgentsUpdated?.(this.agents);
                 }
                 break;
                 
@@ -173,20 +198,52 @@ export class OpenClawClient {
                 }
                 break;
                 
-            case 'res':
-                if (data.ok && data.payload?.agents) {
-                    this.agents = data.payload.agents;
-                    this.onAgentsUpdated?.(this.agents);
-                }
-                break;
-                
             default:
                 console.log('[Clawdian] Unknown message type:', data.type);
         }
     }
 
+    private sendConnectRequest(nonce: string) {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+            console.error('[Clawdian] WebSocket not ready');
+            return;
+        }
+
+        const request = {
+            type: 'req',
+            id: this.generateId(),
+            method: 'connect',
+            params: {
+                minProtocol: 3,
+                maxProtocol: 3,
+                client: {
+                    version: '1.0.1',
+                    platform: this.getPlatform(),
+                    mode: 'ui'
+                },
+                role: 'operator',
+                scopes: ['operator.read', 'operator.write', 'operator.admin'],
+                auth: {
+                    token: this.token
+                },
+                nonce: nonce
+            }
+        };
+
+        console.log('[Clawdian] Sending connect request');
+        this.ws.send(JSON.stringify(request));
+    }
+
     private generateId(): string {
         return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    }
+
+    private getPlatform(): string {
+        const platform = navigator.platform.toLowerCase();
+        if (platform.includes('mac')) return 'macos';
+        if (platform.includes('win')) return 'windows';
+        if (platform.includes('linux')) return 'linux';
+        return 'unknown';
     }
 
     sendMessage(msg: ChatMessage): Promise<string> {
