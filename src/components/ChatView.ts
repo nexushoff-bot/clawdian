@@ -1,7 +1,7 @@
 import { ItemView, WorkspaceLeaf, Notice, setIcon, TFile, FuzzySuggestModal, App } from 'obsidian';
 import { OpenClawClient, AgentInfo } from '../utils/OpenClawClient';
 import ClawdianPlugin from '../main';
-import { SetupCodeModal } from './SetupCodeModal';
+import { SetupCodeModal, PairingPendingModal } from './SetupCodeModal';
 import { CONTEXT_SIZES, AGENT_COLORS, DEFAULT_AGENT_COLORS } from '../settings';
 
 export const VIEW_TYPE_CHAT = 'clawdian-chat-view';
@@ -308,6 +308,10 @@ export class ChatView extends ItemView {
             console.log('[Clawdian] Pairing required, showing setup code modal');
             this.showSetupCodeModal();
         };
+        this.client.onPairingPending = () => {
+            console.log('[Clawdian] Pairing pending approval');
+            this.showPairingPending();
+        };
 
         // Check if already connected
         if (this.client.isConnected()) {
@@ -433,13 +437,56 @@ export class ChatView extends ItemView {
                 
                 try {
                     await this.client.connect();
-                    new Notice('✅ Connected to OpenClaw!');
+                    // Connection success will be handled by callbacks
                 } catch (err: any) {
-                    new Notice('❌ Connection failed: ' + err.message);
+                    // Check if it's a pairing pending error
+                    if (err.message.includes('pending') || err.message.includes('approval')) {
+                        this.showPairingPending();
+                    } else {
+                        new Notice('❌ Connection failed: ' + err.message);
+                    }
                 }
             }
         );
         modal.open();
+    }
+
+    showPairingPending() {
+        // Show modal that pairing is pending approval
+        const modal = new PairingPendingModal(this.app, () => {
+            // Retry callback
+            this.tryConnect();
+        });
+        modal.open();
+        
+        // Start polling for connection status
+        this.startPairingPolling();
+    }
+
+    startPairingPolling() {
+        // Poll every 3 seconds to check if pairing is complete
+        const pollingInterval = setInterval(async () => {
+            if (this.client.isConnected()) {
+                clearInterval(pollingInterval);
+                this.showConnected();
+                return;
+            }
+            
+            // Try to reconnect
+            try {
+                await this.client.connect();
+                clearInterval(pollingInterval);
+                this.showConnected();
+            } catch (err) {
+                // Still pending, keep polling
+                console.log('[Clawdian] Pairing still pending...');
+            }
+        }, 3000);
+        
+        // Stop polling after 5 minutes
+        setTimeout(() => {
+            clearInterval(pollingInterval);
+        }, 5 * 60 * 1000);
     }
 
     showDisconnected() {

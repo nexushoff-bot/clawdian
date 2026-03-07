@@ -40,6 +40,7 @@ export class OpenClawClient {
     private connected = false;
     private connectionResolve: (() => void) | null = null;
     private connectionReject: ((err: Error) => void) | null = null;
+    private pendingChallenge: string | null = null;
     
     onMessage: ((text: string) => void) | null = null;
     onError: ((err: Error) => void) | null = null;
@@ -47,7 +48,7 @@ export class OpenClawClient {
     onDisconnect: (() => void) | null = null;
     onAuthError: ((message: string) => void) | null = null;
     onPairingRequired: ((deviceId: string) => void) | null = null;
-    onSetupCodeRequired: (() => void) | null = null;
+    onPairingPending: (() => void) | null = null;
     onAgentsUpdated: ((agents: AgentInfo[]) => void) | null = null;
 
     private agents: AgentInfo[] = [];
@@ -132,6 +133,13 @@ export class OpenClawClient {
         } catch (e) {
             console.log('[Clawdian] Device identity not available');
         }
+
+        // Load stored device token if available
+        const storedToken = this.deviceManager.loadDeviceToken();
+        if (storedToken) {
+            this.token = storedToken;
+            console.log('[Clawdian] Using stored device token');
+        }
         
         return new Promise((resolve, reject) => {
             this.connectionResolve = resolve;
@@ -163,8 +171,8 @@ export class OpenClawClient {
                     if (this.onError) this.onError(error);
                     if (this.connectionReject) {
                         this.connectionReject(error);
-                        this.connectionReject = null;
                         this.connectionResolve = null;
+                        this.connectionReject = null;
                     }
                 };
 
@@ -180,26 +188,6 @@ export class OpenClawClient {
     }
 
     /**
-     * Request pairing - user needs to approve this device
-     */
-    async requestPairing(): Promise<void> {
-        const identity = this.deviceManager.getIdentity();
-        if (!identity) {
-            await this.deviceManager.loadIdentity();
-        }
-        
-        const deviceId = this.getDeviceId();
-        if (!deviceId) {
-            throw new Error('No device ID available');
-        }
-
-        // Notify user they need to run the pairing command
-        if (this.onPairingRequired) {
-            this.onPairingRequired(deviceId);
-        }
-    }
-
-    /**
      * Handle Gateway messages
      */
     private async handleMessage(data: GatewayMessage) {
@@ -208,11 +196,15 @@ export class OpenClawClient {
         switch (data.type) {
             case 'event':
                 if (data.event === 'connect.challenge') {
-                    console.log('[Clawdian] Challenge received, signing...');
+                    console.log('[Clawdian] Challenge received, sending connect...');
                     await this.handleChallenge(data.payload?.nonce);
+                } else if (data.event === 'agent' && data.payload) {
+                    // Forward agent events to UI
+                    if (this.onMessage) {
+                        this.onMessage(JSON.stringify(data));
+                    }
                 } else if (data.event === 'chat' && data.payload?.message) {
                     console.log('[Clawdian] Chat event received, calling onMessage');
-                    // Send the full event data as JSON string to UI
                     if (this.onMessage) {
                         this.onMessage(JSON.stringify(data));
                     }
@@ -225,9 +217,11 @@ export class OpenClawClient {
                     this.connected = true;
                     console.log('[Clawdian] Connect successful (hello-ok)');
                     
+                    // Store device token if provided
                     if (data.payload?.auth?.deviceToken) {
-                        this.deviceManager.saveDeviceToken(data.payload.auth.deviceToken);
-                        console.log('[Clawdian] Device token saved');
+                        this.token = data.payload.auth.deviceToken;
+                        this.deviceManager.saveDeviceToken(this.token);
+                        console.log('[Clawdian] Device token saved for future connections');
                     }
                     
                     if (this.onConnect) this.onConnect();
@@ -243,11 +237,21 @@ export class OpenClawClient {
                     // Check if pairing is required
                     if (errorMsg.includes('pairing') || 
                         errorMsg.includes('device') || 
-                        errorMsg.includes('unauthorized')) {
-                        console.log('[Clawdian] Pairing required');
-                        const deviceId = this.getDeviceId();
-                        if (deviceId && this.onPairingRequired) {
-                            this.onPairingRequired(deviceId);
+                        errorMsg.includes('unauthorized') ||
+                        errorMsg.includes('pending')) {
+                        console.log('[Clawdian] Pairing required or pending');
+                        
+                        if (errorMsg.includes('pending')) {
+                            // Pairing request is pending approval
+                            if (this.onPairingPending) {
+                                this.onPairingPending();
+                            }
+                        } else {
+                            // Need to pair
+                            const deviceId = this.getDeviceId();
+                            if (deviceId && this.onPairingRequired) {
+                                this.onPairingRequired(deviceId);
+                            }
                         }
                     }
                     
@@ -256,6 +260,14 @@ export class OpenClawClient {
                         this.connectionReject(new Error(errorMsg));
                         this.connectionResolve = null;
                         this.connectionReject = null;
+                    }
+                } else if (data.ok) {
+                    // Generic success response
+                    if (data.payload?.agents) {
+                        this.agents = data.payload.agents;
+                        if (this.onAgentsUpdated) {
+                            this.onAgentsUpdated(this.agents);
+                        }
                     }
                 }
                 break;
@@ -267,7 +279,8 @@ export class OpenClawClient {
                     console.log('[Clawdian] Auth successful, connected =', this.connected);
                     
                     if (data.deviceToken) {
-                        this.deviceManager.saveDeviceToken(data.deviceToken);
+                        this.token = data.deviceToken;
+                        this.deviceManager.saveDeviceToken(this.token);
                         console.log('[Clawdian] Device token saved');
                     }
                     
@@ -304,14 +317,17 @@ export class OpenClawClient {
     private async handleChallenge(nonce: string) {
         if (!nonce) {
             console.error('[Clawdian] No nonce in challenge');
+            // Fall back to legacy auth
+            this.sendLegacyAuth();
             return;
         }
 
+        this.pendingChallenge = nonce;
         console.log('[Clawdian] Sending connect request with token');
         
-        // Build connect request with required client property
-        // Per OpenClaw Gateway protocol, client.mode is REQUIRED
-        // Valid modes: "node" | "cli" | "ui" | "test" | "webchat" | "backend" | "probe"
+        // Build connect request per OpenClaw Gateway protocol
+        const deviceId = this.getDeviceId() || 'clawdian-unknown-' + this.generateId();
+        
         const connectRequest = {
             type: 'req',
             id: this.generateId(),
@@ -320,15 +336,19 @@ export class OpenClawClient {
                 minProtocol: 3,
                 maxProtocol: 3,
                 client: {
-                    id: 'cli',
-                    version: '0.1.0',
-                    platform: 'macos',
-                    mode: 'ui'  // REQUIRED: ui mode for Obsidian plugin (desktop UI client)
+                    id: 'clawdian',
+                    version: '1.0.1',
+                    platform: this.getPlatform(),
+                    mode: 'ui'
                 },
                 role: 'operator',
                 scopes: ['operator.read', 'operator.write', 'operator.admin'],
                 auth: {
                     token: this.token
+                },
+                device: {
+                    id: deviceId,
+                    nonce: nonce
                 }
             }
         };
@@ -338,7 +358,7 @@ export class OpenClawClient {
     }
 
     /**
-     * Fallback auth without device identity
+     * Fallback auth without challenge
      */
     private sendLegacyAuth() {
         const authMessage = this.token 
@@ -379,8 +399,11 @@ export class OpenClawClient {
      */
     parseSetupCode(setupCode: string): { url: string; token: string } | null {
         try {
-            const decoded = atob(setupCode);
-            const parsed = JSON.parse(decoded);
+            // Remove any whitespace
+            const code = setupCode.trim();
+            // Decode base64
+            const json = atob(code);
+            const parsed = JSON.parse(json);
             if (parsed.url && parsed.token) {
                 return { url: parsed.url, token: parsed.token };
             }
@@ -392,6 +415,7 @@ export class OpenClawClient {
 
     /**
      * Connect using setup code (from /pair command)
+     * This is for initial pairing - the token is short-lived
      */
     async connectWithSetupCode(gatewayUrl: string, setupCode: string): Promise<void> {
         const parsed = this.parseSetupCode(setupCode);
@@ -399,18 +423,13 @@ export class OpenClawClient {
             throw new Error('Invalid setup code format');
         }
 
-        // Verify gateway matches
-        if (parsed.url !== gatewayUrl) {
-            console.log('[Clawdian] Gateway mismatch, using provided gateway');
-        }
-
-        // Store the token and URL
-        this.url = gatewayUrl;
+        // Use the gateway from setup code (or override with provided URL)
+        this.url = gatewayUrl || parsed.url;
         this.token = parsed.token;
         
-        // Save token for future use
-        this.deviceManager.saveDeviceToken(parsed.token);
-
+        // Note: DO NOT store the setup code token - it's short-lived
+        // The persistent deviceToken will come from hello-ok after approval
+        
         // Connect
         return this.connect();
     }

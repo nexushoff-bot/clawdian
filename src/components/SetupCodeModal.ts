@@ -8,6 +8,7 @@ interface SetupCodeData {
 export class SetupCodeModal extends Modal {
     onSetupComplete: (url: string, token: string) => void;
     private defaultGateway: string;
+    private step: number = 1;
 
     constructor(app: App, defaultGateway: string, onSetupComplete: (url: string, token: string) => void) {
         super(app);
@@ -25,7 +26,9 @@ export class SetupCodeModal extends Modal {
         // Step 1
         const step1 = contentEl.createEl('div', { cls: 'clawdian-pairing-step' });
         step1.createEl('span', { cls: 'clawdian-step-number', text: '1.' });
-        step1.createEl('span', { text: ' Open up a chat with OpenClaw (OpenClaw TUI, Discord, Telegram, etc.)' });
+        step1.createEl('span', { text: ' Open up a chat with OpenClaw' });
+        const step1Detail = step1.createEl('div', { cls: 'clawdian-step-detail' });
+        step1Detail.createEl('small', { text: '(OpenClaw TUI, Discord, Telegram, etc.)' });
 
         // Step 2
         const step2 = contentEl.createEl('div', { cls: 'clawdian-pairing-step' });
@@ -37,7 +40,9 @@ export class SetupCodeModal extends Modal {
         // Step 3
         const step3 = contentEl.createEl('div', { cls: 'clawdian-pairing-step' });
         step3.createEl('span', { cls: 'clawdian-step-number', text: '3.' });
-        step3.createEl('span', { text: ' Copy the Setup code and paste it here:' });
+        step3.createEl('span', { text: ' Copy the ' });
+        step3.createEl('strong', { text: 'Setup code' });
+        step3.createEl('span', { text: ' and paste it here:' });
 
         // Setup code input
         let codeInput: HTMLTextAreaElement;
@@ -55,7 +60,9 @@ export class SetupCodeModal extends Modal {
         // Step 4
         const step4 = contentEl.createEl('div', { cls: 'clawdian-pairing-step' });
         step4.createEl('span', { cls: 'clawdian-step-number', text: '4.' });
-        step4.createEl('span', { text: ' Copy the Gateway URL and paste it here:' });
+        step4.createEl('span', { text: ' Copy the ' });
+        step4.createEl('strong', { text: 'Gateway URL' });
+        step4.createEl('span', { text: ' and paste it here:' });
 
         // Gateway input
         let gatewayInput: HTMLInputElement;
@@ -73,6 +80,13 @@ export class SetupCodeModal extends Modal {
         const step5 = contentEl.createEl('div', { cls: 'clawdian-pairing-step' });
         step5.createEl('span', { cls: 'clawdian-step-number', text: '5.' });
         step5.createEl('span', { text: ' Click Connect' });
+
+        // Important note about pairing
+        const noteEl = contentEl.createEl('div', { cls: 'clawdian-pairing-note' });
+        noteEl.createEl('strong', { text: '⚠️ Important:' });
+        noteEl.createEl('span', { text: ' After connecting, you\'ll need to run ' });
+        noteEl.createEl('code', { text: '/pair approve' });
+        noteEl.createEl('span', { text: ' in your OpenClaw chat to complete pairing. The plugin will then receive a persistent token for future connections.' });
 
         // Buttons
         new Setting(contentEl)
@@ -128,7 +142,7 @@ export class SetupCodeModal extends Modal {
             // Add padding if needed
             const padding = 4 - (code.length % 4);
             if (padding !== 4) {
-                code += 'String('.repeat(padding);
+                code += '='.repeat(padding);
             }
             
             const json = atob(code);
@@ -136,5 +150,56 @@ export class SetupCodeModal extends Modal {
         } catch (err) {
             throw new Error('Failed to decode setup code. Make sure you copied the entire code.');
         }
+    }
+}
+
+/**
+ * Modal shown when pairing is pending approval
+ */
+export class PairingPendingModal extends Modal {
+    private onRetry: () => void;
+
+    constructor(app: App, onRetry: () => void) {
+        super(app);
+        this.onRetry = onRetry;
+    }
+
+    onOpen() {
+        const { contentEl } = this;
+        contentEl.empty();
+        contentEl.addClass('clawdian-pairing-modal');
+
+        contentEl.createEl('h2', { text: '⏳ Waiting for Approval' });
+
+        contentEl.createEl('p', {
+            text: 'Your device is waiting to be paired. Complete these steps:'
+        });
+
+        const ol = contentEl.createEl('ol', { cls: 'clawdian-pairing-pending-steps' });
+        ol.createEl('li', { text: 'Go to your OpenClaw chat (Discord, Telegram, TUI, etc.)' });
+        ol.createEl('li', { text: 'Type: /pair approve' });
+        ol.createEl('li', { text: 'Your device will automatically connect once approved' });
+
+        const statusEl = contentEl.createEl('div', { cls: 'clawdian-pairing-status' });
+        statusEl.createEl('span', { cls: 'clawdian-spinner-small' });
+        statusEl.createEl('span', { text: ' Polling for approval...' });
+
+        new Setting(contentEl)
+            .addButton((btn) => {
+                btn.setButtonText('Retry')
+                    .onClick(() => {
+                        this.close();
+                        this.onRetry();
+                    });
+            })
+            .addButton((btn) => {
+                btn.setButtonText('Cancel')
+                    .onClick(() => this.close());
+            });
+    }
+
+    onClose() {
+        const { contentEl } = this;
+        contentEl.empty();
     }
 }
