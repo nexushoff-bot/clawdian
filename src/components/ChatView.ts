@@ -135,41 +135,19 @@ export class ChatView extends ItemView {
             try {
                 const data = JSON.parse(text);
                 
-                // Handle agent events - just show final message
-                if (data.type === 'event' && data.event === 'agent') {
+                // Only handle chat events with final state - ignore agent events to avoid duplicates
+                if (data.type === 'event' && data.event === 'chat') {
                     const payload = data.payload;
                     
                     // Filter by session ID
-                    if (payload.sessionKey) {
+                    if (payload?.sessionKey) {
                         const messageSessionId = payload.sessionKey.split(':session:')[1];
                         if (messageSessionId !== this.sessionId) return;
                     }
                     
                     // Only process final messages
-                    if (payload.state === 'final' && payload.data?.text) {
-                        this.hideLoading();
-                        this.addMessage('agent', payload.data.text);
-                        return;
-                    }
-                    
-                    // Handle errors
-                    if (payload.state === 'error') {
-                        this.hideLoading();
-                        this.showErrorText('⚠️ ' + (payload.error || 'An error occurred'));
-                    }
-                    return;
-                }
-
-                // Handle chat events
-                if (data.type === 'event' && data.event === 'chat') {
-                    if (data.payload?.sessionKey) {
-                        const messageSessionId = data.payload.sessionKey.split(':session:')[1];
-                        if (messageSessionId !== this.sessionId) return;
-                    }
-                    
-                    // Handle final chat messages
-                    if (data.payload?.state === 'final' && data.payload?.message?.content) {
-                        const textContent = data.payload.message.content
+                    if (payload?.state === 'final' && payload?.message?.content) {
+                        const textContent = payload.message.content
                             .filter((item: any) => item.type === 'text')
                             .map((item: any) => item.text)
                             .join('');
@@ -179,19 +157,18 @@ export class ChatView extends ItemView {
                     return;
                 }
 
-                // Handle direct message (fallback)
-                if (data.message?.role === 'assistant' && data.message?.content) {
-                    const textContent = data.message.content
-                        .filter((item: any) => item.type === 'text')
-                        .map((item: any) => item.text)
-                        .join('');
-                    this.hideLoading();
-                    this.addMessage('agent', textContent);
+                // Handle errors from agent events
+                if (data.type === 'event' && data.event === 'agent') {
+                    const payload = data.payload;
+                    if (payload.state === 'error') {
+                        this.hideLoading();
+                        this.showErrorText('⚠️ ' + (payload.error || 'An error occurred'));
+                    }
+                    return;
                 }
+
             } catch (e) {
-                // Plain text fallback
-                this.hideLoading();
-                this.addMessage('agent', text);
+                // Ignore parse errors
             }
         };
         
