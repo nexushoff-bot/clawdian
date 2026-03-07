@@ -453,3 +453,35 @@
     margin-top: 16px;
     cursor: pointer;
 }
+
+/* Pairing Modal Styles */
+.clawdian-pairing-modal .clawdian-pairing-step {
+    margin: 12px 0;
+    padding-left: 8px;
+}
+
+.clawdian-pairing-modal .clawdian-step-number {
+    font-weight: bold;
+    color: var(--text-accent);
+    margin-right: 8px;
+}
+
+.clawdian-pairing-modal code {
+    background: var(--background-modifier-border);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: var(--font-monospace);
+    font-size: 0.9em;
+}
+
+.clawdian-pairing-modal .setting-item {
+    margin: 16px 0;
+}
+
+.clawdian-pairing-modal textarea,
+.clawdian-pairing-modal input[type="text"] {
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    padding: 8px;
+}

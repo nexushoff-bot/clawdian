@@ -47,6 +47,7 @@ export class OpenClawClient {
     onDisconnect: (() => void) | null = null;
     onAuthError: ((message: string) => void) | null = null;
     onPairingRequired: ((deviceId: string) => void) | null = null;
+    onSetupCodeRequired: (() => void) | null = null;
     onAgentsUpdated: ((agents: AgentInfo[]) => void) | null = null;
 
     private agents: AgentInfo[] = [];
@@ -371,6 +372,51 @@ export class OpenClawClient {
 
     clearDeviceToken() {
         this.deviceManager.clearDeviceToken();
+    }
+
+    /**
+     * Parse a setup code (base64 JSON) and extract URL and token
+     */
+    parseSetupCode(setupCode: string): { url: string; token: string } | null {
+        try {
+            const decoded = atob(setupCode);
+            const parsed = JSON.parse(decoded);
+            if (parsed.url && parsed.token) {
+                return { url: parsed.url, token: parsed.token };
+            }
+        } catch (e) {
+            console.error('[Clawdian] Failed to parse setup code:', e);
+        }
+        return null;
+    }
+
+    /**
+     * Connect using setup code (from /pair command)
+     */
+    async connectWithSetupCode(gatewayUrl: string, setupCode: string): Promise<void> {
+        const parsed = this.parseSetupCode(setupCode);
+        if (!parsed) {
+            throw new Error('Invalid setup code format');
+        }
+
+        // Verify gateway matches
+        if (parsed.url !== gatewayUrl) {
+            console.log('[Clawdian] Gateway mismatch, using provided gateway');
+        }
+
+        // Store the token and URL
+        this.url = gatewayUrl;
+        this.token = parsed.token;
+        
+        // Save token for future use
+        this.deviceManager.saveDeviceToken(parsed.token);
+
+        // Connect
+        return this.connect();
+    }
+
+    getUrl(): string {
+        return this.url;
     }
 
     sendMessage(msg: ChatMessage): Promise<string> {

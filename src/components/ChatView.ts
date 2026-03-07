@@ -301,9 +301,12 @@ export class ChatView extends ItemView {
         };
         this.client.onAuthError = (msg) => {
             console.log('[Clawdian] Auth error in view:', msg);
+            // Show setup code modal on auth error
+            this.showSetupCodeModal();
         };
         this.client.onPairingRequired = (deviceId) => {
-            this.showPairingRequired(deviceId);
+            console.log('[Clawdian] Pairing required, showing setup code modal');
+            this.showSetupCodeModal();
         };
 
         // Check if already connected
@@ -412,6 +415,31 @@ export class ChatView extends ItemView {
             console.log('[Clawdian] Showed input container');
         }
         this.showInfoText('✅ Connected to OpenClaw');
+    }
+
+    showSetupCodeModal() {
+        // Show the setup code modal when pairing is required
+        const modal = new SetupCodeModal(
+            this.app,
+            this.plugin.settings.gatewayUrl,
+            async (gateway: string, token: string) => {
+                // Update settings with new gateway and token
+                this.plugin.settings.gatewayUrl = gateway;
+                this.plugin.settings.gatewayToken = token;
+                await this.plugin.saveSettings();
+                
+                // Update client and reconnect
+                this.client.updateConfig(gateway, token);
+                
+                try {
+                    await this.client.connect();
+                    new Notice('✅ Connected to OpenClaw!');
+                } catch (err: any) {
+                    new Notice('❌ Connection failed: ' + err.message);
+                }
+            }
+        );
+        modal.open();
     }
 
     showDisconnected() {
