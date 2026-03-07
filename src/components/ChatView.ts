@@ -36,6 +36,7 @@ export class ChatView extends ItemView {
     statusPollingInterval: ReturnType<typeof setInterval> | null = null;
     currentRunId: string | null = null;
     hasShownConnected = false;  // Track if connected message was shown
+    processedRunIds = new Set<string>();  // Track processed messages to prevent duplicates
     readonly RESPONSE_TIMEOUT_MS = 60000;
     readonly STATUS_POLLING_MS = 60000;
 
@@ -147,6 +148,21 @@ export class ChatView extends ItemView {
                     
                     // Only process final messages
                     if (payload?.state === 'final' && payload?.message?.content) {
+                        // Check for duplicate runId
+                        const runId = payload.runId;
+                        if (runId && this.processedRunIds.has(runId)) {
+                            console.log('[Clawdian] Skipping duplicate message for runId:', runId);
+                            return;
+                        }
+                        if (runId) {
+                            this.processedRunIds.add(runId);
+                            // Clean up old IDs after 100 messages
+                            if (this.processedRunIds.size > 100) {
+                                const ids = Array.from(this.processedRunIds);
+                                this.processedRunIds = new Set(ids.slice(-50));
+                            }
+                        }
+                        
                         const textContent = payload.message.content
                             .filter((item: any) => item.type === 'text')
                             .map((item: any) => item.text)
