@@ -1,6 +1,5 @@
 import { PluginSettingTab, Setting, App, Notice } from 'obsidian';
 import ClawdianPlugin from './main';
-import { PairingModal } from './components/PairingModal';
 
 // Default color palette for agents
 export const AGENT_COLORS = [
@@ -17,16 +16,15 @@ export const AGENT_COLORS = [
 ];
 
 export const DEFAULT_AGENT_COLORS: Record<string, string> = {
-    'main': '#6366f1',      // Indigo
-    'nexus': '#6366f1',     // Indigo
-    'aristotowl': '#f97316', // Orange
-    'prism': '#ec4899',     // Pink
-    'orion': '#10b981',     // Emerald
+    'main': '#6366f1',
+    'nexus': '#6366f1',
+    'aristotowl': '#f97316',
+    'prism': '#ec4899',
+    'orion': '#10b981',
 };
 
 export interface ClawdianSettings {
     gatewayUrl: string;
-    gatewayToken: string;
     defaultAgent: string;
     lastAgent: string;
     agentColors: Record<string, string>;
@@ -39,7 +37,6 @@ export interface ClawdianSettings {
 
 export const DEFAULT_SETTINGS: ClawdianSettings = {
     gatewayUrl: 'ws://127.0.0.1:18789',
-    gatewayToken: '',
     defaultAgent: '',
     lastAgent: '',
     agentColors: {},
@@ -59,8 +56,8 @@ export const CONTEXT_SIZES: Record<string, { label: string; chars: number }> = {
 
 export class ClawdianSettingTab extends PluginSettingTab {
     plugin: ClawdianPlugin;
-    selectedColorAgentId: string = ''; // Track selected agent for color picker
-    colorPickerEl: any = null; // Reference to color picker for updates
+    selectedColorAgentId: string = '';
+    colorPickerEl: any = null;
 
     constructor(app: App, plugin: ClawdianPlugin) {
         super(app, plugin);
@@ -70,22 +67,18 @@ export class ClawdianSettingTab extends PluginSettingTab {
     display(): void {
         const { containerEl } = this;
         containerEl.empty();
-
         containerEl.createEl('h2', { text: 'Clawdian Settings' });
 
-        const deviceId = this.plugin.client.getDeviceId();
         const isConnected = this.plugin.client.isConnected();
         const agents = this.plugin.client.getAgents();
         
-        // Initialize selected agent for color picker
         if (!this.selectedColorAgentId && agents.length > 0) {
             this.selectedColorAgentId = agents[0].id;
         }
 
-        // ==================== Connection Status ====================
-        containerEl.createEl('h3', { text: 'Connection Status' });
+        // Connection Status
+        containerEl.createEl('h3', { text: 'Connection' });
         
-        // Status + Connect/Disconnect button in same row
         new Setting(containerEl)
             .setName('Status')
             .setDesc(isConnected ? '✅ Connected' : '❌ Disconnected')
@@ -100,46 +93,18 @@ export class ClawdianSettingTab extends PluginSettingTab {
                 } else {
                     btn.setButtonText('Connect')
                         .setCta()
-                        .onClick(() => {
-                            this.plugin.tryConnect().then(() => {
-                                this.display();
-                            });
+                        .onClick(async () => {
+                            await this.plugin.tryConnect();
+                            this.display();
                         });
                 }
             });
 
-        // Auto-connect on startup (moved to Connection Status section)
-        new Setting(containerEl)
-            .setName('Auto-connect on startup')
-            .setDesc('Automatically connect to Gateway when Obsidian starts')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.autoConnect)
-                .onChange(async (value) => {
-                    this.plugin.settings.autoConnect = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        if (deviceId) {
-            new Setting(containerEl)
-                .setName('Device ID')
-                .setDesc(deviceId)
-                .addButton(btn => {
-                    btn.setButtonText('Copy')
-                        .onClick(() => {
-                            navigator.clipboard.writeText(deviceId);
-                            new Notice('Device ID copied!');
-                        });
-                });
-        }
-
-        // ==================== Gateway Configuration ====================
-        containerEl.createEl('h3', { text: 'Gateway Configuration' });
-        
         new Setting(containerEl)
             .setName('Gateway URL')
             .setDesc('OpenClaw Gateway WebSocket URL')
             .addText(text => text
-                .setPlaceholder('ws://127.0.0.1:18789')
+                .setPlaceholder('wss://your-gateway-url')
                 .setValue(this.plugin.settings.gatewayUrl)
                 .onChange(async (value) => {
                     this.plugin.settings.gatewayUrl = value;
@@ -147,43 +112,30 @@ export class ClawdianSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('Gateway Token (optional)')
-            .setDesc('Only needed if auto-pairing fails')
-            .addText(text => {
-                text.inputEl.type = 'password';
-                text.setPlaceholder('device-token')
-                    .setValue(this.plugin.settings.gatewayToken)
-                    .onChange(async (value) => {
-                        this.plugin.settings.gatewayToken = value;
-                        await this.plugin.saveSettings();
-                    });
-            })
+            .setName('Auto-connect on startup')
+            .setDesc('Automatically connect when Obsidian starts')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.autoConnect)
+                .onChange(async (value) => {
+                    this.plugin.settings.autoConnect = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('Reset Token')
+            .setDesc('Clear stored gateway token (you\'ll need to re-enter it)')
             .addButton(btn => {
-                btn.setButtonText('Test Connection')
-                    .onClick(() => {
-                        this.plugin.client.updateConfig(
-                            this.plugin.settings.gatewayUrl,
-                            this.plugin.settings.gatewayToken
-                        );
-                        this.plugin.client.connect().then(() => {
-                            new Notice('✅ Connected successfully!');
-                            this.display();
-                        }).catch((err: Error) => {
-                            new Notice('❌ Connection failed: ' + err.message);
-                            if (deviceId) {
-                                new PairingModal(this.app, deviceId, () => {
-                                    this.plugin.client.clearDeviceToken();
-                                    this.plugin.client.connect();
-                                }).open();
-                            }
-                        });
+                btn.setButtonText('Clear Token')
+                    .setWarning()
+                    .onClick(async () => {
+                        await this.plugin.clearToken();
+                        new Notice('Token cleared. Reconnect to enter a new token.');
                     });
             });
 
-        // ==================== Preferences ====================
+        // Preferences
         containerEl.createEl('h3', { text: 'Preferences' });
 
-        // Default Agent
         const agentSetting = new Setting(containerEl)
             .setName('Default Agent')
             .setDesc('Which agent to chat with by default');
@@ -194,23 +146,22 @@ export class ClawdianSettingTab extends PluginSettingTab {
                     dropdown.addOption(agent.id, agent.name || agent.id);
                 });
             } else {
-                dropdown.addOption('', 'No agents available');
+                dropdown.addOption('', 'Connect to see agents');
             }
             dropdown.setValue(this.plugin.settings.lastAgent || this.plugin.settings.defaultAgent);
             dropdown.onChange(async (value) => {
                 this.plugin.settings.defaultAgent = value;
                 this.plugin.settings.lastAgent = value;
                 await this.plugin.saveSettings();
-                this.display(); // Refresh to update color picker
+                this.display();
             });
-            return dropdown;
         });
 
-        // Agent Color - single row with dropdown + color picker
+        // Agent Color
         if (agents.length > 0) {
             const colorSetting = new Setting(containerEl)
                 .setName('Agent Color')
-                .setDesc('Select an agent and customize its chat color');
+                .setDesc('Customize chat color for selected agent');
             
             colorSetting.addDropdown(dropdown => {
                 agents.forEach(agent => {
@@ -219,7 +170,6 @@ export class ClawdianSettingTab extends PluginSettingTab {
                 dropdown.setValue(this.selectedColorAgentId);
                 dropdown.onChange(async (value) => {
                     this.selectedColorAgentId = value;
-                    // Update color picker directly without refresh
                     const color = this.plugin.settings.agentColors[value] || 
                                  DEFAULT_AGENT_COLORS[value] || 
                                  AGENT_COLORS[0];
@@ -227,16 +177,14 @@ export class ClawdianSettingTab extends PluginSettingTab {
                         this.colorPickerEl.setValue(color);
                     }
                 });
-                return dropdown;
             });
 
-            // Color picker for selected agent
             colorSetting.addColorPicker(picker => {
                 const color = this.plugin.settings.agentColors[this.selectedColorAgentId] || 
                              DEFAULT_AGENT_COLORS[this.selectedColorAgentId] || 
                              AGENT_COLORS[0];
                 picker.setValue(color);
-                this.colorPickerEl = picker; // Store reference for updates
+                this.colorPickerEl = picker;
                 picker.onChange(async (value) => {
                     this.plugin.settings.agentColors[this.selectedColorAgentId] = value;
                     await this.plugin.saveSettings();
@@ -244,12 +192,12 @@ export class ClawdianSettingTab extends PluginSettingTab {
             });
         }
 
-        // ==================== Context ====================
+        // Context
         containerEl.createEl('h3', { text: 'Context' });
 
         new Setting(containerEl)
             .setName('Include vault context')
-            .setDesc('Send current file and vault info with messages')
+            .setDesc('Send current file as context with messages')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.includeVaultContext)
                 .onChange(async (value) => {
@@ -259,7 +207,7 @@ export class ClawdianSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Context size')
-            .setDesc('Maximum characters from file to include as context')
+            .setDesc('Maximum characters from file to include')
             .addDropdown(dropdown => {
                 dropdown.addOption('small', 'Small (500 chars)');
                 dropdown.addOption('medium', 'Medium (1500 chars)');
@@ -290,49 +238,11 @@ export class ClawdianSettingTab extends PluginSettingTab {
                 dropdown.addOption('3', 'Last 3 messages');
                 dropdown.addOption('5', 'Last 5 messages');
                 dropdown.addOption('10', 'Last 10 messages');
-                dropdown.addOption('20', 'Last 20 messages');
                 dropdown.setValue(this.plugin.settings.chatHistoryDepth.toString());
                 dropdown.onChange(async (value) => {
                     this.plugin.settings.chatHistoryDepth = parseInt(value);
                     await this.plugin.saveSettings();
                 });
-            });
-
-        // ==================== Advanced ====================
-        containerEl.createEl('h3', { text: 'Advanced' });
-        
-        // Test Session Status Button (temporary for testing)
-        new Setting(containerEl)
-            .setName('Debug: WebSocket Status')
-            .setDesc('Check WebSocket connection and send test ping')
-            .addButton(btn => {
-                btn.setButtonText('Ping Gateway')
-                    .onClick(async () => {
-                        if (!this.plugin.client.isConnected()) {
-                            new Notice('Not connected. Please connect first.');
-                            return;
-                        }
-                        try {
-                            // Just check if we're connected
-                            new Notice('✅ WebSocket is connected and ready');
-                            console.log('[Clawdian] WebSocket ready state:', this.plugin.client['ws']?.readyState);
-                        } catch (err: any) {
-                            new Notice('Error: ' + err.message);
-                        }
-                    });
-            });
-
-        new Setting(containerEl)
-            .setName('Reset Device Identity')
-            .setDesc('Clear stored device identity and token')
-            .addButton(btn => {
-                btn.setButtonText('Reset')
-                    .setWarning()
-                    .onClick(() => {
-                        this.plugin.client['deviceManager'].clearIdentity();
-                        new Notice('Device identity cleared. Restart plugin to re-pair.');
-                        this.display();
-                    });
             });
     }
 }

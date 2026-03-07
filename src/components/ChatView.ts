@@ -1,7 +1,7 @@
 import { ItemView, WorkspaceLeaf, Notice, setIcon, TFile, FuzzySuggestModal, App } from 'obsidian';
 import { OpenClawClient, AgentInfo } from '../utils/OpenClawClient';
 import ClawdianPlugin from '../main';
-import { SetupCodeModal, PairingPendingModal } from './SetupCodeModal';
+import { TokenModal } from './TokenModal';
 import { CONTEXT_SIZES, AGENT_COLORS, DEFAULT_AGENT_COLORS } from '../settings';
 
 export const VIEW_TYPE_CHAT = 'clawdian-chat-view';
@@ -19,7 +19,6 @@ export class ChatView extends ItemView {
     inputEl: HTMLTextAreaElement;
     connectPromptEl: HTMLElement | null = null;
     inputContainerEl: HTMLElement | null = null;
-    deviceIdDisplayEl: HTMLElement | null = null;
     agentSelectEl: HTMLSelectElement | null = null;
     loadingEl: HTMLElement | null = null;
     contextBarEl: HTMLElement | null = null;
@@ -31,21 +30,20 @@ export class ChatView extends ItemView {
     lastProcessedRunId: string | null = null;
     sessionId: string;
     currentAgentId: string = '';
-    sessionIds: Map<string, string> = new Map(); // Store session ID per agent
-    agentMessages: Map<string, Array<{sender: 'user' | 'agent', text: string}>> = new Map(); // Store messages per agent
+    sessionIds: Map<string, string> = new Map();
+    agentMessages: Map<string, Array<{sender: 'user' | 'agent', text: string}>> = new Map();
     responseTimeout: ReturnType<typeof setTimeout> | null = null;
     statusPollingInterval: ReturnType<typeof setInterval> | null = null;
     currentRunId: string | null = null;
-    readonly RESPONSE_TIMEOUT_MS = 60000; // 60 seconds timeout for LLM responses
-    readonly STATUS_POLLING_MS = 60000; // Poll status every 60 seconds
+    readonly RESPONSE_TIMEOUT_MS = 60000;
+    readonly STATUS_POLLING_MS = 60000;
 
     constructor(leaf: WorkspaceLeaf, client: OpenClawClient, plugin: ClawdianPlugin) {
         super(leaf);
         this.client = client;
         this.plugin = plugin;
-        // Generate unique session ID for this chat instance
         this.sessionId = 'obsidian-chat-' + this.generateSessionId();
-        console.log('[Clawdian] Created isolated chat session:', this.sessionId);
+        console.log('[Clawdian] Created chat session:', this.sessionId);
     }
 
     getViewType(): string {
@@ -69,7 +67,7 @@ export class ChatView extends ItemView {
         const header = container.createEl('div', { cls: 'clawdian-header' });
         header.createEl('span', { text: '🦞 Clawdian', cls: 'clawdian-title' });
         
-        // Agent selector in header (top right)
+        // Agent selector
         const headerRight = header.createEl('div', { cls: 'clawdian-header-right' });
         headerRight.createEl('label', { text: 'Agent:', cls: 'clawdian-agent-label' });
         this.agentSelectEl = headerRight.createEl('select', { cls: 'clawdian-agent-select' });
@@ -80,50 +78,38 @@ export class ChatView extends ItemView {
         // Loading indicator
         this.loadingEl = container.createEl('div', { cls: 'clawdian-loading' });
         this.loadingEl.createEl('div', { cls: 'clawdian-spinner' });
-        const loadingText = this.loadingEl.createEl('span', { cls: 'clawdian-loading-text' });
+        this.loadingEl.createEl('span', { cls: 'clawdian-loading-text' });
         this.updateLoadingText();
         this.loadingEl.style.display = 'none';
 
-        // Create connect prompt (shown when not connected)
+        // Connect prompt
         this.connectPromptEl = container.createEl('div', { cls: 'clawdian-connect-prompt' });
-        
         const connectBtn = this.connectPromptEl.createEl('button', {
             cls: 'clawdian-connect-btn',
             text: 'Connect'
         });
-        connectBtn.addEventListener('click', () => this.tryConnect());
-        
-        // Device ID display area (for pairing)
-        this.deviceIdDisplayEl = this.connectPromptEl.createEl('div', { cls: 'clawdian-device-id' });
-        this.deviceIdDisplayEl.style.display = 'none';
+        connectBtn.addEventListener('click', () => this.handleConnect());
 
-        // Context bar (file attachments) - hidden until connected
+        // Context bar
         this.contextBarEl = container.createEl('div', { cls: 'clawdian-context-bar' });
         this.contextBarEl.style.display = 'none';
 
-        // Register event listener for active file changes
         this.registerEvent(this.app.workspace.on('active-leaf-change', () => {
             this.updateCurrentFile();
         }));
 
-        // Initialize context files
         this.initContextFiles();
 
         // Input container
         this.inputContainerEl = container.createEl('div', { cls: 'clawdian-input-container' });
-
-        // Input area (full width)
         this.inputEl = this.inputContainerEl.createEl('textarea', {
             cls: 'clawdian-input',
             attr: { placeholder: 'Type your message...' }
         });
-
-        // Send button
         const sendBtn = this.inputContainerEl.createEl('button', {
             cls: 'clawdian-send-btn',
             text: 'Send'
         });
-
         sendBtn.addEventListener('click', () => this.sendMessage());
         this.inputEl.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -132,75 +118,61 @@ export class ChatView extends ItemView {
             }
         });
 
-        // Setup callbacks BEFORE checking connection
+        // Setup callbacks
+        this.setupCallbacks();
+
+        // Check connection
+        if (this.client.isConnected()) {
+            this.showConnected();
+        } else {
+            this.showDisconnected();
+        }
+    }
+
+    setupCallbacks() {
         this.client.onMessage = (text: string) => {
-            console.log('[Clawdian] Chat event received, calling onMessage');
-            console.log('[Clawdian] UI received message:', text);
-            
-            // Try to parse as JSON (responses are direct payload format)
             try {
                 const data = JSON.parse(text);
-                console.log('[Clawdian] Parsed data:', data);
-
-                // Handle streaming events from agent
+                
+                // Handle streaming events
                 if (data.type === 'event' && data.event === 'agent') {
                     const payload = data.payload;
-                    console.log('[Clawdian] Agent event received:', JSON.stringify(payload, null, 2));
-                    
-                    // Check if it's an assistant message (streaming or final)
                     const isAssistant = payload.stream === 'assistant' || payload.data?.text;
                     const delta = payload.data?.delta || '';
                     const fullText = payload.data?.text || '';
                     const isFinal = payload.state === 'final';
                     
-                    console.log('[Clawdian] isAssistant:', isAssistant, 'delta:', delta, 'fullText length:', fullText.length, 'isFinal:', isFinal);
-                    
-                    // Filter by session ID
                     if (payload.sessionKey) {
                         const messageSessionId = payload.sessionKey.split(':session:')[1];
-                        if (messageSessionId !== this.sessionId) {
-                            console.log('[Clawdian] Ignoring message for different session');
-                            return;
-                        }
+                        if (messageSessionId !== this.sessionId) return;
                     }
                     
-                    // Handle assistant messages
                     if (isAssistant && (delta || fullText)) {
-                        // Start streaming if not already
                         if (!this.isStreaming) {
                             this.isStreaming = true;
                             this.streamingText = '';
                             this.hideLoading();
                             this.startStreamingMessage();
-                            console.log('[Clawdian] Started streaming message');
                         }
                         
-                        // Append delta if available, otherwise use fullText
                         if (delta) {
                             this.streamingText += delta;
                         } else if (fullText && !this.streamingText) {
-                            // No delta but have fullText - this might be a single-shot message
                             this.streamingText = fullText;
                         }
                         
                         this.updateStreamingMessage(this.streamingText);
-                        console.log('[Clawdian] Updated streaming text, length:', this.streamingText.length);
                         
-                        // If final, finish streaming
                         if (isFinal) {
-                            console.log('[Clawdian] Stream complete, final text length:', this.streamingText.length);
                             this.isStreaming = false;
                             if (this.currentStreamingMessage) {
                                 this.finishStreamingMessage(this.streamingText);
                             }
-                            
-                            // Store message for chat history
                             const agentId = this.agentSelectEl?.value || this.plugin.settings.defaultAgent;
                             if (!this.agentMessages.has(agentId)) {
                                 this.agentMessages.set(agentId, []);
                             }
                             this.agentMessages.get(agentId)!.push({ sender: 'agent', text: this.streamingText });
-                            
                             this.streamingText = '';
                             this.currentStreamingMessage = null;
                             this.hideLoading();
@@ -208,141 +180,63 @@ export class ChatView extends ItemView {
                         return;
                     }
                     
-                    // Check for error state
                     if (payload.state === 'error') {
                         this.isStreaming = false;
                         this.streamingText = '';
                         this.currentStreamingMessage = null;
                         this.hideLoading();
                         this.showErrorText('⚠️ ' + (payload.error || 'An error occurred'));
-                        return;
                     }
                 }
 
-                // Filter by session ID - check if message is for this view's session
+                // Handle chat events
                 if (data.type === 'event' && data.event === 'chat' && data.payload?.sessionKey) {
-                    const messageSessionKey = data.payload.sessionKey;
-                    // Extract session ID from key (format: agent:{agent}:session:{sessionId})
-                    const messageSessionId = messageSessionKey.split(':session:')[1];
-                    console.log('[Clawdian] Message session ID:', messageSessionId, 'expected:', this.sessionId);
-                    if (messageSessionId !== this.sessionId) {
-                        console.log('[Clawdian] Ignoring message for different session:', messageSessionKey);
-                        return; // Skip this message
-                    }
+                    const messageSessionId = data.payload.sessionKey.split(':session:')[1];
+                    if (messageSessionId !== this.sessionId) return;
                 }
 
-                // Check if this is a direct chat payload (not wrapped in event)
-                if (data.message && data.message.role === 'assistant' && data.message.content) {
-                    console.log('[Clawdian] Found direct chat payload, extracting text...');
-                    const message = data.message;
-                    if (message.content && Array.isArray(message.content)) {
-                        const textContent = message.content
-                            .filter((item: any) => item.type === 'text')
-                            .map((item: any) => item.text)
-                            .join('');
-                        console.log('[Clawdian] Extracted text:', textContent);
-                        this.hideLoading();
-                        this.addMessage('agent', textContent);
-                        return;
-                    }
+                // Handle direct message
+                if (data.message?.role === 'assistant' && data.message?.content) {
+                    const textContent = data.message.content
+                        .filter((item: any) => item.type === 'text')
+                        .map((item: any) => item.text)
+                        .join('');
+                    this.hideLoading();
+                    this.addMessage('agent', textContent);
                 }
-
-                // Check for wrapped event format (fallback)
-                if (data.type === 'event' && data.event === 'chat') {
-                    console.log('[Clawdian] Found chat event, checking payload...');
-                    const message = data.payload?.message;
-                    const state = data.payload?.state;
-                    console.log('[Clawdian] Chat event state:', state);
-
-                    // Only process final messages to avoid duplicates
-                    if (state === 'final' && message) {
-                        console.log('[Clawdian] Processing final message, extracting text...');
-                        if (message.content && Array.isArray(message.content)) {
-                            const textContent = message.content
-                                .filter((item: any) => item.type === 'text')
-                                .map((item: any) => item.text)
-                                .join('');
-                            console.log('[Clawdian] Extracted text from final chat event:', textContent);
-                            this.hideLoading();
-                            this.addMessage('agent', textContent);
-                            return;
-                        } else {
-                            console.log('[Clawdian] Message content not in expected array format');
-                        }
-                    } else if (state !== 'final') {
-                        console.log('[Clawdian] Skipping non-final message (state:, state, )');
-                        return; // Skip delta messages entirely (state:', state, ')');
-                    }
-                }
-
-                console.log('[Clawdian] Message does not match expected formats');
             } catch (e) {
-                console.log('[Clawdian] Failed to parse as JSON:', e);
-                // Not JSON, treat as plain text
+                this.hideLoading();
+                this.addMessage('agent', text);
             }
-            // Fallback to plain text handling
-            console.log('[Clawdian] Using fallback text handling');
-            this.hideLoading();
-            this.addMessage('agent', text);
         };
         
         this.client.onConnect = () => {
-            console.log('[Clawdian] ChatView onConnect called');
             this.showConnected();
-            // Fetch agents after connecting
             this.fetchAndUpdateAgents();
         };
+        
         this.client.onAgentsUpdated = (agents) => {
             this.populateAgentDropdown(agents);
         };
+        
         this.client.onDisconnect = () => {
-            console.log('[Clawdian] ChatView onDisconnect called');
             this.showDisconnected();
         };
+        
         this.client.onAuthError = (msg) => {
-            console.log('[Clawdian] Auth error in view:', msg);
-            // Show setup code modal on auth error
-            this.showSetupCodeModal();
-        };
-        this.client.onPairingRequired = (deviceId) => {
-            console.log('[Clawdian] Pairing required, showing setup code modal');
-            this.showSetupCodeModal();
-        };
-        this.client.onPairingPending = () => {
-            console.log('[Clawdian] Pairing pending approval');
-            this.showPairingPending();
-        };
-
-        // Check if already connected
-        if (this.client.isConnected()) {
-            console.log('[Clawdian] Already connected, showing chat');
-            this.showConnected();
-        } else {
-            console.log('[Clawdian] Not connected, showing connect prompt');
             this.showDisconnected();
-        }
+            this.plugin.showTokenModal();
+        };
     }
 
-    async tryConnect() {
-        const connectBtn = this.connectPromptEl?.querySelector('.clawdian-connect-btn') as HTMLButtonElement;
-        
-        try {
-            await this.client.connect();
-            // Success - handled by onConnect callback
-        } catch (err: any) {
-            console.log('[Clawdian] Connection failed:', err.message);
-            // Check if it's a pairing error
-            if (err.message.includes('pairing') || err.message.includes('device') || err.message.includes('unauthorized')) {
-                // Pairing required - will be handled by onPairingRequired callback
-            } else {
-                // Other error
-                if (connectBtn) {
-                    connectBtn.setText('Connect');
-                    connectBtn.disabled = false;
-                }
-                new Notice('Connection failed: ' + err.message);
-            }
+    async handleConnect() {
+        if (this.client.isConnected()) {
+            this.client.disconnect();
+            this.showDisconnected();
+            return;
         }
+        
+        await this.plugin.tryConnect();
     }
 
     async fetchAndUpdateAgents() {
@@ -358,219 +252,75 @@ export class ChatView extends ItemView {
 
     populateAgentDropdown(agents?: AgentInfo[]) {
         if (!this.agentSelectEl) return;
-        
-        // Clear existing options
         this.agentSelectEl.empty();
-        
-        // Use provided agents or fall back to stored agents
         const agentsList = agents?.length ? agents : this.client.getAgents();
         
         if (agentsList.length === 0) {
-            // No agents available - show placeholder
-            const option = this.agentSelectEl!.createEl('option', {
+            this.agentSelectEl.createEl('option', {
                 text: 'No agents available',
                 value: '',
                 attr: { disabled: 'true', selected: 'true' }
             });
         } else {
-            // Use fetched agents
             agentsList.forEach(agent => {
                 const option = this.agentSelectEl!.createEl('option', { 
                     text: agent.name || agent.id,
                     value: agent.id 
                 });
-                // Use lastAgent if available, otherwise defaultAgent
                 const selectedAgent = this.plugin.settings.lastAgent || this.plugin.settings.defaultAgent;
-                if (agent.id === selectedAgent) {
-                    option.selected = true;
-                }
+                if (agent.id === selectedAgent) option.selected = true;
             });
             
-            // Add change listener to save last agent and switch session
             this.agentSelectEl.addEventListener('change', async () => {
                 const selectedValue = this.agentSelectEl?.value;
                 if (selectedValue) {
-                    const previousAgent = this.currentAgentId;
                     this.plugin.settings.lastAgent = selectedValue;
                     await this.plugin.saveSettings();
-                    // Switch to this agent's session (create if not exists)
                     if (!this.sessionIds.has(selectedValue)) {
                         this.sessionIds.set(selectedValue, 'obsidian-chat-' + this.generateSessionId());
                     }
                     this.sessionId = this.sessionIds.get(selectedValue)!;
                     this.currentAgentId = selectedValue;
-                    console.log('[Clawdian] Switched to agent:', selectedValue, 'session:', this.sessionId);
                 }
             });
         }
     }
 
     showConnected() {
-        console.log('[Clawdian] showConnected called');
-        if (this.connectPromptEl) {
-            this.connectPromptEl.style.display = 'none';
-            console.log('[Clawdian] Hid connect prompt');
-        }
-        if (this.contextBarEl) {
-            this.contextBarEl.style.display = 'flex';
-        }
-        if (this.inputContainerEl) {
-            this.inputContainerEl.style.display = 'flex';
-            console.log('[Clawdian] Showed input container');
-        }
+        if (this.connectPromptEl) this.connectPromptEl.style.display = 'none';
+        if (this.contextBarEl) this.contextBarEl.style.display = 'flex';
+        if (this.inputContainerEl) this.inputContainerEl.style.display = 'flex';
         this.showInfoText('✅ Connected to OpenClaw');
     }
 
-    showSetupCodeModal() {
-        // Show the setup code modal when pairing is required
-        const modal = new SetupCodeModal(
-            this.app,
-            this.plugin.settings.gatewayUrl,
-            async (gateway: string, token: string) => {
-                // Update settings with new gateway and token
-                this.plugin.settings.gatewayUrl = gateway;
-                this.plugin.settings.gatewayToken = token;
-                await this.plugin.saveSettings();
-                
-                // Update client and reconnect
-                this.client.updateConfig(gateway, token);
-                
-                try {
-                    await this.client.connect();
-                    // Connection success will be handled by callbacks
-                } catch (err: any) {
-                    // Check if it's a pairing pending error
-                    if (err.message.includes('pending') || err.message.includes('approval')) {
-                        this.showPairingPending();
-                    } else {
-                        new Notice('❌ Connection failed: ' + err.message);
-                    }
-                }
-            }
-        );
-        modal.open();
-    }
-
-    showPairingPending() {
-        // Show modal that pairing is pending approval
-        const modal = new PairingPendingModal(this.app, () => {
-            // Retry callback
-            this.tryConnect();
-        });
-        modal.open();
-        
-        // Start polling for connection status
-        this.startPairingPolling();
-    }
-
-    startPairingPolling() {
-        // Poll every 3 seconds to check if pairing is complete
-        const pollingInterval = setInterval(async () => {
-            if (this.client.isConnected()) {
-                clearInterval(pollingInterval);
-                this.showConnected();
-                return;
-            }
-            
-            // Try to reconnect
-            try {
-                await this.client.connect();
-                clearInterval(pollingInterval);
-                this.showConnected();
-            } catch (err) {
-                // Still pending, keep polling
-                console.log('[Clawdian] Pairing still pending...');
-            }
-        }, 3000);
-        
-        // Stop polling after 5 minutes
-        setTimeout(() => {
-            clearInterval(pollingInterval);
-        }, 5 * 60 * 1000);
-    }
-
     showDisconnected() {
-        console.log('[Clawdian] showDisconnected called');
         if (this.connectPromptEl) {
             this.connectPromptEl.style.display = 'flex';
-            const connectBtn = this.connectPromptEl.querySelector('.clawdian-connect-btn') as HTMLButtonElement;
-            if (connectBtn) {
-                connectBtn.setText('Connect');
-                connectBtn.disabled = false;
-            }
-            if (this.deviceIdDisplayEl) {
-                this.deviceIdDisplayEl.style.display = 'none';
+            const btn = this.connectPromptEl.querySelector('.clawdian-connect-btn') as HTMLButtonElement;
+            if (btn) {
+                btn.setText('Connect');
+                btn.disabled = false;
             }
         }
-        if (this.contextBarEl) {
-            this.contextBarEl.style.display = 'none';
-        }
-        if (this.inputContainerEl) {
-            this.inputContainerEl.style.display = 'none';
-        }
-    }
-
-    showPairingRequired(deviceId: string) {
-        if (!this.connectPromptEl) return;
-        
-        // Show device ID and command
-        if (this.deviceIdDisplayEl) {
-            this.deviceIdDisplayEl.empty();
-            this.deviceIdDisplayEl.style.display = 'block';
-            
-            const cmdEl = this.deviceIdDisplayEl.createEl('div', { cls: 'clawdian-terminal-command' });
-            cmdEl.createEl('code', { text: `openclaw pairing approve ${deviceId}` });
-            
-            const copyBtn = this.deviceIdDisplayEl.createEl('button', {
-                cls: 'clawdian-copy-btn',
-                text: 'Copy Command'
-            });
-            copyBtn.addEventListener('click', () => {
-                navigator.clipboard.writeText(`openclaw pairing approve ${deviceId}`);
-                new Notice('Command copied to clipboard!');
-            });
-            
-            this.deviceIdDisplayEl.createEl('div', {
-                cls: 'clawdian-device-id-label',
-                text: `Device ID: ${deviceId}`
-            });
-        }
-        
-        // Update connect button
-        const connectBtn = this.connectPromptEl.querySelector('.clawdian-connect-btn') as HTMLButtonElement;
-        if (connectBtn) {
-            connectBtn.setText('Retry Connection');
-            connectBtn.disabled = false;
-        }
+        if (this.contextBarEl) this.contextBarEl.style.display = 'none';
+        if (this.inputContainerEl) this.inputContainerEl.style.display = 'none';
     }
 
     initContextFiles() {
-        // Auto-add current file if setting is enabled and no files attached
-        console.log('[Clawdian] initContextFiles - includeVaultContext:', this.plugin.settings.includeVaultContext, 'attachedFiles:', this.attachedFiles.length);
         if (this.plugin.settings.includeVaultContext && this.attachedFiles.length === 0) {
             const activeFile = this.app.workspace.getActiveFile();
-            console.log('[Clawdian] initContextFiles - activeFile:', activeFile?.path);
             if (activeFile && activeFile.extension === 'md') {
-                this.attachedFiles.push({
-                    path: activeFile.path,
-                    name: activeFile.name
-                });
-                console.log('[Clawdian] initContextFiles - added file:', activeFile.path);
+                this.attachedFiles.push({ path: activeFile.path, name: activeFile.name });
             }
         }
         this.renderContextBar();
     }
 
     updateCurrentFile() {
-        // Update context bar when active file changes (only if no files manually added)
         if (this.attachedFiles.length === 0 && this.plugin.settings.includeVaultContext) {
             const activeFile = this.app.workspace.getActiveFile();
-            console.log('[Clawdian] updateCurrentFile - activeFile:', activeFile?.path);
             if (activeFile && activeFile.extension === 'md') {
-                this.attachedFiles.push({
-                    path: activeFile.path,
-                    name: activeFile.name
-                });
+                this.attachedFiles.push({ path: activeFile.path, name: activeFile.name });
                 this.renderContextBar();
             }
         }
@@ -580,19 +330,17 @@ export class ChatView extends ItemView {
         if (!this.contextBarEl) return;
         this.contextBarEl.empty();
 
-        // Add file button
         const addBtn = this.contextBarEl.createEl('button', {
             cls: 'clawdian-context-add-btn',
             text: '+ Add file'
         });
-        addBtn.addEventListener('click', () => this.showFilePicker());
+        addBtn.addEventListener('click', () => new FileSuggestModal(this.app, this).open());
 
-        // Render attached files
         const filesContainer = this.contextBarEl.createEl('div', { cls: 'clawdian-context-files' });
         this.attachedFiles.forEach((file, index) => {
-            const fileChip = filesContainer.createEl('div', { cls: 'clawdian-context-file-chip' });
-            fileChip.createEl('span', { text: file.name, cls: 'clawdian-context-file-name' });
-            const removeBtn = fileChip.createEl('button', { cls: 'clawdian-context-file-remove', text: '×' });
+            const chip = filesContainer.createEl('div', { cls: 'clawdian-context-file-chip' });
+            chip.createEl('span', { text: file.name, cls: 'clawdian-context-file-name' });
+            const removeBtn = chip.createEl('button', { cls: 'clawdian-context-file-remove', text: '×' });
             removeBtn.addEventListener('click', () => {
                 this.attachedFiles.splice(index, 1);
                 this.renderContextBar();
@@ -600,20 +348,12 @@ export class ChatView extends ItemView {
         });
     }
 
-    showFilePicker() {
-        new FileSuggestModal(this.app, this).open();
-    }
-
     async addFile(file: TFile) {
-        // Check if already attached
         if (this.attachedFiles.some(f => f.path === file.path)) {
             new Notice('File already attached');
             return;
         }
-        this.attachedFiles.push({
-            path: file.path,
-            name: file.name
-        });
+        this.attachedFiles.push({ path: file.path, name: file.name });
         this.renderContextBar();
     }
 
@@ -622,28 +362,20 @@ export class ChatView extends ItemView {
             new Notice('Not connected. Click Connect first.');
             return;
         }
-
-        if (this.isLoading) {
-            return; // Prevent multiple sends while loading
-        }
+        if (this.isLoading) return;
 
         const text = this.inputEl.value.trim();
         if (!text) return;
 
         this.addMessage('user', text);
         this.inputEl.value = '';
-
-        // Show loading spinner
         this.showLoading();
 
-        // Get vault context from attached files
         const context: any = {};
         const maxChars = CONTEXT_SIZES[this.plugin.settings.contextSize].chars;
         
         if (this.attachedFiles.length > 0) {
-            console.log('[Clawdian] Reading attached files:', this.attachedFiles.map(f => f.path));
             const fileContents: string[] = [];
-            
             for (const file of this.attachedFiles) {
                 try {
                     const tfile = this.app.vault.getAbstractFileByPath(file.path);
@@ -651,31 +383,24 @@ export class ChatView extends ItemView {
                         const content = await this.app.vault.read(tfile);
                         const truncated = maxChars === Infinity ? content : content.slice(0, maxChars);
                         fileContents.push(`--- ${file.name} ---\n${truncated}`);
-                        console.log('[Clawdian] Read file:', file.path, 'length:', truncated.length);
                     }
                 } catch (e) {
                     console.log('[Clawdian] Could not read file:', file.path, e);
                 }
             }
-            
             if (fileContents.length > 0) {
                 context.currentFile = this.attachedFiles.map(f => f.path).join(', ');
                 context.fileContent = fileContents.join('\n\n');
             }
-        } else {
-            console.log('[Clawdian] No files attached, skipping context');
         }
 
         try {
-            console.log('[Clawdian] Sending message with session ID:', this.sessionId);
-            // Use selected agent from dropdown, or fall back to default
             const selectedAgent = this.agentSelectEl?.value || this.plugin.settings.defaultAgent;
-            console.log('[Clawdian] Using agent:', selectedAgent);
             await this.client.sendMessage({
                 agent: selectedAgent,
                 content: text,
                 context,
-                sessionId: this.sessionId  // Use unique session for this chat
+                sessionId: this.sessionId
             });
         } catch (err) {
             this.addMessage('agent', '⚠️ Failed to send. Connection lost?');
@@ -684,21 +409,14 @@ export class ChatView extends ItemView {
 
     showLoading() {
         this.isLoading = true;
-        if (this.loadingEl) {
-            this.loadingEl.style.display = 'flex';
-        }
-        // Start status polling every minute
+        if (this.loadingEl) this.loadingEl.style.display = 'flex';
         this.startStatusPolling();
     }
 
     hideLoading() {
         this.isLoading = false;
-        if (this.loadingEl) {
-            this.loadingEl.style.display = 'none';
-        }
-        // Stop status polling
+        if (this.loadingEl) this.loadingEl.style.display = 'none';
         this.stopStatusPolling();
-        // Clear the timeout if response was received
         if (this.responseTimeout) {
             clearTimeout(this.responseTimeout);
             this.responseTimeout = null;
@@ -707,80 +425,52 @@ export class ChatView extends ItemView {
 
     updateLoadingText() {
         if (!this.loadingEl) return;
-        const agentId = this.agentSelectEl?.value || this.plugin.settings.defaultAgent;
-        const agentName = this.agentSelectEl?.options[this.agentSelectEl.selectedIndex]?.text || agentId || 'Agent';
+        const agentId = this.agentSelectEl?.value || this.plugin.settings.defaultAgent || 'Agent';
+        const agentName = (this.agentSelectEl && this.agentSelectEl.selectedIndex >= 0 
+            ? this.agentSelectEl.options[this.agentSelectEl.selectedIndex]?.text 
+            : null) || agentId;
         const loadingText = this.loadingEl.querySelector('.clawdian-loading-text');
-        if (loadingText) {
-            loadingText.setText(`${agentName} is thinking...`);
-        }
+        if (loadingText) loadingText.setText(`${agentName} is thinking...`);
     }
 
     startStreamingMessage() {
-        // Create a new message element for streaming
         const agentId = this.agentSelectEl?.value || this.plugin.settings.defaultAgent;
         const agentName = this.agentSelectEl?.options[this.agentSelectEl.selectedIndex]?.text || agentId;
         const agentColor = this.getAgentColor(agentId);
-        
-        // Get agent identity info for avatar
         const agents = this.client.getAgents();
         const agent = agents.find(a => a.id === agentId);
         
-        // Determine avatar
         let avatar = agentName.charAt(0).toUpperCase();
         let useImageAvatar = false;
+        if (agent?.identity?.emoji) avatar = agent.identity.emoji;
+        else if (agent?.identity?.avatarUrl) { avatar = agent.identity.avatarUrl; useImageAvatar = true; }
+        else if (agent?.identity?.avatar) { avatar = agent.identity.avatar; useImageAvatar = true; }
         
-        if (agent?.identity?.emoji) {
-            avatar = agent.identity.emoji;
-        } else if (agent?.identity?.avatarUrl) {
-            avatar = agent.identity.avatarUrl;
-            useImageAvatar = true;
-        } else if (agent?.identity?.avatar) {
-            avatar = agent.identity.avatar;
-            useImageAvatar = true;
-        }
-        
-        // Create message container
         const msgContainer = this.messagesEl.createEl('div', {
             cls: 'clawdian-message-container clawdian-message-container-agent clawdian-streaming'
         });
         msgContainer.style.setProperty('--agent-color', agentColor);
         
-        // Avatar
         const avatarEl = msgContainer.createEl('div', { cls: 'clawdian-avatar' });
         if (useImageAvatar) {
-            const img = avatarEl.createEl('img', {
-                cls: 'clawdian-avatar-img',
-                attr: { src: avatar, alt: agentName }
-            });
-            img.onerror = () => {
-                avatarEl.empty();
-                avatarEl.setText(agentName.charAt(0).toUpperCase());
-            };
+            const img = avatarEl.createEl('img', { cls: 'clawdian-avatar-img', attr: { src: avatar, alt: agentName } });
+            img.onerror = () => { avatarEl.empty(); avatarEl.setText(agentName.charAt(0).toUpperCase()); };
         } else {
             avatarEl.setText(avatar);
         }
         avatarEl.style.backgroundColor = agentColor;
         
-        // Message block
         const messageBlock = msgContainer.createEl('div', { cls: 'clawdian-message-block' });
-        messageBlock.createEl('div', {
-            cls: 'clawdian-message-sender',
-            text: agentName
-        });
-        
-        // Create bubble with streaming text
-        const bubble = messageBlock.createEl('div', {
+        messageBlock.createEl('div', { cls: 'clawdian-message-sender', text: agentName });
+        this.currentStreamingMessage = messageBlock.createEl('div', {
             cls: 'clawdian-message-bubble clawdian-streaming-bubble',
-            text: '▋' // Cursor
+            text: '▋'
         });
-        
-        this.currentStreamingMessage = bubble;
         this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
     }
 
     updateStreamingMessage(text: string) {
         if (this.currentStreamingMessage) {
-            // Add cursor at the end to show it's still typing
             this.currentStreamingMessage.setText(text + '▋');
             this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
         }
@@ -788,7 +478,6 @@ export class ChatView extends ItemView {
 
     finishStreamingMessage(text: string) {
         if (this.currentStreamingMessage) {
-            // Remove cursor and set final text
             this.currentStreamingMessage.setText(text);
             this.currentStreamingMessage.parentElement?.parentElement?.removeClass('clawdian-streaming');
             this.currentStreamingMessage = null;
@@ -796,13 +485,8 @@ export class ChatView extends ItemView {
     }
 
     startStatusPolling() {
-        // Clear any existing polling
         this.stopStatusPolling();
-        
-        // Start polling after 1 minute
-        this.statusPollingInterval = setInterval(() => {
-            this.checkSessionStatus();
-        }, this.STATUS_POLLING_MS);
+        this.statusPollingInterval = setInterval(() => this.checkSessionStatus(), this.STATUS_POLLING_MS);
     }
 
     stopStatusPolling() {
@@ -814,141 +498,77 @@ export class ChatView extends ItemView {
 
     async checkSessionStatus() {
         if (!this.currentRunId || !this.client.isConnected()) return;
-        
         try {
             const status = await this.client.getSessionStatus(this.currentRunId);
-            if (status) {
-                this.showInfoText(`⏳ Agent is ${status}...`);
-            }
+            if (status) this.showInfoText(`⏳ Agent is ${status}...`);
         } catch (err) {
             console.log('[Clawdian] Status check failed:', err);
         }
     }
 
     showInfoText(text: string) {
-        const infoEl = this.messagesEl.createEl('div', {
-            cls: 'clawdian-info-text',
-            text: text
-        });
-        // Auto-remove after 5 seconds
-        setTimeout(() => {
-            infoEl.remove();
-        }, 5000);
+        const infoEl = this.messagesEl.createEl('div', { cls: 'clawdian-info-text', text });
+        setTimeout(() => infoEl.remove(), 5000);
         this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
     }
 
     showErrorText(text: string) {
-        const errorEl = this.messagesEl.createEl('div', {
-            cls: 'clawdian-error-text',
-            text: text
-        });
+        const errorEl = this.messagesEl.createEl('div', { cls: 'clawdian-error-text', text });
         this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
     }
 
-    private generateSessionId(): string {
+    generateSessionId(): string {
         return Date.now().toString(36) + Math.random().toString(36).substr(2);
     }
 
     addMessage(sender: 'user' | 'agent', text: string) {
-        console.log('[Clawdian] addMessage called with sender:', sender, 'text:', text);
-        
-        // Use selected agent from dropdown for display name
         const agentId = this.agentSelectEl?.value || this.plugin.settings.defaultAgent;
         const agentName = this.agentSelectEl?.options[this.agentSelectEl.selectedIndex]?.text || agentId;
         const agentColor = this.getAgentColor(agentId);
-        
-        // Get agent identity info for avatar
         const agents = this.client.getAgents();
         const agent = agents.find(a => a.id === agentId);
         
-        // Determine avatar: priority -> emoji > avatarUrl > avatar > first letter of name
         let avatar = agentName.charAt(0).toUpperCase();
         let useImageAvatar = false;
+        if (agent?.identity?.emoji) avatar = agent.identity.emoji;
+        else if (agent?.identity?.avatarUrl) { avatar = agent.identity.avatarUrl; useImageAvatar = true; }
+        else if (agent?.identity?.avatar) { avatar = agent.identity.avatar; useImageAvatar = true; }
         
-        if (agent?.identity?.emoji) {
-            avatar = agent.identity.emoji;
-        } else if (agent?.identity?.avatarUrl) {
-            avatar = agent.identity.avatarUrl;
-            useImageAvatar = true;
-        } else if (agent?.identity?.avatar) {
-            avatar = agent.identity.avatar;
-            useImageAvatar = true;
-        }
-        
-        // Create message container
         const msgContainer = this.messagesEl.createEl('div', {
             cls: `clawdian-message-container clawdian-message-container-${sender}`
         });
         
         if (sender === 'agent') {
-            // Agent message: avatar on left, name above bubble
             msgContainer.style.setProperty('--agent-color', agentColor);
-            
-            // Avatar
             const avatarEl = msgContainer.createEl('div', { cls: 'clawdian-avatar' });
             if (useImageAvatar) {
-                // Use image for avatar
-                const img = avatarEl.createEl('img', {
-                    cls: 'clawdian-avatar-img',
-                    attr: { src: avatar, alt: agentName }
-                });
-                img.onerror = () => {
-                    // Fallback to first letter if image fails to load
-                    avatarEl.empty();
-                    avatarEl.setText(agentName.charAt(0).toUpperCase());
-                };
+                const img = avatarEl.createEl('img', { cls: 'clawdian-avatar-img', attr: { src: avatar, alt: agentName } });
+                img.onerror = () => { avatarEl.empty(); avatarEl.setText(agentName.charAt(0).toUpperCase()); };
             } else {
                 avatarEl.setText(avatar);
             }
             avatarEl.style.backgroundColor = agentColor;
-            
-            // Message block (name + bubble)
             const messageBlock = msgContainer.createEl('div', { cls: 'clawdian-message-block' });
-            messageBlock.createEl('div', {
-                cls: 'clawdian-message-sender',
-                text: agentName
-            });
-            messageBlock.createEl('div', {
-                cls: 'clawdian-message-bubble',
-                text: text
-            });
+            messageBlock.createEl('div', { cls: 'clawdian-message-sender', text: agentName });
+            messageBlock.createEl('div', { cls: 'clawdian-message-bubble', text });
         } else {
-            // User message: bubble only, right-aligned
             const messageBlock = msgContainer.createEl('div', { cls: 'clawdian-message-block clawdian-user-block' });
-            messageBlock.createEl('div', {
-                cls: 'clawdian-message-sender clawdian-user-sender',
-                text: 'You'
-            });
-            messageBlock.createEl('div', {
-                cls: 'clawdian-message-bubble clawdian-user-bubble',
-                text: text
-            });
+            messageBlock.createEl('div', { cls: 'clawdian-message-sender clawdian-user-sender', text: 'You' });
+            messageBlock.createEl('div', { cls: 'clawdian-message-bubble clawdian-user-bubble', text });
         }
         
         this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
-        console.log('[Clawdian] Message added to UI');
     }
 }
 
-// File picker modal
 class FileSuggestModal extends FuzzySuggestModal<TFile> {
     chatView: ChatView;
-
     constructor(app: App, chatView: ChatView) {
         super(app);
         this.chatView = chatView;
         this.setPlaceholder('Search files to add...');
     }
-
-    getItems(): TFile[] {
-        return this.app.vault.getMarkdownFiles();
-    }
-
-    getItemText(file: TFile): string {
-        return file.basename;
-    }
-
-    onChooseItem(file: TFile, evt: MouseEvent | KeyboardEvent): void {
-        this.chatView.addFile(file);
-    }
+    getItems(): TFile[] { return this.app.vault.getMarkdownFiles(); }
+    getItemText(file: TFile): string { return file.basename; }
+    onChooseItem(file: TFile, evt: MouseEvent | KeyboardEvent): void { this.chatView.addFile(file); }
 }

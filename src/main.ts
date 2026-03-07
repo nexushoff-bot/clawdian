@@ -2,19 +2,23 @@ import { Plugin, WorkspaceLeaf, Notice } from 'obsidian';
 import { ClawdianSettingTab, ClawdianSettings, DEFAULT_SETTINGS } from './settings';
 import { ChatView, VIEW_TYPE_CHAT } from './components/ChatView';
 import { OpenClawClient } from './utils/OpenClawClient';
-import { PairingModal } from './components/PairingModal';
+import { TokenModal } from './components/TokenModal';
 
 export default class ClawdianPlugin extends Plugin {
     settings: ClawdianSettings;
     client: OpenClawClient;
+    private tokenKey = 'clawdian-gateway-token';
 
     async onload() {
         await this.loadSettings();
         
+        // Load token from secret storage
+        const token = await this.loadToken();
+        
         // Initialize OpenClaw client
         this.client = new OpenClawClient(
             this.settings.gatewayUrl,
-            this.settings.gatewayToken
+            token || ''
         );
 
         // Setup callbacks
@@ -42,16 +46,75 @@ export default class ClawdianPlugin extends Plugin {
         // Add settings tab
         this.addSettingTab(new ClawdianSettingTab(this.app, this));
 
-        // Auto-connect if enabled
-        if (this.settings.autoConnect) {
+        // Auto-connect if enabled and we have a token
+        if (this.settings.autoConnect && token) {
             console.log('[Clawdian] Auto-connect enabled, attempting connection...');
             this.tryConnect().catch((err: Error) => {
                 console.log('[Clawdian] Auto-connect failed:', err.message);
-                // Don't show error notice on startup auto-connect failure
             });
         }
 
-        console.log('[Clawdian] Plugin loaded. Click 🦞 to connect.');
+        console.log('[Clawdian] Plugin loaded. Click 🦞 to open chat.');
+    }
+
+    /**
+     * Load token from Obsidian's Secret Storage API
+     */
+    async loadToken(): Promise<string | null> {
+        try {
+            // Try Obsidian's secret storage first (if available)
+            if ((this.app.vault as any).adapter?.read) {
+                const secretPath = `.obsidian/plugins/${this.manifest.id}/.secrets/token`;
+                try {
+                    const data = await (this.app.vault as any).adapter.read(secretPath);
+                    return data.trim() || null;
+                } catch {
+                    return null;
+                }
+            }
+            // Fallback to localStorage
+            return localStorage.getItem(this.tokenKey);
+        } catch (e) {
+            console.log('[Clawdian] No stored token found');
+            return null;
+        }
+    }
+
+    /**
+     * Save token to Obsidian's Secret Storage API
+     */
+    async saveToken(token: string): Promise<void> {
+        try {
+            // Try Obsidian's secret storage first
+            if ((this.app.vault as any).adapter?.write) {
+                const secretPath = `.obsidian/plugins/${this.manifest.id}/.secrets/token`;
+                await (this.app.vault as any).adapter.write(secretPath, token);
+            } else {
+                // Fallback to localStorage
+                localStorage.setItem(this.tokenKey, token);
+            }
+            console.log('[Clawdian] Token saved securely');
+        } catch (e) {
+            // Fallback to localStorage
+            localStorage.setItem(this.tokenKey, token);
+            console.log('[Clawdian] Token saved to localStorage');
+        }
+    }
+
+    /**
+     * Clear stored token
+     */
+    async clearToken(): Promise<void> {
+        try {
+            if ((this.app.vault as any).adapter?.remove) {
+                const secretPath = `.obsidian/plugins/${this.manifest.id}/.secrets/token`;
+                await (this.app.vault as any).adapter.remove(secretPath);
+            }
+            localStorage.removeItem(this.tokenKey);
+            console.log('[Clawdian] Token cleared');
+        } catch {
+            localStorage.removeItem(this.tokenKey);
+        }
     }
 
     setupClientCallbacks() {
@@ -70,32 +133,57 @@ export default class ClawdianPlugin extends Plugin {
 
         this.client.onAuthError = (msg) => {
             console.error('[Clawdian] Auth error:', msg);
-            // Show pairing modal if auth failed
-            if (msg.includes('pairing') || msg.includes('token') || msg.includes('auth')) {
-                const deviceId = this.client.getDeviceId();
-                if (deviceId) {
-                    new PairingModal(this.app, deviceId, () => {
-                        // Retry after user acknowledges
-                    }).open();
-                }
-            }
+            // Show token modal on auth error
+            this.showTokenModal();
         };
     }
 
+    showTokenModal() {
+        const modal = new TokenModal(
+            this.app,
+            this.settings.gatewayUrl,
+            async (gateway: string, token: string) => {
+                // Update settings with gateway
+                this.settings.gatewayUrl = gateway;
+                await this.saveSettings();
+                
+                // Save token securely
+                await this.saveToken(token);
+                
+                // Update client and connect
+                this.client.updateConfig(gateway, token);
+                
+                try {
+                    await this.client.connect();
+                } catch (err: any) {
+                    new Notice('❌ Connection failed: ' + err.message);
+                }
+            }
+        );
+        modal.open();
+    }
+
     async tryConnect(): Promise<boolean> {
+        // Check if we have a token
+        const token = await this.loadToken();
+        
+        if (!token) {
+            // Show token modal
+            this.showTokenModal();
+            return false;
+        }
+
         try {
             await this.client.connect();
             return true;
         } catch (err: any) {
             console.error('[Clawdian] Connection failed:', err.message);
-            new Notice('❌ Connection failed: ' + err.message);
             
-            // Show pairing modal
-            const deviceId = this.client.getDeviceId();
-            if (deviceId) {
-                new PairingModal(this.app, deviceId, () => {
-                    // User closed modal
-                }).open();
+            // If auth error, show token modal
+            if (err.message.includes('auth') || err.message.includes('token') || err.message.includes('unauthorized')) {
+                this.showTokenModal();
+            } else {
+                new Notice('❌ Connection failed: ' + err.message);
             }
             return false;
         }
@@ -130,10 +218,7 @@ export default class ClawdianPlugin extends Plugin {
 
         // Connect when opening if not already connected
         if (!this.client.isConnected()) {
-            const connected = await this.tryConnect();
-            if (!connected) {
-                // View will show "Connect" button
-            }
+            await this.tryConnect();
         }
     }
 }
