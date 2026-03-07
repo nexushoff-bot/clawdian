@@ -35,6 +35,7 @@ export class ChatView extends ItemView {
     responseTimeout: ReturnType<typeof setTimeout> | null = null;
     statusPollingInterval: ReturnType<typeof setInterval> | null = null;
     currentRunId: string | null = null;
+    messageStartTime: number = 0;  // Track when message was sent for timeout handling
     hasShownConnected = false;  // Track if connected message was shown
     processedRunIds = new Set<string>();  // Track processed messages to prevent duplicates
     readonly RESPONSE_TIMEOUT_MS = 60000;
@@ -150,15 +151,24 @@ export class ChatView extends ItemView {
                     if (payload?.stream === 'lifecycle') {
                         if (payload?.data?.phase === 'start') {
                             console.log('[Clawdian] Agent started processing');
+                            this.messageStartTime = Date.now();  // Reset timer on new run
                         } else if (payload?.data?.phase === 'end') {
                             console.log('[Clawdian] Agent finished processing');
                         }
                     }
                     
-                    // Handle errors
+                    // Handle abort/timeout errors
                     if (payload?.state === 'error') {
+                        const errorMsg = payload?.error || 'An error occurred';
+                        const isAborted = errorMsg.includes('aborted') || errorMsg.includes('timeout');
+                        
                         this.hideLoading();
-                        this.showErrorText('⚠️ ' + (payload.error || 'An error occurred'));
+                        
+                        if (isAborted) {
+                            this.showErrorText('⚠️ Agent timed out after 10 minutes. Try a shorter request.');
+                        } else {
+                            this.showErrorText('⚠️ ' + errorMsg);
+                        }
                     }
                     return;
                 }
@@ -417,6 +427,7 @@ export class ChatView extends ItemView {
 
     showLoading() {
         this.isLoading = true;
+        this.messageStartTime = Date.now();  // Track when we started waiting
         if (this.loadingEl) this.loadingEl.style.display = 'flex';
         // Scroll to show loading indicator
         requestAnimationFrame(() => {
@@ -424,12 +435,6 @@ export class ChatView extends ItemView {
         });
         // Start status polling every 60 seconds
         this.startStatusPolling();
-        // Set a timeout to show a message if taking too long
-        this.responseTimeout = setTimeout(() => {
-            if (this.isLoading) {
-                this.showInfoText('⏳ Agent is still thinking... This may take a while.');
-            }
-        }, this.RESPONSE_TIMEOUT_MS);
     }
 
     hideLoading() {
@@ -521,9 +526,31 @@ export class ChatView extends ItemView {
 
     async checkSessionStatus() {
         if (!this.currentRunId || !this.client.isConnected()) return;
+        
+        const elapsed = Date.now() - this.messageStartTime;
+        const elapsedMin = Math.floor(elapsed / 60000);
+        
+        // Show progressive timeout warnings
+        if (elapsedMin >= 8 && elapsedMin < 9) {
+            this.showInfoText('⚠️ Agent taking >8 minutes - will timeout at 10 min. Consider cancelling.');
+        } else if (elapsedMin >= 5 && elapsedMin < 6) {
+            this.showInfoText('⏳ Still processing (>5 min). Gateway timeout at 10 min.');
+        } else if (elapsedMin >= 3 && elapsedMin < 4) {
+            this.showInfoText('⏳ This is taking longer than usual (>3 min)...');
+        } else if (elapsedMin >= 1 && elapsedMin < 2) {
+            this.showInfoText('⏳ Agent is thinking...');
+        }
+        
+        // Try to get actual session status from gateway
         try {
             const status = await this.client.getSessionStatus(this.currentRunId);
-            if (status) this.showInfoText(`⏳ Agent is ${status}...`);
+            console.log('[Clawdian] Session status:', status, 'elapsed:', elapsedMin, 'min');
+            
+            // If status indicates failure/error, handle it
+            if (status === 'error' || status === 'aborted' || status === 'timeout') {
+                this.hideLoading();
+                this.showErrorText('⚠️ Agent timed out or failed. Please try again.');
+            }
         } catch (err) {
             console.log('[Clawdian] Status check failed:', err);
         }

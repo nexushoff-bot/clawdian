@@ -310,7 +310,12 @@ export class OpenClawClient {
                 if (data.id === requestId) {
                     clearTimeout(timeout);
                     this.handleMessage = originalHandler;
-                    resolve(data.payload?.state || null);
+                    
+                    // Get the state from the response
+                    const state = data.payload?.state || data.payload?.status || 
+                                  (data.ok ? 'running' : null);
+                    console.log('[Clawdian] getSessionStatus response:', data.payload);
+                    resolve(state);
                 } else {
                     originalHandler(data);
                 }
