@@ -136,6 +136,33 @@ export class ChatView extends ItemView {
             try {
                 const data = JSON.parse(text);
                 
+                // Handle agent lifecycle events (start/end)
+                if (data.type === 'event' && data.event === 'agent') {
+                    const payload = data.payload;
+                    
+                    // Filter by session ID
+                    if (payload?.sessionKey) {
+                        const messageSessionId = payload.sessionKey.split(':session:')[1];
+                        if (messageSessionId !== this.sessionId) return;
+                    }
+                    
+                    // Handle lifecycle events
+                    if (payload?.stream === 'lifecycle') {
+                        if (payload?.data?.phase === 'start') {
+                            console.log('[Clawdian] Agent started processing');
+                        } else if (payload?.data?.phase === 'end') {
+                            console.log('[Clawdian] Agent finished processing');
+                        }
+                    }
+                    
+                    // Handle errors
+                    if (payload?.state === 'error') {
+                        this.hideLoading();
+                        this.showErrorText('⚠️ ' + (payload.error || 'An error occurred'));
+                    }
+                    return;
+                }
+                
                 // Only handle chat events with final state - ignore agent events to avoid duplicates
                 if (data.type === 'event' && data.event === 'chat') {
                     const payload = data.payload;
@@ -169,16 +196,6 @@ export class ChatView extends ItemView {
                             .join('');
                         this.hideLoading();
                         this.addMessage('agent', textContent);
-                    }
-                    return;
-                }
-
-                // Handle errors from agent events
-                if (data.type === 'event' && data.event === 'agent') {
-                    const payload = data.payload;
-                    if (payload.state === 'error') {
-                        this.hideLoading();
-                        this.showErrorText('⚠️ ' + (payload.error || 'An error occurred'));
                     }
                     return;
                 }
@@ -401,6 +418,10 @@ export class ChatView extends ItemView {
     showLoading() {
         this.isLoading = true;
         if (this.loadingEl) this.loadingEl.style.display = 'flex';
+        // Scroll to show loading indicator
+        requestAnimationFrame(() => {
+            this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+        });
         // Start status polling every 60 seconds
         this.startStatusPolling();
         // Set a timeout to show a message if taking too long
@@ -559,7 +580,10 @@ export class ChatView extends ItemView {
             messageBlock.createEl('div', { cls: 'clawdian-message-bubble clawdian-user-bubble', text });
         }
         
-        this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+        // Scroll to bottom after message is added (use requestAnimationFrame for DOM update)
+        requestAnimationFrame(() => {
+            this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+        });
     }
 }
 
