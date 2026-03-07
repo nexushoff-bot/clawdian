@@ -356,7 +356,6 @@ export class OpenClawClient {
                 minProtocol: 3,
                 maxProtocol: 3,
                 client: {
-                    id: 'clawdian',
                     version: '1.0.1',
                     platform: this.getPlatform(),
                     mode: 'ui'
