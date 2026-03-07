@@ -317,17 +317,37 @@ export class OpenClawClient {
     private async handleChallenge(nonce: string) {
         if (!nonce) {
             console.error('[Clawdian] No nonce in challenge');
-            // Fall back to legacy auth
             this.sendLegacyAuth();
             return;
         }
 
-        this.pendingChallenge = nonce;
-        console.log('[Clawdian] Sending connect request with token');
+        console.log('[Clawdian] Challenge received, signing with device identity...');
+        
+        // Ensure we have a device identity
+        if (!this.deviceManager.getIdentity()) {
+            await this.deviceManager.loadIdentity();
+        }
+        
+        const identity = this.deviceManager.getIdentity();
+        if (!identity) {
+            console.error('[Clawdian] No device identity available');
+            this.sendLegacyAuth();
+            return;
+        }
+
+        // Sign the challenge
+        const timestamp = Date.now();
+        const signature = await this.deviceManager.signChallenge(nonce);
+        
+        if (!signature) {
+            console.error('[Clawdian] Failed to sign challenge');
+            this.sendLegacyAuth();
+            return;
+        }
+
+        console.log('[Clawdian] Sending connect request with device signature');
         
         // Build connect request per OpenClaw Gateway protocol
-        const deviceId = this.getDeviceId() || 'clawdian-unknown-' + this.generateId();
-        
         const connectRequest = {
             type: 'req',
             id: this.generateId(),
@@ -347,7 +367,10 @@ export class OpenClawClient {
                     token: this.token
                 },
                 device: {
-                    id: deviceId,
+                    id: identity.id,
+                    publicKey: identity.publicKey,
+                    signature: signature,
+                    signedAt: timestamp,
                     nonce: nonce
                 }
             }
