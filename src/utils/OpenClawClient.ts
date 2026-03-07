@@ -225,7 +225,7 @@ export class OpenClawClient {
                 minProtocol: 3,
                 maxProtocol: 3,
                 client: {
-                    id: 'clawdian',
+                    id: 'cli',  // Required: must be 'cli' or another allowed value
                     version: '1.0.1',
                     platform: this.getPlatform(),
                     mode: 'ui'
