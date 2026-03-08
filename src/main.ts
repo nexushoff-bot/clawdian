@@ -94,12 +94,15 @@ export default class ClawdianPlugin extends Plugin {
         console.log('[Clawdian] Looking for history file at:', this.HISTORY_FILE);
         
         try {
-            const file = this.app.vault.getAbstractFileByPath(this.HISTORY_FILE);
-            console.log('[Clawdian] File found:', file ? file.name : 'NULL');
-            console.log('[Clawdian] File type:', file ? (file instanceof TFile ? 'TFile' : typeof file) : 'none');
+            // Use adapter for direct file system access (bypasses Obsidian's file index)
+            const adapter = this.app.vault.adapter;
             
-            if (file instanceof TFile) {
-                const content = await this.app.vault.read(file);
+            // Check if file exists
+            const exists = await adapter.exists(this.HISTORY_FILE);
+            console.log('[Clawdian] File exists:', exists);
+            
+            if (exists) {
+                const content = await adapter.read(this.HISTORY_FILE);
                 console.log('[Clawdian] Raw file content length:', content.length);
                 console.log('[Clawdian] Raw content preview:', content.substring(0, 200));
                 
@@ -115,7 +118,7 @@ export default class ClawdianPlugin extends Plugin {
                     console.log('[Clawdian] First message:', this.chatHistory.messages[0]);
                 }
             } else {
-                console.log('[Clawdian] File is not a TFile or is null - starting fresh');
+                console.log('[Clawdian] File does not exist - starting fresh');
                 this.chatHistory = { messages: [], lastUpdated: Date.now() };
             }
         } catch (e: any) {
@@ -129,16 +132,39 @@ export default class ClawdianPlugin extends Plugin {
      * Save chat history to file
      */
     async saveChatHistory(): Promise<void> {
+        console.log('[Clawdian] saveChatHistory() called');
+        console.log('[Clawdian] Messages to save:', this.chatHistory.messages.length);
+        
+        // Log first message as sample
+        if (this.chatHistory.messages.length > 0) {
+            const sampleMsg = this.chatHistory.messages[this.chatHistory.messages.length - 1];
+            console.log('[Clawdian] Latest message to save:', {
+                id: sampleMsg.id,
+                role: sampleMsg.role,
+                content: sampleMsg.content.substring(0, 50) + '...',
+                timestamp: new Date(sampleMsg.timestamp).toISOString()
+            });
+        }
+        
         try {
-            // Ensure directory exists - safely handle "already exists" error
+            // Use adapter for direct file system access
+            const adapter = this.app.vault.adapter;
+            
+            // Ensure directory exists
             const dir = '.clawdian';
+            console.log('[Clawdian] Checking/creating directory:', dir);
+            
             try {
-                const dirFile = this.app.vault.getAbstractFileByPath(dir);
-                if (!dirFile) {
-                    await this.app.vault.createFolder(dir);
+                const dirExists = await adapter.exists(dir);
+                if (!dirExists) {
+                    await adapter.mkdir(dir);
+                    console.log('[Clawdian] Created directory');
+                } else {
+                    console.log('[Clawdian] Directory already exists');
                 }
             } catch (folderError: any) {
-                // Ignore "Folder already exists" error
+                console.log('[Clawdian] Folder operation result:', folderError.message || 'success');
+                // Ignore "already exists" errors
                 if (!folderError.message?.includes('already exists')) {
                     throw folderError;
                 }
@@ -146,27 +172,14 @@ export default class ClawdianPlugin extends Plugin {
 
             this.chatHistory.lastUpdated = Date.now();
             const content = JSON.stringify(this.chatHistory, null, 2);
+            console.log('[Clawdian] JSON content length:', content.length);
             
-            const file = this.app.vault.getAbstractFileByPath(this.HISTORY_FILE);
-            if (file instanceof TFile) {
-                await this.app.vault.modify(file, content);
-            } else {
-                try {
-                    await this.app.vault.create(this.HISTORY_FILE, content);
-                } catch (fileError: any) {
-                    // If file was created between check and create, modify instead
-                    if (fileError.message?.includes('already exists')) {
-                        const existingFile = this.app.vault.getAbstractFileByPath(this.HISTORY_FILE);
-                        if (existingFile instanceof TFile) {
-                            await this.app.vault.modify(existingFile, content);
-                        }
-                    } else {
-                        throw fileError;
-                    }
-                }
-            }
-        } catch (e) {
-            console.error('[Clawdian] Failed to save history:', e);
+            // Write file directly
+            await adapter.write(this.HISTORY_FILE, content);
+            console.log('[Clawdian] File written successfully');
+        } catch (e: any) {
+            console.error('[Clawdian] Failed to save history:', e.message || e);
+            console.error('[Clawdian] Stack:', e.stack);
         }
     }
 
@@ -174,16 +187,31 @@ export default class ClawdianPlugin extends Plugin {
      * Add message to history
      */
     async addMessageToHistory(message: Omit<ChatMessage, 'id' | 'timestamp'>): Promise<void> {
+        console.log('[Clawdian] addMessageToHistory() called');
+        console.log('[Clawdian] Message being added:', {
+            agentId: message.agentId,
+            agentName: message.agentName,
+            role: message.role,
+            contentPreview: message.content.substring(0, 100) + (message.content.length > 100 ? '...' : '')
+        });
+        
         const newMessage: ChatMessage = {
             ...message,
             id: this.generateId(),
             timestamp: Date.now()
         };
+        
+        console.log('[Clawdian] Generated message ID:', newMessage.id);
+        
         this.chatHistory.messages.push(newMessage);
+        console.log('[Clawdian] Messages count after push:', this.chatHistory.messages.length);
+        
         // Keep only last 500 messages to prevent file bloat
         if (this.chatHistory.messages.length > 500) {
             this.chatHistory.messages = this.chatHistory.messages.slice(-500);
+            console.log('[Clawdian] Trimmed to last 500 messages');
         }
+        
         await this.saveChatHistory();
     }
 

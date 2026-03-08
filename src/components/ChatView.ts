@@ -349,27 +349,46 @@ export class ChatView extends ItemView {
     }
 
     renderHistory() {
-        if (!this.messagesEl) return;
+        console.log('[Clawdian] renderHistory() called');
+        console.log('[Clawdian] plugin.chatHistory reference:', this.plugin.chatHistory);
+        console.log('[Clawdian] plugin.chatHistory.messages:', this.plugin.chatHistory?.messages?.length || 0, 'messages');
+        
+        if (!this.messagesEl) {
+            console.log('[Clawdian] renderHistory: messagesEl is NULL!');
+            return;
+        }
         
         // Clear existing messages
         this.messagesEl.empty();
         
         // Show ALL messages (global history - group chat style)
-        const messages = this.plugin.chatHistory.messages;
-        
-        console.log('[Clawdian] renderHistory called, messages count:', messages?.length ?? 'undefined');
-        console.log('[Clawdian] chatHistory object:', this.plugin.chatHistory);
-        
-        if (!messages || messages.length === 0) {
-            console.log('[Clawdian] No history to render');
-            return;
-        }
+        const messages = this.plugin.chatHistory?.messages || [];
         
         console.log('[Clawdian] Rendering', messages.length, 'messages from history');
         
-        messages.forEach(msg => {
+        if (!messages || messages.length === 0) {
+            console.log('[Clawdian] No history to render - showing empty state');
+            // Optionally show a placeholder
+            this.messagesEl.createEl('div', { 
+                cls: 'clawdian-empty-history',
+                text: 'No chat history yet. Start a conversation!' 
+            });
+            return;
+        }
+        
+        // Log a few sample messages
+        console.log('[Clawdian] First message in history:', messages[0] ? {
+            id: messages[0].id,
+            role: messages[0].role,
+            content: messages[0].content.substring(0, 50),
+            timestamp: new Date(messages[0].timestamp).toISOString()
+        } : 'none');
+        
+        messages.forEach((msg, idx) => {
             this.renderMessage(msg);
         });
+        
+        console.log('[Clawdian] Rendered', messages.length, 'messages');
         
         // Scroll to bottom
         requestAnimationFrame(() => {
@@ -470,6 +489,8 @@ export class ChatView extends ItemView {
     }
 
     async sendMessage() {
+        console.log('[Clawdian] sendMessage() called');
+        
         if (!this.client.isConnected()) {
             new Notice('Not connected. Click Connect first.');
             return;
@@ -478,11 +499,14 @@ export class ChatView extends ItemView {
 
         const text = this.inputEl.value.trim();
         if (!text) return;
+        
+        console.log('[Clawdian] sendMessage - text:', text.substring(0, 50));
 
         // Add to history and render
         const agentId = this.agentSelectEl?.value || this.plugin.settings.defaultAgent || 'main';
         const agentName = this.agentSelectEl?.options[this.agentSelectEl.selectedIndex]?.text || agentId;
         
+        console.log('[Clawdian] Calling addMessageToHistory with agentId:', agentId);
         await this.plugin.addMessageToHistory({
             agentId,
             agentName,
@@ -490,6 +514,7 @@ export class ChatView extends ItemView {
             content: text
         });
         
+        console.log('[Clawdian] Calling addMessage for UI render');
         this.addMessage('user', text);
         this.inputEl.value = '';
         this.showLoading();
@@ -533,9 +558,13 @@ export class ChatView extends ItemView {
     }
 
     addMessage(role: 'user' | 'assistant', text: string) {
+        console.log('[Clawdian] addMessage() called - role:', role, 'text length:', text.length);
+        
         // Render immediately
         const agentId = this.agentSelectEl?.value || this.plugin.settings.defaultAgent || 'main';
         const agentName = role === 'user' ? 'You' : (this.agentSelectEl?.options[this.agentSelectEl.selectedIndex]?.text || agentId);
+        console.log('[Clawdian] addMessage - agentId:', agentId, 'agentName:', agentName);
+        
         const agentColor = role === 'user' ? '' : this.getAgentColor(agentId);
         const agents = this.client.getAgents();
         const agent = agents.find(a => a.id === agentId);
