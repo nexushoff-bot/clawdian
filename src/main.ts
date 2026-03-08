@@ -90,15 +90,37 @@ export default class ClawdianPlugin extends Plugin {
      * Load chat history from file
      */
     async loadChatHistory(): Promise<void> {
+        console.log('[Clawdian] loadChatHistory() called');
+        console.log('[Clawdian] Looking for history file at:', this.HISTORY_FILE);
+        
         try {
             const file = this.app.vault.getAbstractFileByPath(this.HISTORY_FILE);
+            console.log('[Clawdian] File found:', file ? file.name : 'NULL');
+            console.log('[Clawdian] File type:', file ? (file instanceof TFile ? 'TFile' : typeof file) : 'none');
+            
             if (file instanceof TFile) {
                 const content = await this.app.vault.read(file);
-                this.chatHistory = JSON.parse(content);
+                console.log('[Clawdian] Raw file content length:', content.length);
+                console.log('[Clawdian] Raw content preview:', content.substring(0, 200));
+                
+                const parsed = JSON.parse(content);
+                console.log('[Clawdian] Parsed JSON keys:', Object.keys(parsed));
+                
+                this.chatHistory = parsed;
                 console.log('[Clawdian] Chat history loaded:', this.chatHistory.messages.length, 'messages');
+                console.log('[Clawdian] Last updated:', new Date(this.chatHistory.lastUpdated).toISOString());
+                
+                // Log first few messages
+                if (this.chatHistory.messages.length > 0) {
+                    console.log('[Clawdian] First message:', this.chatHistory.messages[0]);
+                }
+            } else {
+                console.log('[Clawdian] File is not a TFile or is null - starting fresh');
+                this.chatHistory = { messages: [], lastUpdated: Date.now() };
             }
-        } catch (e) {
-            console.log('[Clawdian] No history file, starting fresh');
+        } catch (e: any) {
+            console.error('[Clawdian] Error loading history:', e.message || e);
+            console.log('[Clawdian] Starting with empty history');
             this.chatHistory = { messages: [], lastUpdated: Date.now() };
         }
     }

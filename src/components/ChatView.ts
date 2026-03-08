@@ -69,7 +69,10 @@ export class ChatView extends ItemView {
         this.messagesEl = container.createEl('div', { cls: 'clawdian-messages' });
 
         // Render history FIRST (before connection UI)
-        this.renderHistory();
+        // Small delay to ensure plugin.onload() has completed
+        setTimeout(() => {
+            this.renderHistory();
+        }, 50);
 
         // Loading indicator
         this.loadingEl = container.createEl('div', { cls: 'clawdian-loading' });
@@ -354,7 +357,10 @@ export class ChatView extends ItemView {
         // Show ALL messages (global history - group chat style)
         const messages = this.plugin.chatHistory.messages;
         
-        if (messages.length === 0) {
+        console.log('[Clawdian] renderHistory called, messages count:', messages?.length ?? 'undefined');
+        console.log('[Clawdian] chatHistory object:', this.plugin.chatHistory);
+        
+        if (!messages || messages.length === 0) {
             console.log('[Clawdian] No history to render');
             return;
         }
