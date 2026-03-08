@@ -552,6 +552,36 @@
     color: var(--text-muted);
 }
 
+/* Command Palette */
+.clawdian-command-palette {
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.clawdian-command-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.15s ease;
+}
+
+.clawdian-command-item:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.clawdian-command-label {
+    flex: 1;
+}
+
+.clawdian-command-icon {
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
 /* Token Modal Styles */
 .clawdian-token-modal .clawdian-instructions {
     background: var(--background-secondary);

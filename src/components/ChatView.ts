@@ -121,6 +121,9 @@ export class ChatView extends ItemView {
                 this.sendMessage();
             }
         });
+        this.inputEl.addEventListener('input', () => {
+            this.handleSlashCommands();
+        });
 
         // Setup callbacks
         this.setupCallbacks();
@@ -558,6 +561,253 @@ export class ChatView extends ItemView {
             }
         } catch (err) {
             console.log('[Clawdian] Status check failed:', err);
+        }
+    }
+
+    /**
+     * Handle slash commands in input
+     */
+    handleSlashCommands(): void {
+        const text = this.inputEl.value;
+        const cursorPos = this.inputEl.selectionStart || 0;
+        
+        // Check if at start of line and typing /
+        const beforeCursor = text.substring(0, cursorPos);
+        const afterCursor = text.substring(cursorPos);
+        
+        // Show command palette if just typed / at start
+        if (beforeCursor === '/' && !afterCursor.startsWith('/')) {
+            this.showCommandPalette();
+        }
+    }
+
+    /**
+     * Show slash command palette
+     */
+    showCommandPalette(): void {
+        const commands = [
+            { id: 'search', label: '/search <query> - Search vault and include results', icon: 'search' },
+            { id: 'create', label: '/create <title> - Create a new note', icon: 'file-plus' },
+            { id: 'summarize', label: '/summarize - Summarize current note', icon: 'file-text' },
+            { id: 'clear', label: '/clear - Clear chat history', icon: 'trash' }
+        ];
+        
+        // Create palette element
+        const palette = document.createElement('div');
+        palette.className = 'clawdian-command-palette';
+        palette.style.cssText = `
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            right: 0;
+            background: var(--background-primary);
+            border: 1px solid var(--background-modifier-border);
+            border-radius: 6px;
+            margin-bottom: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+        `;
+        
+        commands.forEach(cmd => {
+            const item = palette.createEl('div', { cls: 'clawdian-command-item' });
+            item.style.cssText = `
+                padding: 8px 12px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            `;
+            item.createEl('span', { text: cmd.label, cls: 'clawdian-command-label' });
+            
+            item.addEventListener('click', () => {
+                this.executeCommand(cmd.id);
+                palette.remove();
+            });
+            
+            item.addEventListener('mouseenter', () => {
+                item.style.backgroundColor = 'var(--background-modifier-hover)';
+            });
+            item.addEventListener('mouseleave', () => {
+                item.style.backgroundColor = 'transparent';
+            });
+        });
+        
+        // Add to input container
+        if (this.inputContainerEl) {
+            this.inputContainerEl.style.position = 'relative';
+            this.inputContainerEl.appendChild(palette);
+        }
+        
+        // Remove on click outside or escape
+        const removePalette = (e: MouseEvent) => {
+            if (!palette.contains(e.target as Node)) {
+                palette.remove();
+                document.removeEventListener('click', removePalette);
+            }
+        };
+        setTimeout(() => document.addEventListener('click', removePalette), 0);
+        
+        // Handle escape
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                palette.remove();
+                document.removeEventListener('keydown', handleEscape);
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
+    }
+
+    /**
+     * Execute a slash command
+     */
+    async executeCommand(commandId: string): Promise<void> {
+        const text = this.inputEl.value;
+        const match = text.match(/^\/(\w+)(?:\s+(.+))?$/);
+        const args = match?.[2] || '';
+        
+        switch (commandId) {
+            case 'search':
+                await this.commandSearch(args);
+                break;
+            case 'create':
+                await this.commandCreate(args);
+                break;
+            case 'summarize':
+                await this.commandSummarize();
+                break;
+            case 'clear':
+                await this.clearHistory();
+                break;
+        }
+        
+        // Clear input after command
+        this.inputEl.value = '';
+    }
+
+    /**
+     * /search command - Search vault and include results
+     */
+    async commandSearch(query: string): Promise<void> {
+        if (!query.trim()) {
+            new Notice('Usage: /search <query>');
+            return;
+        }
+        
+        new Notice(`🔍 Searching for "${query}"...`);
+        
+        // Search vault files
+        const files = this.app.vault.getMarkdownFiles();
+        const results: { file: TFile; content: string }[] = [];
+        
+        for (const file of files) {
+            try {
+                const content = await this.app.vault.read(file);
+                if (content.toLowerCase().includes(query.toLowerCase())) {
+                    results.push({ file, content });
+                    if (results.length >= 5) break; // Limit to 5 results
+                }
+            } catch (e) {
+                // Skip files that can't be read
+            }
+        }
+        
+        if (results.length === 0) {
+            this.addMessage('agent', `No results found for "${query}"`);
+            return;
+        }
+        
+        // Add search results to context
+        const contextParts = results.map(r => {
+            const excerpt = r.content.substring(0, 500);
+            return `--- ${r.file.path} ---\n${excerpt}`;
+        }).join('\n\n');
+        
+        // Send search results as context
+        this.addMessage('user', `/search ${query}`);
+        await this.sendMessageWithContext(
+            `Found ${results.length} results for "${query}". Here's what I found:\n\n${contextParts}\n\nSummarize these results.`,
+            { searchResults: contextParts, query }
+        );
+    }
+
+    /**
+     * /create command - Create a new note
+     */
+    async commandCreate(title: string): Promise<void> {
+        if (!title.trim()) {
+            new Notice('Usage: /create <title>');
+            return;
+        }
+        
+        // Create file
+        const sanitizedTitle = title.replace(/[^a-zA-Z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
+        const path = `${sanitizedTitle}.md`;
+        
+        try {
+            const file = await this.app.vault.create(path, `# ${title}\n\n`);
+            new Notice(`Created: ${path}`);
+            
+            // Open the file
+            const leaf = this.app.workspace.getLeaf();
+            await leaf.openFile(file);
+            
+            this.addMessage('user', `/create ${title}`);
+            this.addMessage('agent', `Created note: [[${path}]]`);
+        } catch (e) {
+            new Notice(`Failed to create note: ${e}`);
+        }
+    }
+
+    /**
+     * /summarize command - Summarize current note
+     */
+    async commandSummarize(): Promise<void> {
+        const activeFile = this.app.workspace.getActiveFile();
+        if (!activeFile) {
+            new Notice('No file active. Open a note first.');
+            return;
+        }
+        
+        try {
+            const content = await this.app.vault.read(activeFile);
+            const excerpt = content.substring(0, 3000);
+            
+            this.addMessage('user', `/summarize ${activeFile.name}`);
+            await this.sendMessageWithContext(
+                `Please summarize this note:\n\n---\n${excerpt}\n---\n\nProvide a concise summary.`,
+                { currentFile: activeFile.path, fileContent: excerpt }
+            );
+        } catch (e) {
+            new Notice(`Failed to read file: ${e}`);
+        }
+    }
+
+    /**
+     * Send message with custom context
+     */
+    async sendMessageWithContext(content: string, customContext: any): Promise<void> {
+        if (!this.client.isConnected()) {
+            new Notice('Not connected. Click Connect first.');
+            return;
+        }
+        if (this.isLoading) return;
+
+        this.addMessage('agent', '...'); // Placeholder
+        this.showLoading();
+
+        try {
+            const selectedAgent = this.agentSelectEl?.value || this.plugin.settings.defaultAgent;
+            const runId = await this.client.sendMessage({
+                agent: selectedAgent,
+                content: content,
+                context: customContext,
+                sessionId: this.sessionId
+            });
+            this.currentRunId = runId;
+        } catch (err) {
+            this.hideLoading();
+            this.addMessage('agent', '⚠️ Failed to send.');
         }
     }
 
