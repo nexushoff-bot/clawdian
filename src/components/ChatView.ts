@@ -351,18 +351,15 @@ export class ChatView extends ItemView {
         // Clear existing messages
         this.messagesEl.empty();
         
-        const agentId = this.agentSelectEl?.value || this.plugin.settings.defaultAgent || 'main';
-        const allMessages = this.plugin.chatHistory.messages;
-        
-        // Filter messages for current agent (or show all if no agent selected)
-        const messages = allMessages.filter(m => m.agentId === agentId);
+        // Show ALL messages (global history - group chat style)
+        const messages = this.plugin.chatHistory.messages;
         
         if (messages.length === 0) {
-            console.log('[Clawdian] No history for agent:', agentId);
+            console.log('[Clawdian] No history to render');
             return;
         }
         
-        console.log('[Clawdian] Rendering', messages.length, 'messages for agent:', agentId);
+        console.log('[Clawdian] Rendering', messages.length, 'messages from history');
         
         messages.forEach(msg => {
             this.renderMessage(msg);
@@ -842,12 +839,11 @@ export class ChatView extends ItemView {
     }
 
     async commandClear(): Promise<void> {
-        // Clear history for current agent
-        const agentId = this.agentSelectEl?.value || this.plugin.settings.defaultAgent || 'main';
-        this.plugin.chatHistory.messages = this.plugin.chatHistory.messages.filter(m => m.agentId !== agentId);
+        // Clear ALL history (global chat history)
+        this.plugin.chatHistory.messages = [];
         await this.plugin.saveChatHistory();
         this.messagesEl.empty();
-        new Notice('Chat history cleared for ' + agentId);
+        new Notice('Chat history cleared');
     }
 }
 
