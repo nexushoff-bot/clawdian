@@ -141,8 +141,9 @@ export class OpenClawClient {
     }
 
     private handleConnectChallenge(nonce: string) {
-        console.log('[Clawdian] Received challenge, sending connect with nonce...');
-        this.sendConnectRequest(nonce);
+        // For now, just send connect without nonce - token auth should work
+        console.log('[Clawdian] Received challenge, sending connect...');
+        this.sendConnectRequest();
     }
 
     private handleMessage(data: GatewayMessage) {
@@ -208,13 +209,13 @@ export class OpenClawClient {
         }
     }
 
-    private sendConnectRequest(nonce?: string) {
+    private sendConnectRequest() {
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
             console.error('[Clawdian] WebSocket not ready');
             return;
         }
 
-        const request: any = {
+        const request = {
             type: 'req',
             id: this.generateId(),
             method: 'connect',
@@ -234,11 +235,6 @@ export class OpenClawClient {
                 }
             }
         };
-        
-        // Include nonce if provided (from challenge)
-        if (nonce) {
-            request.params.nonce = nonce;
-        }
 
         console.log('[Clawdian] Sending connect request');
         this.ws.send(JSON.stringify(request));
