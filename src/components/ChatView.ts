@@ -853,11 +853,24 @@ export class ChatView extends ItemView {
             const data = Object.fromEntries(this.history);
             const content = JSON.stringify(data, null, 2);
             
-            const file = this.app.vault.getAbstractFileByPath(this.HISTORY_FILE);
+            // Check if file exists first
+            let file = this.app.vault.getAbstractFileByPath(this.HISTORY_FILE);
             if (file instanceof TFile) {
                 await this.app.vault.modify(file, content);
             } else {
-                await this.app.vault.create(this.HISTORY_FILE, content);
+                try {
+                    file = await this.app.vault.create(this.HISTORY_FILE, content);
+                } catch (createError: any) {
+                    // If file was created by another instance, try to modify it
+                    if (createError.message?.includes('already exists')) {
+                        const existingFile = this.app.vault.getAbstractFileByPath(this.HISTORY_FILE);
+                        if (existingFile instanceof TFile) {
+                            await this.app.vault.modify(existingFile, content);
+                        }
+                    } else {
+                        throw createError;
+                    }
+                }
             }
             console.log('[Clawdian] History saved');
         } catch (e) {
