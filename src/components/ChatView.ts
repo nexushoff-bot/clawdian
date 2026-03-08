@@ -52,7 +52,7 @@ export class ChatView extends ItemView {
     getIcon(): string { return 'message-square'; }
 
     async onOpen() {
-        const container = this.containerEl.children[1];
+        const container = this.containerEl.children[1] as HTMLElement;
         container.empty();
         container.addClass('clawdian-chat-container');
 
@@ -446,6 +446,7 @@ export class ChatView extends ItemView {
         addBtn.addEventListener('click', () => new FileSuggestModal(this.app, this).open());
 
         this.attachedFiles.forEach((file, index) => {
+            if (!this.contextBarEl) return;
             const chip = this.contextBarEl.createEl('div', { cls: 'clawdian-context-file-chip' });
             chip.createEl('span', { text: file.name, cls: 'clawdian-context-file-name' });
             const removeBtn = chip.createEl('button', { cls: 'clawdian-context-file-remove', text: '×' });
@@ -780,7 +781,7 @@ export class ChatView extends ItemView {
         await this.client.sendMessage({
             agent: this.agentSelectEl?.value || this.plugin.settings.defaultAgent,
             content: `Found ${results.length} results for "${query}". Here's what I found:\n\n${contextParts}\n\nSummarize these results.`,
-            context: { searchResults: contextParts, query },
+            context: { currentFile: `Search: ${query}`, fileContent: contextParts },
             sessionId: this.sessionId
         });
     }

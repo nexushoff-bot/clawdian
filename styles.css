@@ -614,3 +614,71 @@
     text-align: center;
     color: var(--text-muted);
 }
+
+/* Connect Overlay - Blurred background */
+.clawdian-connect-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.clawdian-connect-overlay-content {
+    background: var(--background-primary);
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.clawdian-connect-overlay-content h2 {
+    margin: 0 0 16px 0;
+    color: var(--text-normal);
+}
+
+.clawdian-connect-overlay-content .clawdian-instructions {
+    text-align: left;
+    margin-bottom: 20px;
+}
+
+.clawdian-connect-overlay-content .clawdian-instructions ol {
+    margin: 8px 0;
+    padding-left: 20px;
+}
+
+.clawdian-connect-overlay-content .clawdian-instructions li {
+    margin: 8px 0;
+    color: var(--text-muted);
+}
+
+.clawdian-connect-overlay-content .clawdian-instructions code {
+    background: var(--background-modifier-border);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: var(--font-monospace);
+}
+
+.clawdian-connect-overlay-content .clawdian-connect-btn {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border: none;
+    border-radius: 8px;
+    padding: 12px 32px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.clawdian-connect-overlay-content .clawdian-connect-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
