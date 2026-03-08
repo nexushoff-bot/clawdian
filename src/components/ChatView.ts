@@ -837,9 +837,16 @@ export class ChatView extends ItemView {
         try {
             // Ensure .clawdian directory exists
             const dir = '.clawdian';
-            const dirExists = this.app.vault.getAbstractFileByPath(dir);
-            if (!dirExists) {
-                await this.app.vault.createFolder(dir);
+            try {
+                const dirExists = this.app.vault.getAbstractFileByPath(dir);
+                if (!dirExists) {
+                    await this.app.vault.createFolder(dir);
+                }
+            } catch (dirError: any) {
+                // Ignore "already exists" errors
+                if (!dirError.message?.includes('already exists')) {
+                    throw dirError;
+                }
             }
 
             // Convert Map to object for JSON serialization
