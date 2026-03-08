@@ -225,7 +225,10 @@ export class ChatView extends ItemView {
         
         this.client.onConnect = () => {
             this.showConnected();
-            this.fetchAndUpdateAgents();
+            this.fetchAndUpdateAgents().then(() => {
+                // Re-render history after agents are loaded
+                this.renderHistory();
+            });
         };
         
         this.client.onAgentsUpdated = (agents) => {
@@ -898,8 +901,12 @@ export class ChatView extends ItemView {
         const agentId = this.agentSelectEl?.value || this.plugin.settings.defaultAgent || 'main';
         const messages = this.history.get(agentId) || [];
         
-        // Clear current messages
-        this.messagesEl.empty();
+        // Only render if messages area is empty (initial load)
+        // Don't clear existing messages to avoid wiping new messages
+        if (this.messagesEl.children.length > 0) {
+            console.log('[Clawdian] Skipping history render - messages area not empty');
+            return;
+        }
         
         // Render saved messages
         for (const msg of messages) {
