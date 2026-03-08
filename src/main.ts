@@ -1,16 +1,40 @@
-import { Plugin, WorkspaceLeaf, Notice } from 'obsidian';
+import { Plugin, WorkspaceLeaf, Notice, TFile } from 'obsidian';
 import { ClawdianSettingTab, ClawdianSettings, DEFAULT_SETTINGS } from './settings';
 import { ChatView, VIEW_TYPE_CHAT } from './components/ChatView';
 import { OpenClawClient } from './utils/OpenClawClient';
 import { TokenModal } from './components/TokenModal';
 
+// Global chat history interface
+export interface ChatMessage {
+    id: string;
+    timestamp: number;
+    agentId: string;
+    agentName: string;
+    role: 'user' | 'assistant';
+    content: string;
+}
+
+export interface ChatHistory {
+    messages: ChatMessage[];
+    lastUpdated: number;
+}
+
 export default class ClawdianPlugin extends Plugin {
     settings: ClawdianSettings;
     client: OpenClawClient;
     private tokenKey = 'clawdian-gateway-token';
+    chatHistory: ChatHistory = { messages: [], lastUpdated: 0 };
+    readonly HISTORY_FILE = '.clawdian/chat-history.json';
 
     async onload() {
+        console.log('[Clawdian] Plugin loading...');
+        
+        // Load settings first
         await this.loadSettings();
+        
+        // Load chat history EARLY (before view opens)
+        await this.loadChatHistory();
+        console.log('[Clawdian] History loaded:', this.chatHistory.messages.length, 'messages');
         
         // Load token from secret storage
         const token = await this.loadToken();
@@ -49,31 +73,101 @@ export default class ClawdianPlugin extends Plugin {
         // Auto-connect if enabled and we have a token
         if (this.settings.autoConnect && token) {
             console.log('[Clawdian] Auto-connect enabled, attempting connection...');
-            this.tryConnect().catch((err: Error) => {
+            
+            this.tryConnect().then((connected) => {
+                if (connected) {
+                    new Notice('🦞 Connected');
+                }
+            }).catch((err: Error) => {
                 console.log('[Clawdian] Auto-connect failed:', err.message);
             });
         }
 
-        console.log('[Clawdian] Plugin loaded. Click 🦞 to open chat.');
+        console.log('[Clawdian] Plugin loaded');
     }
 
     /**
-     * Load token from Obsidian's Secret Storage API
+     * Load chat history from file
+     */
+    async loadChatHistory(): Promise<void> {
+        try {
+            const file = this.app.vault.getAbstractFileByPath(this.HISTORY_FILE);
+            if (file instanceof TFile) {
+                const content = await this.app.vault.read(file);
+                this.chatHistory = JSON.parse(content);
+                console.log('[Clawdian] Chat history loaded:', this.chatHistory.messages.length, 'messages');
+            }
+        } catch (e) {
+            console.log('[Clawdian] No history file, starting fresh');
+            this.chatHistory = { messages: [], lastUpdated: Date.now() };
+        }
+    }
+
+    /**
+     * Save chat history to file
+     */
+    async saveChatHistory(): Promise<void> {
+        try {
+            // Ensure directory exists
+            const dir = '.clawdian';
+            const dirExists = this.app.vault.getAbstractFileByPath(dir);
+            if (!dirExists) {
+                await this.app.vault.createFolder(dir);
+            }
+
+            this.chatHistory.lastUpdated = Date.now();
+            const content = JSON.stringify(this.chatHistory, null, 2);
+            
+            const file = this.app.vault.getAbstractFileByPath(this.HISTORY_FILE);
+            if (file instanceof TFile) {
+                await this.app.vault.modify(file, content);
+            } else {
+                await this.app.vault.create(this.HISTORY_FILE, content);
+            }
+        } catch (e) {
+            console.error('[Clawdian] Failed to save history:', e);
+        }
+    }
+
+    /**
+     * Add message to history
+     */
+    async addMessageToHistory(message: Omit<ChatMessage, 'id' | 'timestamp'>): Promise<void> {
+        const newMessage: ChatMessage = {
+            ...message,
+            id: this.generateId(),
+            timestamp: Date.now()
+        };
+        this.chatHistory.messages.push(newMessage);
+        // Keep only last 500 messages to prevent file bloat
+        if (this.chatHistory.messages.length > 500) {
+            this.chatHistory.messages = this.chatHistory.messages.slice(-500);
+        }
+        await this.saveChatHistory();
+    }
+
+    private generateId(): string {
+        return Date.now().toString(36) + Math.random().toString(36).substring(2, 10);
+    }
+
+    /**
+     * Load token from Obsidian's Secret Storage
      */
     async loadToken(): Promise<string | null> {
         try {
-            // Try Obsidian's secret storage first (if available)
-            if ((this.app.vault as any).adapter?.read) {
+            const adapter = (this.app.vault as any).adapter;
+            if (adapter?.read) {
                 const secretPath = `.obsidian/plugins/${this.manifest.id}/.secrets/token`;
                 try {
-                    const data = await (this.app.vault as any).adapter.read(secretPath);
-                    return data.trim() || null;
+                    const data = await adapter.read(secretPath);
+                    if (data && data.trim()) {
+                        return data.trim();
+                    }
                 } catch {
                     return null;
                 }
             }
-            // Fallback to localStorage
-            return localStorage.getItem(this.tokenKey);
+            return null;
         } catch (e) {
             console.log('[Clawdian] No stored token found');
             return null;
@@ -81,46 +175,46 @@ export default class ClawdianPlugin extends Plugin {
     }
 
     /**
-     * Save token to Obsidian's Secret Storage API
+     * Save token to Obsidian's Secret Storage
      */
     async saveToken(token: string): Promise<void> {
-        try {
-            // Try Obsidian's secret storage first
-            if ((this.app.vault as any).adapter?.write) {
-                const secretPath = `.obsidian/plugins/${this.manifest.id}/.secrets/token`;
-                await (this.app.vault as any).adapter.write(secretPath, token);
-            } else {
-                // Fallback to localStorage
-                localStorage.setItem(this.tokenKey, token);
+        const adapter = (this.app.vault as any).adapter;
+        if (adapter?.write && adapter?.mkdir) {
+            const secretDir = `.obsidian/plugins/${this.manifest.id}/.secrets`;
+            const secretPath = `${secretDir}/token`;
+            
+            try {
+                await adapter.mkdir(secretDir);
+            } catch (e) {
+                // Directory may already exist
             }
-            console.log('[Clawdian] Token saved securely');
-        } catch (e) {
-            // Fallback to localStorage
-            localStorage.setItem(this.tokenKey, token);
-            console.log('[Clawdian] Token saved to localStorage');
+            
+            await adapter.write(secretPath, token);
+            console.log('[Clawdian] Token saved to Secret Storage');
+        } else {
+            console.error('[Clawdian] Secret Storage not available!');
+            throw new Error('Secret Storage not available');
         }
     }
 
     /**
-     * Clear stored token
+     * Clear stored token from Secret Storage
      */
     async clearToken(): Promise<void> {
-        try {
-            if ((this.app.vault as any).adapter?.remove) {
-                const secretPath = `.obsidian/plugins/${this.manifest.id}/.secrets/token`;
-                await (this.app.vault as any).adapter.remove(secretPath);
+        const adapter = (this.app.vault as any).adapter;
+        if (adapter?.remove) {
+            const secretPath = `.obsidian/plugins/${this.manifest.id}/.secrets/token`;
+            try {
+                await adapter.remove(secretPath);
+            } catch (e) {
+                // File may not exist
             }
-            localStorage.removeItem(this.tokenKey);
-            console.log('[Clawdian] Token cleared');
-        } catch {
-            localStorage.removeItem(this.tokenKey);
         }
     }
 
     setupClientCallbacks() {
         this.client.onConnect = () => {
             console.log('[Clawdian] Connected to Gateway');
-            new Notice('🦞 Connected to OpenClaw!');
         };
 
         this.client.onDisconnect = () => {
@@ -133,7 +227,6 @@ export default class ClawdianPlugin extends Plugin {
 
         this.client.onAuthError = (msg) => {
             console.error('[Clawdian] Auth error:', msg);
-            // Show token modal on auth error
             this.showTokenModal();
         };
     }
@@ -143,14 +236,11 @@ export default class ClawdianPlugin extends Plugin {
             this.app,
             this.settings.gatewayUrl,
             async (gateway: string, token: string) => {
-                // Update settings with gateway
                 this.settings.gatewayUrl = gateway;
                 await this.saveSettings();
                 
-                // Save token securely
                 await this.saveToken(token);
                 
-                // Update client and connect
                 this.client.updateConfig(gateway, token);
                 
                 try {
@@ -164,12 +254,9 @@ export default class ClawdianPlugin extends Plugin {
     }
 
     async tryConnect(): Promise<boolean> {
-        // Check if we have a token
         const token = await this.loadToken();
         
         if (!token) {
-            // Show token modal
-            this.showTokenModal();
             return false;
         }
 
@@ -178,13 +265,6 @@ export default class ClawdianPlugin extends Plugin {
             return true;
         } catch (err: any) {
             console.error('[Clawdian] Connection failed:', err.message);
-            
-            // If auth error, show token modal
-            if (err.message.includes('auth') || err.message.includes('token') || err.message.includes('unauthorized')) {
-                this.showTokenModal();
-            } else {
-                new Notice('❌ Connection failed: ' + err.message);
-            }
             return false;
         }
     }
