@@ -211,7 +211,7 @@ export class OpenClawClient {
         }
     }
 
-    private sendConnectRequest() {
+    private sendConnectRequest(nonce?: string) {
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
             console.error('[Clawdian] WebSocket not ready');
             return;

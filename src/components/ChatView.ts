@@ -31,7 +31,6 @@ export class ChatView extends ItemView {
     sessionId: string;
     currentAgentId: string = '';
     sessionIds: Map<string, string> = new Map();
-    agentMessages: Map<string, Array<{sender: 'user' | 'agent', text: string}>> = new Map();
     responseTimeout: ReturnType<typeof setTimeout> | null = null;
     statusPollingInterval: ReturnType<typeof setInterval> | null = null;
     currentRunId: string | null = null;
@@ -40,6 +39,8 @@ export class ChatView extends ItemView {
     processedRunIds = new Set<string>();  // Track processed messages to prevent duplicates
     readonly RESPONSE_TIMEOUT_MS = 60000;
     readonly STATUS_POLLING_MS = 60000;
+    readonly HISTORY_FILE = '.clawdian/history.json';  // Path to history file
+    history: Map<string, Array<{sender: 'user' | 'agent', text: string, timestamp?: number}>> = new Map();  // Message history per agent
 
     constructor(leaf: WorkspaceLeaf, client: OpenClawClient, plugin: ClawdianPlugin) {
         super(leaf);
@@ -123,6 +124,10 @@ export class ChatView extends ItemView {
 
         // Setup callbacks
         this.setupCallbacks();
+
+        // Load and render history
+        await this.loadHistory();
+        this.renderHistory();
 
         // Check connection
         if (this.client.isConnected()) {
@@ -556,6 +561,131 @@ export class ChatView extends ItemView {
         }
     }
 
+    /**
+     * Load message history from file
+     */
+    async loadHistory(): Promise<void> {
+        try {
+            const file = this.app.vault.getAbstractFileByPath(this.HISTORY_FILE);
+            if (file instanceof TFile) {
+                const content = await this.app.vault.read(file);
+                const data = JSON.parse(content);
+                // Convert object back to Map
+                this.history = new Map(Object.entries(data));
+                console.log('[Clawdian] History loaded:', this.history.size, 'agents');
+            }
+        } catch (e) {
+            console.log('[Clawdian] No history file found, starting fresh');
+            this.history = new Map();
+        }
+    }
+
+    /**
+     * Save message history to file
+     */
+    async saveHistory(): Promise<void> {
+        try {
+            // Ensure .clawdian directory exists
+            const dir = '.clawdian';
+            const dirExists = this.app.vault.getAbstractFileByPath(dir);
+            if (!dirExists) {
+                await this.app.vault.createFolder(dir);
+            }
+
+            // Convert Map to object for JSON serialization
+            const data = Object.fromEntries(this.history);
+            const content = JSON.stringify(data, null, 2);
+            
+            const file = this.app.vault.getAbstractFileByPath(this.HISTORY_FILE);
+            if (file instanceof TFile) {
+                await this.app.vault.modify(file, content);
+            } else {
+                await this.app.vault.create(this.HISTORY_FILE, content);
+            }
+            console.log('[Clawdian] History saved');
+        } catch (e) {
+            console.error('[Clawdian] Failed to save history:', e);
+        }
+    }
+
+    /**
+     * Add message to history for current agent
+     */
+    addToHistory(sender: 'user' | 'agent', text: string): void {
+        const agentId = this.agentSelectEl?.value || this.plugin.settings.defaultAgent || 'main';
+        if (!this.history.has(agentId)) {
+            this.history.set(agentId, []);
+        }
+        this.history.get(agentId)!.push({ sender, text, timestamp: Date.now() });
+        // Save after each message
+        this.saveHistory();
+    }
+
+    /**
+     * Render history for current agent
+     */
+    renderHistory(): void {
+        const agentId = this.agentSelectEl?.value || this.plugin.settings.defaultAgent || 'main';
+        const messages = this.history.get(agentId) || [];
+        
+        // Clear current messages
+        this.messagesEl.empty();
+        
+        // Render saved messages
+        for (const msg of messages) {
+            if (msg.sender === 'user') {
+                const messageBlock = this.messagesEl.createEl('div', { cls: 'clawdian-message-container clawdian-message-container-user' });
+                const block = messageBlock.createEl('div', { cls: 'clawdian-message-block clawdian-user-block' });
+                block.createEl('div', { cls: 'clawdian-message-sender clawdian-user-sender', text: 'You' });
+                block.createEl('div', { cls: 'clawdian-message-bubble clawdian-user-bubble', text: msg.text });
+            } else {
+                // Agent message - need to get agent info
+                const agentName = this.agentSelectEl?.options[this.agentSelectEl.selectedIndex]?.text || agentId;
+                const agentColor = this.getAgentColor(agentId);
+                const agents = this.client.getAgents();
+                const agent = agents.find(a => a.id === agentId);
+                
+                let avatar = agentName.charAt(0).toUpperCase();
+                let useImageAvatar = false;
+                if (agent?.identity?.emoji) avatar = agent.identity.emoji;
+                else if (agent?.identity?.avatarUrl) { avatar = agent.identity.avatarUrl; useImageAvatar = true; }
+                else if (agent?.identity?.avatar) { avatar = agent.identity.avatar; useImageAvatar = true; }
+                
+                const msgContainer = this.messagesEl.createEl('div', {
+                    cls: 'clawdian-message-container clawdian-message-container-agent'
+                });
+                msgContainer.style.setProperty('--agent-color', agentColor);
+                const avatarEl = msgContainer.createEl('div', { cls: 'clawdian-avatar' });
+                if (useImageAvatar) {
+                    const img = avatarEl.createEl('img', { cls: 'clawdian-avatar-img', attr: { src: avatar, alt: agentName } });
+                    img.onerror = () => { avatarEl.empty(); avatarEl.setText(agentName.charAt(0).toUpperCase()); };
+                } else {
+                    avatarEl.setText(avatar);
+                }
+                avatarEl.style.backgroundColor = agentColor;
+                const messageBlock = msgContainer.createEl('div', { cls: 'clawdian-message-block' });
+                messageBlock.createEl('div', { cls: 'clawdian-message-sender', text: agentName });
+                messageBlock.createEl('div', { cls: 'clawdian-message-bubble', text: msg.text });
+            }
+        }
+        
+        // Scroll to bottom
+        requestAnimationFrame(() => {
+            this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+        });
+    }
+
+    /**
+     * Clear history for current agent
+     */
+    async clearHistory(): Promise<void> {
+        const agentId = this.agentSelectEl?.value || this.plugin.settings.defaultAgent || 'main';
+        this.history.delete(agentId);
+        await this.saveHistory();
+        this.messagesEl.empty();
+        new Notice('Chat history cleared');
+    }
+
     showInfoText(text: string) {
         const infoEl = this.messagesEl.createEl('div', { cls: 'clawdian-info-text', text });
         setTimeout(() => infoEl.remove(), 5000);
@@ -611,6 +741,9 @@ export class ChatView extends ItemView {
         requestAnimationFrame(() => {
             this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
         });
+        
+        // Save to history
+        this.addToHistory(sender, text);
     }
 }
 
