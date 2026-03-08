@@ -901,17 +901,16 @@ export class ChatView extends ItemView {
         const agentId = this.agentSelectEl?.value || this.plugin.settings.defaultAgent || 'main';
         const messages = this.history.get(agentId) || [];
         
-        // Only render if messages area is empty (initial load)
-        // Don't clear existing messages to avoid wiping new messages
-        if (this.messagesEl.children.length > 0) {
-            console.log('[Clawdian] Skipping history render - messages area not empty');
-            return;
-        }
+        // Clear and re-render - this is called on initial load
+        console.log('[Clawdian] Rendering history:', messages.length, 'messages for agent', agentId);
         
         // Render saved messages
         for (const msg of messages) {
             if (msg.sender === 'user') {
-                const messageBlock = this.messagesEl.createEl('div', { cls: 'clawdian-message-container clawdian-message-container-user' });
+                const messageBlock = this.messagesEl.createEl('div', { 
+                    cls: 'clawdian-message-container clawdian-message-container-user',
+                    attr: { 'data-history-message': 'true' }
+                });
                 const block = messageBlock.createEl('div', { cls: 'clawdian-message-block clawdian-user-block' });
                 block.createEl('div', { cls: 'clawdian-message-sender clawdian-user-sender', text: 'You' });
                 block.createEl('div', { cls: 'clawdian-message-bubble clawdian-user-bubble', text: msg.text });
@@ -929,7 +928,8 @@ export class ChatView extends ItemView {
                 else if (agent?.identity?.avatar) { avatar = agent.identity.avatar; useImageAvatar = true; }
                 
                 const msgContainer = this.messagesEl.createEl('div', {
-                    cls: 'clawdian-message-container clawdian-message-container-agent'
+                    cls: 'clawdian-message-container clawdian-message-container-agent',
+                    attr: { 'data-history-message': 'true' }
                 });
                 msgContainer.style.setProperty('--agent-color', agentColor);
                 const avatarEl = msgContainer.createEl('div', { cls: 'clawdian-avatar' });
