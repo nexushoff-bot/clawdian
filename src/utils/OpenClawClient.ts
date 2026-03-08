@@ -108,9 +108,8 @@ export class OpenClawClient {
                 this.ws = new WebSocket(this.url);
                 
                 this.ws.onopen = () => {
-                    console.log('[Clawdian] WebSocket connected, sending connect...');
-                    // Send connect request immediately with token auth
-                    this.sendConnectRequest();
+                    console.log('[Clawdian] WebSocket connected, waiting for challenge...');
+                    // Don't send connect here - wait for connect.challenge event
                 };
 
                 this.ws.onmessage = (event) => {
@@ -142,10 +141,8 @@ export class OpenClawClient {
     }
 
     private handleConnectChallenge(nonce: string) {
-        // For token auth, we may need to respond to challenge
-        // But gateway token should work without device signing
-        console.log('[Clawdian] Received challenge, responding with connect...');
-        this.sendConnectRequest();
+        console.log('[Clawdian] Received challenge, sending connect with nonce...');
+        this.sendConnectRequest(nonce);
     }
 
     private handleMessage(data: GatewayMessage) {
@@ -217,7 +214,7 @@ export class OpenClawClient {
             return;
         }
 
-        const request = {
+        const request: any = {
             type: 'req',
             id: this.generateId(),
             method: 'connect',
@@ -225,7 +222,7 @@ export class OpenClawClient {
                 minProtocol: 3,
                 maxProtocol: 3,
                 client: {
-                    id: 'cli',  // Required: must be 'cli' or another allowed value
+                    id: 'cli',
                     version: '1.0.1',
                     platform: this.getPlatform(),
                     mode: 'ui'
@@ -237,8 +234,13 @@ export class OpenClawClient {
                 }
             }
         };
+        
+        // Include nonce if provided (from challenge)
+        if (nonce) {
+            request.params.nonce = nonce;
+        }
 
-        console.log('[Clawdian] Sending connect request:', JSON.stringify(request, null, 2));
+        console.log('[Clawdian] Sending connect request');
         this.ws.send(JSON.stringify(request));
     }
 
