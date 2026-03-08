@@ -108,11 +108,18 @@ export default class ClawdianPlugin extends Plugin {
      */
     async saveChatHistory(): Promise<void> {
         try {
-            // Ensure directory exists
+            // Ensure directory exists - safely handle "already exists" error
             const dir = '.clawdian';
-            const dirExists = this.app.vault.getAbstractFileByPath(dir);
-            if (!dirExists) {
-                await this.app.vault.createFolder(dir);
+            try {
+                const dirFile = this.app.vault.getAbstractFileByPath(dir);
+                if (!dirFile) {
+                    await this.app.vault.createFolder(dir);
+                }
+            } catch (folderError: any) {
+                // Ignore "Folder already exists" error
+                if (!folderError.message?.includes('already exists')) {
+                    throw folderError;
+                }
             }
 
             this.chatHistory.lastUpdated = Date.now();
@@ -122,7 +129,19 @@ export default class ClawdianPlugin extends Plugin {
             if (file instanceof TFile) {
                 await this.app.vault.modify(file, content);
             } else {
-                await this.app.vault.create(this.HISTORY_FILE, content);
+                try {
+                    await this.app.vault.create(this.HISTORY_FILE, content);
+                } catch (fileError: any) {
+                    // If file was created between check and create, modify instead
+                    if (fileError.message?.includes('already exists')) {
+                        const existingFile = this.app.vault.getAbstractFileByPath(this.HISTORY_FILE);
+                        if (existingFile instanceof TFile) {
+                            await this.app.vault.modify(existingFile, content);
+                        }
+                    } else {
+                        throw fileError;
+                    }
+                }
             }
         } catch (e) {
             console.error('[Clawdian] Failed to save history:', e);
