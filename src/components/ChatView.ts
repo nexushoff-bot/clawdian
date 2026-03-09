@@ -541,6 +541,22 @@ export class ChatView extends ItemView {
         }
         if (!text) return;
         
+        // Check for slash commands
+        if (text.startsWith('/')) {
+            const match = text.match(/^\/(\w+)(?:\s+(.*))?$/);
+            if (match) {
+                const commandId = match[1];
+                const args = match[2] || '';
+                
+                // Validate command
+                if (this.validateCommand(commandId)) {
+                    this.inputEl.value = '';
+                    await this.executeCommand(commandId, args);
+                    return;
+                }
+            }
+        }
+        
         console.log('[Clawdian] sendMessage - text:', text.substring(0, 50));
 
         // Add to history and render
@@ -806,16 +822,19 @@ export class ChatView extends ItemView {
         });
     }
 
-    async executeCommand(commandId: string): Promise<void> {
+    async executeCommand(commandId: string, args?: string): Promise<void> {
         // Validate command ID before executing
         if (!this.validateCommand(commandId)) {
             new Notice('Invalid command');
             return;
         }
         
-        const text = this.inputEl.value;
-        const match = text.match(/^\/(\w+)(?:\s+(.+))?$/);
-        const args = match?.[2] || '';
+        // If args not provided, parse from input
+        if (args === undefined) {
+            const text = this.inputEl.value;
+            const match = text.match(/^\/(\w+)(?:\s+(.+))?$/);
+            args = match?.[2] || '';
+        }
         
         switch (commandId) {
             case 'search': await this.commandSearch(args); break;
@@ -823,8 +842,6 @@ export class ChatView extends ItemView {
             case 'summarize': await this.commandSummarize(); break;
             case 'clear': await this.commandClear(); break;
         }
-        
-        this.inputEl.value = '';
     }
 
     async commandSearch(query: string): Promise<void> {
