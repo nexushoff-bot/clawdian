@@ -10,6 +10,7 @@ export interface ChatMessage {
     timestamp: number;
     agentId: string;
     agentName: string;
+    agentEmoji?: string;
     role: 'user' | 'assistant';
     content: string;
 }

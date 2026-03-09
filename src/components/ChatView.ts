@@ -240,17 +240,19 @@ export class ChatView extends ItemView {
                         // Get agent info - use payload agent if available, fallback to selected
                         const agentId = payload.agent || this.agentSelectEl?.value || this.plugin.settings.defaultAgent || 'main';
                         const agentName = this.agentSelectEl?.options[this.agentSelectEl.selectedIndex]?.text || agentId;
+                        const agentEmoji = this.getAgentEmoji(agentId);
                         
                         // Save to history
                         await this.plugin.addMessageToHistory({
                             agentId,
                             agentName,
+                            agentEmoji,
                             role: 'assistant',
                             content: textContent
                         });
                         
                         this.hideLoading();
-                        this.addMessage('assistant', textContent);
+                        this.addMessage('assistant', textContent, agentEmoji);
                     }
                     return;
                 }
@@ -305,6 +307,12 @@ export class ChatView extends ItemView {
         return this.plugin.settings.agentColors[agentId] || 
                DEFAULT_AGENT_COLORS[agentId] || 
                AGENT_COLORS[0];
+    }
+
+    getAgentEmoji(agentId: string): string | undefined {
+        const agents = this.client.getAgents();
+        const agent = agents.find(a => a.id === agentId);
+        return agent?.identity?.emoji;
     }
 
     populateAgentDropdown(agents?: AgentInfo[]) {
@@ -424,7 +432,9 @@ export class ChatView extends ItemView {
         
         let avatar = agentName.charAt(0).toUpperCase();
         let useImageAvatar = false;
-        if (agent?.identity?.emoji) avatar = agent.identity.emoji;
+        // Use saved emoji from message if available, otherwise get from agent identity
+        if (msg.agentEmoji) avatar = msg.agentEmoji;
+        else if (agent?.identity?.emoji) avatar = agent.identity.emoji;
         else if (agent?.identity?.avatarUrl) { avatar = agent.identity.avatarUrl; useImageAvatar = true; }
         else if (agent?.identity?.avatar) { avatar = agent.identity.avatar; useImageAvatar = true; }
         
@@ -524,11 +534,13 @@ export class ChatView extends ItemView {
         // Add to history and render
         const agentId = this.agentSelectEl?.value || this.plugin.settings.defaultAgent || 'main';
         const agentName = this.agentSelectEl?.options[this.agentSelectEl.selectedIndex]?.text || agentId;
+        const agentEmoji = this.getAgentEmoji(agentId);
         
         console.log('[Clawdian] Calling addMessageToHistory with agentId:', agentId);
         await this.plugin.addMessageToHistory({
             agentId,
             agentName,
+            agentEmoji,
             role: 'user',
             content: text
         });
@@ -576,7 +588,7 @@ export class ChatView extends ItemView {
         }
     }
 
-    addMessage(role: 'user' | 'assistant', text: string) {
+    addMessage(role: 'user' | 'assistant', text: string, savedEmoji?: string) {
         console.log('[Clawdian] addMessage() called - role:', role, 'text length:', text.length);
         
         // Render immediately
@@ -590,7 +602,9 @@ export class ChatView extends ItemView {
         
         let avatar = agentName.charAt(0).toUpperCase();
         let useImageAvatar = false;
-        if (agent?.identity?.emoji) avatar = agent.identity.emoji;
+        // Use saved emoji if provided, otherwise get from agent identity
+        if (savedEmoji) avatar = savedEmoji;
+        else if (agent?.identity?.emoji) avatar = agent.identity.emoji;
         else if (agent?.identity?.avatarUrl) { avatar = agent.identity.avatarUrl; useImageAvatar = true; }
         else if (agent?.identity?.avatar) { avatar = agent.identity.avatar; useImageAvatar = true; }
         

@@ -283,6 +283,7 @@ export class OpenClawClient {
                 }
             };
 
+            console.log('[Clawdian] Sending to agent:', agentId, 'sessionKey:', sessionKey);
             this.ws.send(JSON.stringify(request));
             resolve(request.id);
         });
