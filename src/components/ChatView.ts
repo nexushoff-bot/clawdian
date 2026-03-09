@@ -119,11 +119,10 @@ export class ChatView extends ItemView {
 
         this.setupCallbacks();
 
-        // Check connection
+        // Check connection - always show overlay if not connected
         if (this.client.isConnected()) {
             this.showConnected();
-        } else if (!this.plugin.settings.autoConnect) {
-            // Show connect overlay if not auto-connect
+        } else {
             this.showConnectOverlay();
         }
     }
