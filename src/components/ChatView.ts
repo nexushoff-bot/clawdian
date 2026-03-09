@@ -38,6 +38,7 @@ export class ChatView extends ItemView {
     processedRunIds = new Set<string>();
     readonly RESPONSE_TIMEOUT_MS = 60000;
     readonly STATUS_POLLING_MS = 60000;
+    private commandPaletteEl: HTMLElement | null = null;
 
     constructor(leaf: WorkspaceLeaf, client: OpenClawClient, plugin: ClawdianPlugin) {
         super(leaf);
@@ -764,6 +765,12 @@ export class ChatView extends ItemView {
     }
 
     showCommandPalette(): void {
+        // Close any existing palette first
+        if (this.commandPaletteEl) {
+            this.commandPaletteEl.remove();
+            this.commandPaletteEl = null;
+        }
+        
         const commands = [
             { id: 'search', label: '/search <query> - Search vault and include results', icon: 'search' },
             { id: 'create', label: '/create <title> - Create a new note', icon: 'file-plus' },
@@ -773,6 +780,7 @@ export class ChatView extends ItemView {
         
         const palette = document.createElement('div');
         palette.className = 'clawdian-command-palette';
+        this.commandPaletteEl = palette;
         palette.style.cssText = `
             position: absolute;
             bottom: 100%;
@@ -794,7 +802,7 @@ export class ChatView extends ItemView {
             
             item.addEventListener('click', () => {
                 this.executeCommand(cmd.id);
-                palette.remove();
+                this.closeCommandPalette();
             });
             
             item.addEventListener('mouseenter', () => item.style.backgroundColor = 'var(--background-modifier-hover)');
@@ -808,18 +816,27 @@ export class ChatView extends ItemView {
         
         const removePalette = (e: MouseEvent) => {
             if (!palette.contains(e.target as Node)) {
-                palette.remove();
-                document.removeEventListener('click', removePalette);
+                this.closeCommandPalette();
             }
         };
-        setTimeout(() => document.addEventListener('click', removePalette), 0);
         
-        document.addEventListener('keydown', function handleEscape(e: KeyboardEvent) {
-            if (e.key === 'Escape') {
-                palette.remove();
-                document.removeEventListener('keydown', handleEscape);
-            }
-        });
+        setTimeout(() => {
+            document.addEventListener('click', removePalette);
+            document.addEventListener('keydown', function handleEscape(e: KeyboardEvent) {
+                if (e.key === 'Escape') {
+                    palette.remove();
+                    document.removeEventListener('click', removePalette);
+                    this.commandPaletteEl = null;
+                }
+            }.bind(this));
+        }, 0);
+    }
+    
+    private closeCommandPalette(): void {
+        if (this.commandPaletteEl) {
+            this.commandPaletteEl.remove();
+            this.commandPaletteEl = null;
+        }
     }
 
     async executeCommand(commandId: string, args?: string): Promise<void> {
