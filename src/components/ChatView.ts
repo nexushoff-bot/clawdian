@@ -759,7 +759,7 @@ export class ChatView extends ItemView {
 
     handleSlashCommands(): void {
         const text = this.inputEl.value;
-        if (text === '/') {
+        if (text.startsWith('/')) {
             this.showCommandPalette();
         }
     }
@@ -821,14 +821,33 @@ export class ChatView extends ItemView {
         };
         
         setTimeout(() => {
-            document.addEventListener('click', removePalette);
-            document.addEventListener('keydown', function handleEscape(e: KeyboardEvent) {
+            const handleEscape = (e: KeyboardEvent) => {
                 if (e.key === 'Escape') {
                     palette.remove();
                     document.removeEventListener('click', removePalette);
+                    document.removeEventListener('keydown', handleEscape);
                     this.commandPaletteEl = null;
                 }
-            }.bind(this));
+            };
+            
+            const handleEnter = (e: KeyboardEvent) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Execute the current command from input
+                    const text = this.inputEl.value;
+                    const match = text.match(/^\/(\w+)(?:\s+(.*))?$/);
+                    if (match) {
+                        const commandId = match[1];
+                        const args = match[2] || '';
+                        this.executeCommand(commandId, args);
+                    }
+                }
+            };
+            
+            document.addEventListener('click', removePalette);
+            document.addEventListener('keydown', handleEscape);
+            document.addEventListener('keydown', handleEnter);
         }, 0);
     }
     
@@ -842,7 +861,8 @@ export class ChatView extends ItemView {
     async executeCommand(commandId: string, args?: string): Promise<void> {
         // Validate command ID before executing
         if (!this.validateCommand(commandId)) {
-            new Notice('Invalid command');
+            new Notice(`"${commandId}" is not a valid command. Use /search, /create, /summarize, or /clear`);
+            this.closeCommandPalette();
             return;
         }
         
@@ -859,6 +879,8 @@ export class ChatView extends ItemView {
             case 'summarize': await this.commandSummarize(); break;
             case 'clear': await this.commandClear(); break;
         }
+        
+        this.closeCommandPalette();
     }
 
     async commandSearch(query: string): Promise<void> {
