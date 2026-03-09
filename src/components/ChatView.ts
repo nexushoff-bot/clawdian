@@ -397,14 +397,7 @@ export class ChatView extends ItemView {
     }
 
     renderHistory() {
-        console.log('[Clawdian] renderHistory() called');
-        console.log('[Clawdian] plugin.chatHistory reference:', this.plugin.chatHistory);
-        console.log('[Clawdian] plugin.chatHistory.messages:', this.plugin.chatHistory?.messages?.length || 0, 'messages');
-        
-        if (!this.messagesEl) {
-            console.log('[Clawdian] renderHistory: messagesEl is NULL!');
-            return;
-        }
+        if (!this.messagesEl) return;
         
         // Clear existing messages
         this.messagesEl.empty();
@@ -412,10 +405,7 @@ export class ChatView extends ItemView {
         // Show ALL messages (global history - group chat style)
         const messages = this.plugin.chatHistory?.messages || [];
         
-        console.log('[Clawdian] Rendering', messages.length, 'messages from history');
-        
         if (!messages || messages.length === 0) {
-            console.log('[Clawdian] No history to render - showing empty state');
             // Optionally show a placeholder
             this.messagesEl.createEl('div', { 
                 cls: 'clawdian-empty-history',
@@ -424,19 +414,9 @@ export class ChatView extends ItemView {
             return;
         }
         
-        // Log a few sample messages
-        console.log('[Clawdian] First message in history:', messages[0] ? {
-            id: messages[0].id,
-            role: messages[0].role,
-            content: messages[0].content.substring(0, 50),
-            timestamp: new Date(messages[0].timestamp).toISOString()
-        } : 'none');
-        
-        messages.forEach((msg, idx) => {
+        messages.forEach((msg) => {
             this.renderMessage(msg);
         });
-        
-        console.log('[Clawdian] Rendered', messages.length, 'messages');
         
         // Scroll to bottom
         requestAnimationFrame(() => {
