@@ -88,7 +88,19 @@ export class OpenClawClient {
         });
     }
 
+    private validateGatewayUrl(url: string): boolean {
+        try {
+            const parsed = new URL(url);
+            return parsed.protocol === 'wss:' || parsed.protocol === 'ws:';
+        } catch {
+            return false;
+        }
+    }
+
     updateConfig(url: string, token: string) {
+        if (!this.validateGatewayUrl(url)) {
+            throw new Error('Invalid Gateway URL. Must use wss:// or ws:// protocol.');
+        }
         this.url = url;
         this.token = token;
         if (this.ws) this.disconnect();
@@ -102,6 +114,14 @@ export class OpenClawClient {
         return new Promise((resolve, reject) => {
             this.connectionResolve = resolve;
             this.connectionReject = reject;
+            
+            // Validate URL before attempting connection
+            if (!this.validateGatewayUrl(this.url)) {
+                const errorMsg = 'Invalid Gateway URL. Must use wss:// or ws:// protocol.';
+                console.error('[Clawdian] ' + errorMsg);
+                reject(new Error(errorMsg));
+                return;
+            }
             
             try {
                 console.log('[Clawdian] Connecting to:', this.url);

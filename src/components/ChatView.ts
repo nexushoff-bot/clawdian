@@ -27,13 +27,12 @@ export class ChatView extends ItemView {
     isStreaming = false;
     currentStreamingMessage: HTMLElement | null = null;
     streamingText: string = '';
-    lastProcessedRunId: string | null = null;
     sessionId: string;
-    currentAgentId: string = '';
     sessionIds: Map<string, string> = new Map();
     responseTimeout: ReturnType<typeof setTimeout> | null = null;
     statusPollingInterval: ReturnType<typeof setInterval> | null = null;
     currentRunId: string | null = null;
+    currentAgentId: string = '';
     messageStartTime: number = 0;
     hasShownConnected = false;
     processedRunIds = new Set<string>();
@@ -187,10 +186,7 @@ export class ChatView extends ItemView {
                     
                     if (payload?.stream === 'lifecycle') {
                         if (payload?.data?.phase === 'start') {
-                            console.log('[Clawdian] Agent started processing');
                             this.messageStartTime = Date.now();
-                        } else if (payload?.data?.phase === 'end') {
-                            console.log('[Clawdian] Agent finished processing');
                         }
                     }
                     
@@ -221,7 +217,6 @@ export class ChatView extends ItemView {
                     if (payload?.state === 'final' && payload?.message?.content) {
                         const runId = payload.runId;
                         if (runId && this.processedRunIds.has(runId)) {
-                            console.log('[Clawdian] Skipping duplicate message');
                             return;
                         }
                         if (runId) {
@@ -281,6 +276,16 @@ export class ChatView extends ItemView {
         };
     }
 
+    private sanitizeInput(input: string): string {
+        // Remove potentially dangerous characters
+        return input.replace(/[<>]/g, '').trim();
+    }
+
+    private validateCommand(cmdId: string): boolean {
+        const allowedCommands = ['search', 'create', 'summarize', 'clear'];
+        return allowedCommands.includes(cmdId);
+    }
+
     async handleConnect() {
         if (this.client.isConnected()) {
             this.client.disconnect();
@@ -313,6 +318,22 @@ export class ChatView extends ItemView {
         const agents = this.client.getAgents();
         const agent = agents.find(a => a.id === agentId);
         return agent?.identity?.emoji;
+    }
+
+    private getAgentDisplayInfo(agentId: string): { avatar: string; useImageAvatar: boolean; color: string; name: string } {
+        const agents = this.client.getAgents();
+        const agent = agents.find(a => a.id === agentId);
+        const agentName = agent?.name || agentId;
+        const agentColor = this.getAgentColor(agentId);
+        
+        let avatar = agentName.charAt(0).toUpperCase();
+        let useImageAvatar = false;
+        
+        if (agent?.identity?.emoji) avatar = agent.identity.emoji;
+        else if (agent?.identity?.avatarUrl) { avatar = agent.identity.avatarUrl; useImageAvatar = true; }
+        else if (agent?.identity?.avatar) { avatar = agent.identity.avatar; useImageAvatar = true; }
+        
+        return { avatar, useImageAvatar, color: agentColor, name: agentName };
     }
 
     populateAgentDropdown(agents?: AgentInfo[]) {
@@ -509,6 +530,12 @@ export class ChatView extends ItemView {
     }
 
     async addFile(file: TFile) {
+        // TFile objects from Obsidian vault are already validated
+        // But add a check for safety
+        if (!file || !file.path) {
+            new Notice('Invalid file');
+            return;
+        }
         if (this.attachedFiles.some(f => f.path === file.path)) {
             new Notice('File already attached');
             return;
@@ -527,6 +554,11 @@ export class ChatView extends ItemView {
         if (this.isLoading) return;
 
         const text = this.inputEl.value.trim();
+        const MAX_MESSAGE_LENGTH = 50000;
+        if (text.length > MAX_MESSAGE_LENGTH) {
+            new Notice('Message too long. Maximum ' + MAX_MESSAGE_LENGTH + ' characters.');
+            return;
+        }
         if (!text) return;
         
         console.log('[Clawdian] sendMessage - text:', text.substring(0, 50));
@@ -795,6 +827,12 @@ export class ChatView extends ItemView {
     }
 
     async executeCommand(commandId: string): Promise<void> {
+        // Validate command ID before executing
+        if (!this.validateCommand(commandId)) {
+            new Notice('Invalid command');
+            return;
+        }
+        
         const text = this.inputEl.value;
         const match = text.match(/^\/(\w+)(?:\s+(.+))?$/);
         const args = match?.[2] || '';
@@ -811,7 +849,10 @@ export class ChatView extends ItemView {
 
     async commandSearch(query: string): Promise<void> {
         if (!query.trim()) { new Notice('Usage: /search <query>'); return; }
-        new Notice(`🔍 Searching for "${query}"...`);
+        // Sanitize query input
+        const sanitizedQuery = this.sanitizeInput(query);
+        if (!sanitizedQuery) { new Notice('Invalid query'); return; }
+        new Notice(`🔍 Searching for "${sanitizedQuery}"...`);
         
         const files = this.app.vault.getMarkdownFiles();
         const results: { file: TFile; content: string }[] = [];
@@ -836,20 +877,20 @@ export class ChatView extends ItemView {
             return `--- ${r.file.path} ---\n${excerpt}`;
         }).join('\n\n');
         
-        this.addMessage('user', `/search ${query}`);
+        this.addMessage('user', `/search ${sanitizedQuery}`);
         this.showLoading();
         
         await this.plugin.addMessageToHistory({
             agentId: this.agentSelectEl?.value || 'main',
             agentName: 'You',
             role: 'user',
-            content: `/search ${query}`
+            content: `/search ${sanitizedQuery}`
         });
         
         await this.client.sendMessage({
             agent: this.agentSelectEl?.value || this.plugin.settings.defaultAgent,
-            content: `Found ${results.length} results for "${query}". Here's what I found:\n\n${contextParts}\n\nSummarize these results.`,
-            context: { currentFile: `Search: ${query}`, fileContent: contextParts },
+            content: `Found ${results.length} results for "${sanitizedQuery}". Here's what I found:\n\n${contextParts}\n\nSummarize these results.`,
+            context: { currentFile: `Search: ${sanitizedQuery}`, fileContent: contextParts },
             sessionId: this.sessionId
         });
     }
@@ -857,7 +898,10 @@ export class ChatView extends ItemView {
     async commandCreate(title: string): Promise<void> {
         if (!title.trim()) { new Notice('Usage: /create <title>'); return; }
         
-        const sanitizedTitle = title.replace(/[^a-zA-Z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
+        // Sanitize title input
+        const sanitizedTitle = this.sanitizeInput(title).replace(/[^a-zA-Z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
+        if (!sanitizedTitle) { new Notice('Invalid title'); return; }
+        
         const path = `${sanitizedTitle}.md`;
         
         try {

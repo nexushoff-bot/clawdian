@@ -1,304 +1,375 @@
 # Clawdian 🦞
 
-An Obsidian plugin that connects your vault to OpenClaw agents, enabling AI-powered chat with full vault context awareness.
+> **Production-ready Obsidian plugin for AI-powered chat with vault context**
 
-## What is Clawdian?
+[![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)]()
+[![License](https://img.shields.io/badge/License-MIT-yellow)]()
 
-Clawdian embeds a chat interface directly into Obsidian, allowing you to:
+Clawdian embeds an intelligent chat interface directly into Obsidian, allowing you to:
 
-- 💬 Chat with AI agents inside your vault
-- 📄 Get context-aware responses based on your current note
-- 🔍 Include vault context automatically with messages
-- 🔐 Secure device-based authentication with OpenClaw Gateway
-- 🌐 Works over local network or Tailscale
+- 💬 **Chat with AI agents** inside your vault with full context awareness
+- 📄 **Vault context** automatically includes current note content with messages
+- 🗨️ **Chat history persistence** - your conversations are saved locally
+- 📎 **File attachments** - attach any vault files to your messages
+- ⚡ **Slash commands** - `/search`, `/create`, `/summarize`, `/clear` for quick actions
+- 🎨 **Multi-agent support** - switch between agents with custom color themes
+- 🔄 **Auto-connect** - automatically connect to Gateway on plugin startup
+- 🔐 **Secure auth** - tokens stored in Obsidian's Secret Storage
 
 ## Features
 
-- **Vault Context**: Automatically sends current file content with messages
-- **Multiple Agents**: Switch between different OpenClaw agents
-- **Secure Auth**: Device identity-based pairing (no manual tokens needed)
-- **Setup Code Support**: Connect via `/pair` command from OpenClaw chat
-- **Cross-Platform**: Works on macOS, Windows, Linux
+### Core Capabilities
 
-## Requirements
+- **Vault Context Integration**: Automatically sends current file content with messages
+- **Multiple Agent Support**: Switch between different OpenClaw agents seamlessly
+- **Chat History**: All conversations persisted locally in `.clawdian/chat-history.json`
+- **File Attachments**: Attach vault files as context via the context bar
+- **Slash Commands**: Quick actions via `/` prefix in input
 
-- Obsidian v0.15.0+
-- OpenClaw Gateway running (local or remote)
-- OpenClaw v2026.2.25 or newer
+### Slash Commands
 
-## Setup
+| Command | Description |
+|---------|-------------|
+| `/search <query>` | Search vault for relevant files |
+| `/create <title>` | Create a new note with AI |
+| `/summarize` | Summarize attached files or context |
+| `/clear` | Clear current conversation |
 
-### Step 1: Install OpenClaw
+### Agent Customization
 
-If you haven't already:
+- **Color Theming**: Each agent has a customizable color theme (affects avatars and UI)
+- **Auto-Select**: Remembers last-selected agent for quick switching
+- **Agent List**: Dynamically fetched from OpenClaw Gateway
 
-```bash
-npm install -g openclaw
-```
+### Settings
 
-### Step 2: Start OpenClaw Gateway
+| Setting | Description | Default |
+|---------|-------------|---------|
+| Gateway URL | OpenClaw WebSocket endpoint | `ws://127.0.0.1:18789` |
+| Auto-connect | Connect on plugin startup | `Off` |
+| Default Agent | Agent to use when none selected | `Last used` |
+| Include Vault Context | Send current file with messages | `On` |
+| Context Size | File content truncation | `Large (3000 chars)` |
+| Include Chat History | Include previous messages in context | `On` |
+| History Depth | Number of previous messages | `5` |
 
-On your OpenClaw machine:
+## Installation
 
-```bash
-openclaw gateway start
-```
+### Quick Setup
 
-Or for remote access via Tailscale:
+1. **Install Clawdian in Obsidian**:
+   - Download the latest release from [GitHub Releases](https://github.com/nexushoff-bot/clawdian/releases)
+   - Extract files to your vault's `.obsidian/plugins/clawdian/` folder
+   - Enable "Clawdian" in Obsidian Settings → Community Plugins
 
-```bash
-openclaw gateway run --tailscale serve
-```
+2. **Start OpenClaw Gateway**:
+   ```bash
+   # Local access
+   openclaw gateway start
+   
+   # Remote access via Tailscale
+   openclaw gateway run --tailscale serve
+   ```
 
-### Step 3: Get Setup Code
+3. **Configure in Obsidian**:
+   - Click the 🦞 icon in Obsidian's ribbon
+   - In Settings (gear icon), enter your Gateway URL
+   - Click "Reset Token" and paste your OpenClaw gateway token
+   - Toggle **Auto-connect** if you want automatic connections
+   - Click the 🦞 ribbon icon to open chat
 
-In your OpenClaw chat (Discord, Signal, etc.):
+### Development Setup
 
-```
-/pair
-```
-
-Copy the setup code that appears.
-
-### Step 4: Install Clawdian in Obsidian
-
-1. Download the latest release from GitHub releases
-2. Extract to your Obsidian vault's `.obsidian/plugins/clawdian/` folder
-3. Enable "Clawdian" in Obsidian Settings → Community Plugins
-
-### Step 5: Connect
-
-1. Click the 🦞 icon in Obsidian's ribbon
-2. Click "Use Setup Code"
-3. Paste your setup code from Step 3
-4. Click "Connect"
-5. You're ready to chat!
-
-## Development
-
-### Prerequisites
-
-- Node.js 18+
-- npm or yarn
-- Obsidian desktop app (for testing)
-
-### Clone & Install
+For developers contributing to Clawdian:
 
 ```bash
-git clone https://github.com/yourusername/clawdian.git
+# Clone repository
+git clone https://github.com/nexushoff-bot/clawdian.git
 cd clawdian
 npm install
+
+# Build
+npm run build
+
+# Copy to test vault
+cp main.js manifest.json styles.css /path/to/vault/.obsidian/plugins/clawdian/
+
+# Reload Obsidian
+Cmd/Ctrl + R
 ```
+
+See [CODE_REFERENCE.md](CODE_REFERENCE.md) for detailed architecture documentation.
+
+## Usage
+
+### Starting a Conversation
+
+1. Click the **🦞 icon** in Obsidian's ribbon to open the chat view
+2. Select an agent from the dropdown (if not auto-connected)
+3. Your current note's content is automatically included (if enabled)
+4. Type your message and press **Enter** or click **Send**
+
+### Attaching Files
+
+1. Click **"+ Add file"** in the context bar
+2. Select files from your vault
+3. Attached files appear as chips above the input
+4. Click **×** on a chip to remove a file
+
+### Slash Commands
+
+Type `/` in the input field to see available commands:
+
+```
+/search marketing plan
+→ Searches vault for "marketing plan" and includes results in context
+
+/create "Q1 Review"
+→ Creates a new note and generates content with AI
+
+/summarize
+→ Summarizes attached files or current context
+
+/clear
+→ Clears the conversation history (local only)
+```
+
+### Switching Agents
+
+1. Click the **agent dropdown** in the header
+2. Select from available agents
+3. Each agent has its own chat session and color theme
+4. The plugin remembers your last selection
+
+### Chat History
+
+- All messages are automatically saved to `.clawdian/chat-history.json` in your vault root
+- History is **global** (group chat style), not per-agent
+- Controls: Settings → Include Chat History / History Depth
+- History loads automatically when you open the chat view
+
+## Security
+
+### Token Storage
+
+⚠️ **Important**: Clawdian uses **Obsidian's Secret Storage** for token management, NOT:
+- ❌ `settings.json`
+- ❌ `plugin-data.json`
+- ❌ localStorage
+
+**Token Location**: `.obsidian/plugins/clawdian/.secrets/token`
+
+This ensures your gateway token is encrypted and isolated per-plugin.
+
+### Network Security
+
+- **HTTPS/WSS**: Always use WebSocket Secure (`wss://`) for remote connections
+- **Local Development**: `ws://` is safe for localhost/Tailscale
+- **Token Scopes**: Plugin requests `operator.read`, `operator.write`, `operator.admin`
+
+### Vault Data Privacy
+
+- All chat history stored **locally** in your vault
+- No external logging or telemetry
+- Agent tokens never leave your device except to Gateway
+
+## Troubleshooting
+
+### "Cannot connect to Gateway"
+
+**Check Gateway status:**
+```bash
+openclaw gateway status
+```
+
+**Verify URL matches setup code:**
+- Settings → Gateway URL must match the WebSocket address from your token
+- For local: `ws://127.0.0.1:18789`
+- For Tailscale: `wss://your-node.tailscale.io:18789`
+
+**Check firewall:**
+- macOS: System Settings → Network → Firewall
+- Windows: Windows Defender Firewall
+- Allow Node.js/OpenClaw if prompted
+
+### "Auth error: missing scope"
+
+**Generate a new token with proper scopes:**
+```bash
+# In OpenClaw chat
+/pair
+
+# Ensure token includes:
+- operator.read
+- operator.write
+- operator.admin
+```
+
+**Reset token in Clawdian:**
+- Settings → Reset Token button
+- Paste new token from `/pair`
+
+### "Invalid connect params"
+
+The Gateway protocol enforces strict schema values:
+- `client.id`: Must be `'cli'` (restricted)
+- `client.mode`: `'operator'`, `'node'`, `'cli'`, `'ui'`
+- `role`: `'operator'`
+
+This is a **Gateway security feature**, not a Clawdian bug.
+
+### UI not updating after connect
+
+**Hard reload Obsidian:**
+```bash
+Cmd/Ctrl + Shift + R (clears cache)
+```
+
+**Or manually:**
+1. Disable Clawdian in settings
+2. Reload Obsidian
+3. Re-enable Clawdian
+
+### Chat history not loading
+
+**Check file exists:**
+```bash
+ls -la .clawdian/chat-history.json
+```
+
+**If missing, history starts fresh** (this is normal for new installs)
+
+**Increase history depth:**
+- Settings → Chat History Depth (default: 5, max: 500 messages retained)
+
+### Performance Issues
+
+**Large vaults:**
+- Settings → Context Size → Switch from "max" to "large" or "medium"
+- Reduce History Depth to 3-5 messages
+- Avoid attaching too many large files simultaneously
+
+## Development
 
 ### Project Structure
 
 ```
 clawdian/
 ├── src/
-│   ├── main.ts              # Plugin entry point
-│   ├── settings.ts          # Settings panel
+│   ├── main.ts              # Plugin entry point, history, token management
+│   ├── settings.ts          # Settings panel UI and defaults
 │   ├── components/
-│   │   ├── ChatView.ts      # Chat UI component
-│   │   ├── PairingModal.ts  # Pairing setup modal
-│   │   └── SetupCodeModal.ts # Setup code input modal
+│   │   ├── ChatView.ts      # Chat UI, message rendering, slash commands
+│   │   └── TokenModal.ts    # Token input modal
 │   └── utils/
-│       ├── OpenClawClient.ts # WebSocket client
-│       └── DeviceIdentity.ts # Device auth management
-├── tests/                   # Test files
-├── docs/                    # Documentation
-├── esbuild.config.mjs       # Build configuration
-├── manifest.json            # Obsidian manifest
-└── package.json             # Dependencies
+│       └── OpenClawClient.ts # WebSocket connection handler
+├── styles.css               # All plugin styling
+├── manifest.json            # Obsidian plugin metadata
+├── package.json             # Dependencies and scripts
+├── AGENT.md                 # Workflow instructions (for contributors)
+├── CODE_REFERENCE.md        # Architecture documentation (READ FIRST)
+└── README.md                # This file
 ```
 
-### Development Workflow
-
-1. **Make changes** to source files in `src/`
-2. **Build** the plugin:
-   ```bash
-   npm run build
-   ```
-3. **Copy to test vault**:
-   ```bash
-   npm run dev
-   # Or manually:
-   cp main.js styles.css /path/to/vault/.obsidian/plugins/clawdian/
-   ```
-4. **Reload Obsidian** (`Cmd/Ctrl + R`)
-
-### Available Scripts
-
-| Script | Description |
-|--------|-------------|
-| `npm run build` | Build production version |
-| `npm run dev` | Build and copy to test vault |
-| `npm test` | Run tests |
-
-### Hot Reload Development
-
-For faster iteration:
+### Building
 
 ```bash
-# Terminal 1: Watch and rebuild
-npm run dev
-
-# Terminal 2: In Obsidian, reload with Cmd+R after each build
-```
-
-## Building
-
-### Production Build
-
-```bash
+# Production build
 npm run build
+
+# Output:
+# - main.js (compiled)
+# - styles.css (compiled)
 ```
 
-This creates:
-- `main.js` - Compiled plugin code
-- `styles.css` - Plugin styles
+### Testing
 
-### Creating a Release
+1. **Clone test vault**: `./clawdian-vault`
+2. **Copy build files**:
+   ```bash
+   cp main.js manifest.json styles.css clawdian-vault/.obsidian/plugins/clawdian/
+   ```
+3. **Reload Obsidian**: `Cmd/Ctrl + R`
+4. **Check logs**: `Cmd/Ctrl + Option + I` → look for `[Clawdian]` prefixed messages
 
-1. Update version in `manifest.json` and `package.json`
-2. Run `npm run build`
-3. Create GitHub release with:
-   - `main.js`
-   - `styles.css`
-   - `manifest.json`
+### Key Files for Developers
 
-### Installing in Obsidian Vault
+| File | Purpose | When to Edit |
+|------|---------|--------------|
+| `CODE_REFERENCE.md` | Architecture reference | Update when you add new features |
+| `src/main.ts` | Core plugin logic | Token storage, history management |
+| `src/components/ChatView.ts` | UI component | Message rendering, commands |
+| `src/utils/OpenClawClient.ts` | WebSocket client | Connection logic, message handling |
+| `styles.css` | Styling | UI appearance, theme support |
 
-**Manual Installation:**
+## Known Limitations
 
-```bash
-# Create plugin directory
-mkdir -p /path/to/vault/.obsidian/plugins/clawdian
+1. **Single Vault Context**: Only one file can be actively attached at a time (plus chat history)
+2. **History Cap**: Maximum 500 messages retained in chat history
+3. **No Cloud Sync**: All data local to vault (by design for privacy)
+4. **Agent Sessions**: Each agent has independent session state (no cross-agent context)
+5. **WebSocket Only**: Requires WebSocket connection to OpenClaw Gateway (no REST fallback)
 
-# Copy files
-cp main.js styles.css manifest.json /path/to/vault/.obsidian/plugins/clawdian/
-```
+## Future Roadmap
 
-**Enable in Obsidian:**
-
-1. Open Obsidian Settings (`Cmd/Ctrl + ,`)
-2. Go to Community Plugins
-3. Turn off "Safe Mode" if enabled
-4. Find "Clawdian" and enable it
-
-## Architecture
-
-### Authentication Flow
-
-```
-1. User clicks "Use Setup Code"
-2. Plugin decodes base64 setup code → {url, token}
-3. Plugin connects WebSocket to Gateway
-4. Gateway sends connect.challenge
-5. Plugin sends connect request with token
-6. Gateway responds with hello-ok
-7. Connection established!
-```
-
-### Message Flow
-
-```
-User types message
-    ↓
-ChatView.sendMessage()
-    ↓
-OpenClawClient.sendMessage()
-    ↓
-HTTP POST to /tools/invoke
-    ↓
-OpenClaw Gateway processes
-    ↓
-Message sent to agent
-```
-
-## Troubleshooting
-
-### "Cannot connect to Gateway"
-
-- Check Gateway is running: `openclaw gateway status`
-- Verify URL in settings matches your setup code
-- Check firewall/Tailscale status
-
-### "Auth error: missing scope"
-
-The Gateway requires specific scopes. The plugin requests:
-- `operator.read`
-- `operator.write`
-- `operator.admin`
-
-If your token doesn't have these, generate a new setup code.
-
-### "Invalid connect params"
-
-The Gateway protocol is strict. Valid values are:
-- `client.id`: `"cli"`, `"web"`, etc.
-- `client.mode`: `"operator"`, `"node"`, `"cli"`, `"ui"`
-- `role`: `"operator"`
-- `scopes`: `["operator.read", "operator.write"]`
-
-### UI not updating after connect
-
-Reload Obsidian: `Cmd/Ctrl + R`
+- [ ] Agent avatars (custom images)
+- [ ] Threaded conversations
+- [ ] Export chat history to Markdown
+- [ ] Voice-to-text input
+- [ ] Multiple simultaneous attachments with per-file context
+- [ ] Rich message formatting (code blocks, tables)
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests: `npm test`
-5. Submit a PR
+1. **Read first**: `AGENT.md` and `CODE_REFERENCE.md` before making changes
+2. **Fork the repo**: `https://github.com/nexushoff-bot/clawdian`
+3. **Create a branch**: `git checkout -b feature/your-feature`
+4. **Make changes**: Follow the architecture in `CODE_REFERENCE.md`
+5. **Test thoroughly**: Use the test vault at `./clawdian-vault`
+6. **Update docs**: Modify `CODE_REFERENCE.md` if you change architecture
+7. **Submit PR**: Describe changes, link related issues
 
-## Publishing to Community Plugins
+### Git Commit Conventions
 
-To share Clawdian with the Obsidian community, submit it to the official plugin directory.
+```bash
+feat: Add new agent color picker
+fix: Fix history loading on view open
+docs: Update README with slash commands
+style: Format CSS with prettier
+refactor: Simplify OpenClawClient message handling
+test: Add unit tests for token storage
+```
 
-### Prerequisites
+## Publishing to Obsidian Community Plugins
 
-Before submitting, ensure your repository has:
-- ✅ `README.md` - Plugin description and usage instructions
-- ✅ `LICENSE` - MIT or other open-source license
-- ✅ `manifest.json` - Plugin metadata
+To submit Clawdian to the official plugin directory:
 
-### Step 1: Create a GitHub Release
-
-1. Update `version` in `manifest.json` following [Semantic Versioning](https://semver.org/)
-2. Create a GitHub release:
-   - Go to your repo → Releases → Draft a new release
-   - **Tag version**: Must match manifest version (no `v` prefix, e.g., `1.0.0`)
-   - Upload these assets:
-     - `main.js`
-     - `manifest.json`
-     - `styles.css` (optional)
-
-### Step 2: Submit to Community Plugins
-
-1. Fork [obsidian-releases](https://github.com/obsidianmd/obsidian-releases)
-2. Edit `community-plugins.json`, add your entry:
+1. **Update version** in `manifest.json` and `package.json` (Semantic Versioning)
+2. **Create GitHub release** with assets: `main.js`, `manifest.json`, `styles.css`
+3. **Fork obsidian-releases**: `https://github.com/obsidianmd/obsidian-releases`
+4. **Add entry** to `community-plugins.json`:
    ```json
    {
      "id": "clawdian",
      "name": "Clawdian",
-     "author": "Your Name",
-     "description": "Chat with OpenClaw AI agents inside Obsidian with vault context awareness",
+     "author": "Neil Hoff",
+     "description": "Chat with OpenClaw AI agents inside Obsidian with vault context",
      "repo": "nexushoff-bot/clawdian",
      "branch": "main"
    }
    ```
-3. Create a Pull Request
-4. Wait for Obsidian team review
+5. **Submit PR** and wait for review
 
-Once merged, users can install directly from Obsidian Settings → Community Plugins.
-
-For detailed instructions, see the [official docs](https://docs.obsidian.md/Plugins/Releasing/Submit+your+plugin).
-
-## License
-
-MIT
+See [official docs](https://docs.obsidian.md/Plugins/Releasing/Submit+your+plugin) for complete instructions.
 
 ## Credits
 
-Built with 🦞 by the OpenClaw community
+Built with 🦞 by **Neil Hoff** for the OpenClaw community.
+
+Clawdian connects Obsidian users to the power of agentic AI while keeping your data local and private.
+
+---
+
+**License**: MIT | **Version**: 1.0.0 | **Status**: Production Ready
+
+[GitHub](https://github.com/nexushoff-bot/clawdian) | [Documentation](CODE_REFERENCE.md)
