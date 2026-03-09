@@ -278,11 +278,13 @@ export class OpenClawClient {
                 method: 'chat.send',
                 params: {
                     sessionKey,
+                    agent: agentId,
                     message: fullPrompt,
                     idempotencyKey: this.generateId()
                 }
             };
 
+            console.log('[Clawdian] Sending message:', { agentId, sessionKey });
             this.ws.send(JSON.stringify(request));
             resolve(request.id);
         });
