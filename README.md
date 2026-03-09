@@ -48,10 +48,17 @@ Clawdian embeds an intelligent chat interface directly into Obsidian, allowing y
 | Gateway URL | OpenClaw WebSocket endpoint | `ws://127.0.0.1:18789` |
 | Auto-connect | Connect on plugin startup | `Off` |
 | Default Agent | Agent to use when none selected | `Last used` |
-| Include Vault Context | Send current file with messages | `On` |
-| Context Size | File content truncation | `Large (3000 chars)` |
-| Include Chat History | Include previous messages in context | `On` |
-| History Depth | Number of previous messages | `5` |
+
+## ⚠️ Network Use Disclosure
+
+**This plugin connects to external services:**
+
+- **OpenClaw Gateway**: WebSocket connection to `ws://` or `wss://` endpoint for AI chat functionality
+- **Your Data**: File content and chat messages are sent to your configured OpenClaw Gateway
+- **No External Telemetry**: Clawdian does NOT send any data to third-party services
+- **Local-First**: All chat history is stored locally in your vault (`.clawdian/chat-history.json`)
+
+**Required Setup**: You must run your own OpenClaw Gateway instance or connect to a trusted gateway. No data leaves your network except through your configured gateway.
 
 ## Installation
 
