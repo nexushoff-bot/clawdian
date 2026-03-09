@@ -152,7 +152,11 @@ export class ChatView extends ItemView {
         });
         
         connectBtn.addEventListener('click', async () => {
-            await this.plugin.tryConnect();
+            const connected = await this.plugin.tryConnect();
+            if (!connected) {
+                // No token stored or connection failed - show modal to enter credentials
+                this.plugin.showTokenModal();
+            }
         });
     }
 
@@ -169,7 +173,7 @@ export class ChatView extends ItemView {
     }
 
     setupCallbacks() {
-        this.client.onMessage = (text: string) => {
+        this.client.onMessage = async (text: string) => {
             try {
                 const data = JSON.parse(text);
                 
@@ -233,6 +237,19 @@ export class ChatView extends ItemView {
                             .filter((item: any) => item.type === 'text')
                             .map((item: any) => item.text)
                             .join('');
+                        
+                        // Get agent info - use payload agent if available, fallback to selected
+                        const agentId = payload.agent || this.agentSelectEl?.value || this.plugin.settings.defaultAgent || 'main';
+                        const agentName = this.agentSelectEl?.options[this.agentSelectEl.selectedIndex]?.text || agentId;
+                        
+                        // Save to history
+                        await this.plugin.addMessageToHistory({
+                            agentId,
+                            agentName,
+                            role: 'assistant',
+                            content: textContent
+                        });
+                        
                         this.hideLoading();
                         this.addMessage('assistant', textContent);
                     }
@@ -270,10 +287,13 @@ export class ChatView extends ItemView {
             return;
         }
         
-        await this.plugin.tryConnect();
+        const connected = await this.plugin.tryConnect();
         
-        if (this.client.isConnected()) {
+        if (connected) {
             this.showConnected();
+        } else {
+            // No token or connection failed - show modal to enter credentials
+            this.plugin.showTokenModal();
         }
     }
 
