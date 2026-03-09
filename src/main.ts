@@ -75,8 +75,9 @@ export default class ClawdianPlugin extends Plugin {
             console.log('[Clawdian] Auto-connect enabled, attempting connection...');
             
             this.tryConnect().then((connected) => {
+                // Notice shown by ChatView.showConnected() to avoid duplicate
                 if (connected) {
-                    new Notice('🦞 Connected');
+                    console.log('[Clawdian] Auto-connect successful');
                 }
             }).catch((err: Error) => {
                 console.log('[Clawdian] Auto-connect failed:', err.message);
