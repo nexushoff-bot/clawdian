@@ -296,12 +296,15 @@ export class OpenClawClient {
         this.connected = false;
     }
 
-    async getSessionStatus(runId: string): Promise<string | null> {
+    async getSessionStatus(sessionKey: string): Promise<string | null> {
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return null;
 
         return new Promise((resolve) => {
             const requestId = this.generateId();
-            const timeout = setTimeout(() => resolve(null), 5000);
+            const timeout = setTimeout(() => {
+                console.log('[Clawdian] getSessionStatus timeout');
+                resolve(null);
+            }, 5000);
 
             const originalHandler = this.handleMessage.bind(this);
             this.handleMessage = (data) => {
@@ -309,21 +312,26 @@ export class OpenClawClient {
                     clearTimeout(timeout);
                     this.handleMessage = originalHandler;
                     
-                    // Get the state from the response
-                    const state = data.payload?.state || data.payload?.status || 
+                    // Log full response for debugging
+                    console.log('[Clawdian] getSessionStatus response:', JSON.stringify(data, null, 2));
+                    
+                    // Try different response structures
+                    const state = data.payload?.state || 
+                                  data.payload?.status ||
+                                  data.payload?.session?.state ||
                                   (data.ok ? 'running' : null);
-                    console.log('[Clawdian] getSessionStatus response:', data.payload);
                     resolve(state);
                 } else {
                     originalHandler(data);
                 }
             };
 
+            // Try sessions.get with sessionKey instead of runId
             this.ws!.send(JSON.stringify({
                 type: 'req',
                 id: requestId,
                 method: 'sessions.get',
-                params: { runId }
+                params: { sessionKey }
             }));
         });
     }

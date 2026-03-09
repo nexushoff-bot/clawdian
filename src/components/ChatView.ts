@@ -668,7 +668,7 @@ export class ChatView extends ItemView {
     }
 
     async checkSessionStatus() {
-        if (!this.currentRunId || !this.client.isConnected()) return;
+        if (!this.sessionId || !this.client.isConnected()) return;
         
         const elapsed = Date.now() - this.messageStartTime;
         const elapsedMin = Math.floor(elapsed / 60000);
@@ -683,8 +683,11 @@ export class ChatView extends ItemView {
             this.showInfoText('⏳ Agent is thinking...');
         }
         
+        const selectedAgent = this.agentSelectEl?.value || this.plugin.settings.defaultAgent || 'main';
+        const sessionKey = `agent:${selectedAgent}:session:${this.sessionId}`;
+        
         try {
-            const status = await this.client.getSessionStatus(this.currentRunId);
+            const status = await this.client.getSessionStatus(sessionKey);
             console.log('[Clawdian] Session status:', status, 'elapsed:', elapsedMin, 'min');
             
             if (status === 'error' || status === 'aborted' || status === 'timeout') {
