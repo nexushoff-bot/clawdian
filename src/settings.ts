@@ -67,7 +67,7 @@ export class ClawdianSettingTab extends PluginSettingTab {
     display(): void {
         const { containerEl } = this;
         containerEl.empty();
-        containerEl.createEl('h2', { text: 'Clawdian Settings' });
+        containerEl.createEl('h2', { text: 'Clawchat Settings' });
 
         const isConnected = this.plugin.client.isConnected();
         const agents = this.plugin.client.getAgents();

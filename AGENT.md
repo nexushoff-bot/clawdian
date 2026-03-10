@@ -1,4 +1,4 @@
-# Clawdian Agent Instructions
+# Clawchat Agent Instructions
 
 > **READ THIS FILE AND `CODE_REFERENCE.md` BEFORE ANY CODE CHANGES**
 

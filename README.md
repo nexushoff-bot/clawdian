@@ -1,11 +1,11 @@
-# Clawdian 🦞
+# Clawchat 🦞
 
 > **Production-ready Obsidian plugin for AI-powered chat with vault context**
 
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)]()
 [![License](https://img.shields.io/badge/License-MIT-yellow)]()
 
-Clawdian embeds an intelligent chat interface directly into Obsidian, allowing you to:
+Clawchat embeds an intelligent chat interface directly into Obsidian, allowing you to:
 
 - 💬 **Chat with AI agents** inside your vault with full context awareness
 - 📄 **Vault context** automatically includes current note content with messages
@@ -67,7 +67,7 @@ Clawdian embeds an intelligent chat interface directly into Obsidian, allowing y
 1. **Install Clawdian in Obsidian**:
    - Download the latest release from [GitHub Releases](https://github.com/nexushoff-bot/clawdian/releases)
    - Extract files to your vault's `.obsidian/plugins/clawdian/` folder
-   - Enable "Clawdian" in Obsidian Settings → Community Plugins
+   - Enable "Clawchat" in Obsidian Settings → Community Plugins
 
 2. **Start OpenClaw Gateway**:
    ```bash
@@ -212,7 +212,7 @@ openclaw gateway status
 - operator.admin
 ```
 
-**Reset token in Clawdian:**
+**Reset token in Clawchat:**
 - Settings → Reset Token button
 - Paste new token from `/pair`
 
@@ -233,9 +233,9 @@ Cmd/Ctrl + Shift + R (clears cache)
 ```
 
 **Or manually:**
-1. Disable Clawdian in settings
+1. Disable Clawchat in settings
 2. Reload Obsidian
-3. Re-enable Clawdian
+3. Re-enable Clawchat
 
 ### Chat history not loading
 
@@ -358,7 +358,7 @@ To submit Clawdian to the official plugin directory:
    ```json
    {
      "id": "clawdian",
-     "name": "Clawdian",
+     "name": "Clawchat",
      "author": "Neil Hoff",
      "description": "Chat with OpenClaw AI agents inside Obsidian with vault context",
      "repo": "nexushoff-bot/clawdian",
@@ -373,7 +373,7 @@ See [official docs](https://docs.obsidian.md/Plugins/Releasing/Submit+your+plugi
 
 Built with 🦞 by **Neil Hoff** for the OpenClaw community.
 
-Clawdian connects Obsidian users to the power of agentic AI while keeping your data local and private.
+Clawchat connects Obsidian users to the power of agentic AI while keeping your data local and private.
 
 ---
 

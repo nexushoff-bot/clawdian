@@ -41,7 +41,7 @@ export class LoadingIndicator {
         const headerEl = contentEl.createEl('div', { cls: 'clawdian-message-header' });
         headerEl.createEl('span', { 
             cls: 'clawdian-message-author',
-            text: 'Clawdian'
+            text: 'Clawchat'
         });
         headerEl.createEl('span', { 
             cls: 'clawdian-loading-status',

@@ -1,5 +1,5 @@
 {
-  "name": "clawdian",
+  "name": "clawchat",
   "version": "0.1.1",
   "description": "Connect Obsidian to OpenClaw agents",
   "main": "main.js",

@@ -48,7 +48,7 @@ export class ChatView extends ItemView {
     }
 
     getViewType(): string { return VIEW_TYPE_CHAT; }
-    getDisplayText(): string { return 'Clawdian Chat'; }
+    getDisplayText(): string { return 'Clawchat'; }
     getIcon(): string { return 'message-square'; }
 
     async onOpen() {
@@ -58,7 +58,7 @@ export class ChatView extends ItemView {
 
         // Header
         const header = container.createEl('div', { cls: 'clawdian-header' });
-        header.createEl('span', { text: '🦞 Clawdian', cls: 'clawdian-title' });
+        header.createEl('span', { text: '🦞 Clawchat', cls: 'clawdian-title' });
         
         // Agent selector
         const headerRight = header.createEl('div', { cls: 'clawdian-header-right' });

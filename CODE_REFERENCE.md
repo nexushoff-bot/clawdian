@@ -1,4 +1,4 @@
-# Clawdian Plugin Code Reference
+# Clawchat Plugin Code Reference
 
 Comprehensive documentation of the Clawdian Obsidian plugin to prevent future bugs and ease onboarding.
 
