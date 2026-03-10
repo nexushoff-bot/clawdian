@@ -943,7 +943,9 @@ export class ChatView extends ItemView {
         try {
             const file = await this.app.vault.create(path, `# ${title}\n\n`);
             new Notice(`Created: ${path}`);
-            const leaf = this.app.workspace.getLeaf();
+            
+            // Open in a new tab instead of current tab
+            const leaf = this.app.workspace.getLeaf('tab');
             await leaf.openFile(file);
             
             await this.plugin.addMessageToHistory({
