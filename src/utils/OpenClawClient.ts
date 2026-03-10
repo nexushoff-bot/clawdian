@@ -124,11 +124,11 @@ export class OpenClawClient {
             }
             
             try {
-                console.log('[Clawdian] Connecting to:', this.url);
+                // console.log('[Clawdian] Connecting to:', this.url);
                 this.ws = new WebSocket(this.url);
                 
                 this.ws.onopen = () => {
-                    console.log('[Clawdian] WebSocket connected, waiting for challenge...');
+                    // console.log('[Clawdian] WebSocket connected, waiting for challenge...');
                     // Don't send connect here - wait for connect.challenge event
                 };
 
@@ -150,7 +150,7 @@ export class OpenClawClient {
                 };
 
                 this.ws.onclose = () => {
-                    console.log('[Clawdian] WebSocket closed');
+                    // console.log('[Clawdian] WebSocket closed');
                     this.connected = false;
                     this.onDisconnect?.();
                 };
@@ -162,16 +162,16 @@ export class OpenClawClient {
 
     private handleConnectChallenge(nonce: string) {
         // For now, just send connect without nonce - token auth should work
-        console.log('[Clawdian] Received challenge, sending connect...');
+        // console.log('[Clawdian] Received challenge, sending connect...');
         this.sendConnectRequest();
     }
 
     private handleMessage(data: GatewayMessage) {
-        console.log('[Clawdian] Received:', data.type, data.event || '', data);
+        // console.log('[Clawdian] Received:', data.type, data.event || '', data);
         
         // Handle connect.challenge event
         if (data.type === 'event' && data.event === 'connect.challenge') {
-            console.log('[Clawdian] Challenge received, responding...');
+            // console.log('[Clawdian] Challenge received, responding...');
             this.handleConnectChallenge(data.payload?.nonce);
             return;
         }
@@ -187,7 +187,7 @@ export class OpenClawClient {
                 // Handle connect response (hello-ok)
                 if (data.payload?.type === 'hello-ok' || data.ok === true) {
                     this.connected = true;
-                    console.log('[Clawdian] Connected successfully');
+                    // console.log('[Clawdian] Connected successfully');
                     this.onConnect?.();
                     this.connectionResolve?.();
                     this.connectionResolve = null;
@@ -209,7 +209,7 @@ export class OpenClawClient {
             case 'connected':
                 if (data.ok === true) {
                     this.connected = true;
-                    console.log('[Clawdian] Auth successful');
+                    // console.log('[Clawdian] Auth successful');
                     this.onConnect?.();
                     this.connectionResolve?.();
                     this.connectionResolve = null;
@@ -225,7 +225,7 @@ export class OpenClawClient {
                 break;
                 
             default:
-                console.log('[Clawdian] Unknown message type:', data.type);
+                // console.log('[Clawdian] Unknown message type:', data.type);
         }
     }
 
@@ -256,7 +256,7 @@ export class OpenClawClient {
             }
         };
 
-        console.log('[Clawdian] Sending connect request');
+        // console.log('[Clawdian] Sending connect request');
         this.ws.send(JSON.stringify(request));
     }
 
@@ -303,7 +303,7 @@ export class OpenClawClient {
                 }
             };
 
-            console.log('[Clawdian] Sending to agent:', agentId, 'sessionKey:', sessionKey);
+            // console.log('[Clawdian] Sending to agent:', agentId, 'sessionKey:', sessionKey);
             this.ws.send(JSON.stringify(request));
             resolve(request.id);
         });
@@ -323,7 +323,7 @@ export class OpenClawClient {
         return new Promise((resolve) => {
             const requestId = this.generateId();
             const timeout = setTimeout(() => {
-                console.log('[Clawdian] getSessionStatus timeout');
+                // console.log('[Clawdian] getSessionStatus timeout');
                 resolve(null);
             }, 5000);
 
@@ -334,7 +334,7 @@ export class OpenClawClient {
                     this.handleMessage = originalHandler;
                     
                     // Log full response for debugging
-                    console.log('[Clawdian] getSessionStatus response:', JSON.stringify(data, null, 2));
+                    // console.log('[Clawdian] getSessionStatus response:', JSON.stringify(data, null, 2));
                     
                     // Try different response structures
                     const state = data.payload?.state || 

@@ -26,9 +26,22 @@ export default class ClawdianPlugin extends Plugin {
     private tokenKey = 'clawdian-gateway-token';
     chatHistory: ChatHistory = { messages: [], lastUpdated: 0 };
     readonly HISTORY_FILE = '.clawdian/chat-history.json';
+    
+    // Debug logging - set DEBUG_CLAWDIAN=1 in .env for production debugging
+    private debug = false;
+    
+    private debugLog(...args: any[]) {
+        if (this.debug) {
+            // console.log('[Clawdian]', ...args);
+        }
+    }
+    
+    private debugError(...args: any[]) {
+        console.error('[Clawdian]', ...args);
+    }
 
     async onload() {
-        console.log('[Clawdian] Plugin loading...');
+        this.debugLog('Plugin loading...');
         
         // Load settings first
         await this.loadSettings();
@@ -72,19 +85,19 @@ export default class ClawdianPlugin extends Plugin {
 
         // Auto-connect if enabled and we have a token
         if (this.settings.autoConnect && token) {
-            console.log('[Clawdian] Auto-connect enabled, attempting connection...');
+            this.debugLog('Auto-connect enabled, attempting connection...');
             
             this.tryConnect().then((connected) => {
                 // Notice shown by ChatView.showConnected() to avoid duplicate
                 if (connected) {
-                    console.log('[Clawdian] Auto-connect successful');
+                    this.debugLog('Auto-connect successful');
                 }
             }).catch((err: Error) => {
-                console.log('[Clawdian] Auto-connect failed:', err.message);
+                this.debugLog('Auto-connect failed:', err.message);
             });
         }
 
-        console.log('[Clawdian] Plugin loaded');
+        this.debugLog('Plugin loaded');
     }
 
     /**
@@ -106,7 +119,7 @@ export default class ClawdianPlugin extends Plugin {
                 this.chatHistory = { messages: [], lastUpdated: Date.now() };
             }
         } catch (e: any) {
-            console.error('[Clawdian] Error loading history:', e.message || e);
+            this.debugError('Error loading history:', e.message || e);
             this.chatHistory = { messages: [], lastUpdated: Date.now() };
         }
     }
@@ -140,7 +153,7 @@ export default class ClawdianPlugin extends Plugin {
             // Write file directly
             await adapter.write(this.HISTORY_FILE, content);
         } catch (e: any) {
-            console.error('[Clawdian] Failed to save history:', e.message || e);
+            this.debugError('Failed to save history:', e.message || e);
         }
     }
 
@@ -187,7 +200,7 @@ export default class ClawdianPlugin extends Plugin {
             }
             return null;
         } catch (e) {
-            console.log('[Clawdian] No stored token found');
+            // console.log('[Clawdian] No stored token found');
             return null;
         }
     }
@@ -208,7 +221,7 @@ export default class ClawdianPlugin extends Plugin {
             }
             
             await adapter.write(secretPath, token);
-            console.log('[Clawdian] Token saved to Secret Storage');
+            // console.log('[Clawdian] Token saved to Secret Storage');
         } else {
             console.error('[Clawdian] Secret Storage not available!');
             throw new Error('Secret Storage not available');
@@ -232,11 +245,11 @@ export default class ClawdianPlugin extends Plugin {
 
     setupClientCallbacks() {
         this.client.onConnect = () => {
-            console.log('[Clawdian] Connected to Gateway');
+            // console.log('[Clawdian] Connected to Gateway');
         };
 
         this.client.onDisconnect = () => {
-            console.log('[Clawdian] Disconnected from Gateway');
+            // console.log('[Clawdian] Disconnected from Gateway');
         };
 
         this.client.onError = (err) => {

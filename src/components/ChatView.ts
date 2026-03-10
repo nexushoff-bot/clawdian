@@ -526,7 +526,7 @@ export class ChatView extends ItemView {
     }
 
     async sendMessage() {
-        console.log('[Clawdian] sendMessage() called');
+        // console.log('[Clawdian] sendMessage() called');
         
         if (!this.client.isConnected()) {
             new Notice('Not connected. Click Connect first.');
@@ -558,14 +558,14 @@ export class ChatView extends ItemView {
             }
         }
         
-        console.log('[Clawdian] sendMessage - text:', text.substring(0, 50));
+        // console.log('[Clawdian] sendMessage - text:', text.substring(0, 50));
 
         // Add to history and render
         const agentId = this.agentSelectEl?.value || this.plugin.settings.defaultAgent || 'main';
         const agentName = this.agentSelectEl?.options[this.agentSelectEl.selectedIndex]?.text || agentId;
         const agentEmoji = this.getAgentEmoji(agentId);
         
-        console.log('[Clawdian] Calling addMessageToHistory with agentId:', agentId);
+        // console.log('[Clawdian] Calling addMessageToHistory with agentId:', agentId);
         await this.plugin.addMessageToHistory({
             agentId,
             agentName,
@@ -574,7 +574,7 @@ export class ChatView extends ItemView {
             content: text
         });
         
-        console.log('[Clawdian] Calling addMessage for UI render');
+        // console.log('[Clawdian] Calling addMessage for UI render');
         this.addMessage('user', text);
         this.inputEl.value = '';
         this.showLoading();
@@ -593,7 +593,7 @@ export class ChatView extends ItemView {
                         fileContents.push(`--- ${file.name} ---\n${truncated}`);
                     }
                 } catch (e) {
-                    console.log('[Clawdian] Could not read file:', file.path, e);
+                    // console.log('[Clawdian] Could not read file:', file.path, e);
                 }
             }
             if (fileContents.length > 0) {
@@ -618,12 +618,12 @@ export class ChatView extends ItemView {
     }
 
     addMessage(role: 'user' | 'assistant', text: string, savedEmoji?: string) {
-        console.log('[Clawdian] addMessage() called - role:', role, 'text length:', text.length);
+        // console.log('[Clawdian] addMessage() called - role:', role, 'text length:', text.length);
         
         // Render immediately
         const agentId = this.agentSelectEl?.value || this.plugin.settings.defaultAgent || 'main';
         const agentName = role === 'user' ? 'You' : (this.agentSelectEl?.options[this.agentSelectEl.selectedIndex]?.text || agentId);
-        console.log('[Clawdian] addMessage - agentId:', agentId, 'agentName:', agentName);
+        // console.log('[Clawdian] addMessage - agentId:', agentId, 'agentName:', agentName);
         
         const agentColor = role === 'user' ? '' : this.getAgentColor(agentId);
         const agents = this.client.getAgents();
@@ -731,14 +731,14 @@ export class ChatView extends ItemView {
         
         try {
             const status = await this.client.getSessionStatus(sessionKey);
-            console.log('[Clawdian] Session status:', status, 'elapsed:', elapsedMin, 'min');
+            // console.log('[Clawdian] Session status:', status, 'elapsed:', elapsedMin, 'min');
             
             if (status === 'error' || status === 'aborted' || status === 'timeout') {
                 this.hideLoading();
                 this.showErrorText('⚠️ Agent timed out or failed. Please try again.');
             }
         } catch (err) {
-            console.log('[Clawdian] Status check failed:', err);
+            // console.log('[Clawdian] Status check failed:', err);
         }
     }
 
