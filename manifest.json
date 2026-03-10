@@ -3,7 +3,7 @@
 	"name": "Clawdian",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Chat with OpenClaw AI agents with vault context awareness",
+	"description": "Chat with OpenClaw AI agents with vault context awareness.",
 	"author": "Neil Hoff",
 	"authorUrl": "https://github.com/nexushoff-bot",
 	"fundingUrl": "",
