@@ -55,7 +55,7 @@ Clawchat embeds an intelligent chat interface directly into Obsidian, allowing y
 
 - **OpenClaw Gateway**: WebSocket connection to `ws://` or `wss://` endpoint for AI chat functionality
 - **Your Data**: File content and chat messages are sent to your configured OpenClaw Gateway
-- **No External Telemetry**: Clawdian does NOT send any data to third-party services
+- **No External Telemetry**: Clawchat does NOT send any data to third-party services
 - **Local-First**: All chat history is stored locally in your vault (`.clawdian/chat-history.json`)
 
 **Required Setup**: You must run your own OpenClaw Gateway instance or connect to a trusted gateway. No data leaves your network except through your configured gateway.
@@ -64,9 +64,9 @@ Clawchat embeds an intelligent chat interface directly into Obsidian, allowing y
 
 ### Quick Setup
 
-1. **Install Clawdian in Obsidian**:
+1. **Install Clawchat in Obsidian**:
    - Download the latest release from [GitHub Releases](https://github.com/nexushoff-bot/clawdian/releases)
-   - Extract files to your vault's `.obsidian/plugins/clawdian/` folder
+   - Extract files to your vault's `.obsidian/plugins/clawchat/` folder
    - Enable "Clawchat" in Obsidian Settings → Community Plugins
 
 2. **Start OpenClaw Gateway**:
@@ -87,7 +87,7 @@ Clawchat embeds an intelligent chat interface directly into Obsidian, allowing y
 
 ### Development Setup
 
-For developers contributing to Clawdian:
+For developers contributing to Clawchat:
 
 ```bash
 # Clone repository
@@ -99,7 +99,7 @@ npm install
 npm run build
 
 # Copy to test vault
-cp main.js manifest.json styles.css /path/to/vault/.obsidian/plugins/clawdian/
+cp main.js manifest.json styles.css /path/to/vault/.obsidian/plugins/clawchat/
 
 # Reload Obsidian
 Cmd/Ctrl + R
@@ -159,12 +159,12 @@ Type `/` in the input field to see available commands:
 
 ### Token Storage
 
-⚠️ **Important**: Clawdian uses **Obsidian's Secret Storage** for token management, NOT:
+⚠️ **Important**: Clawchat uses **Obsidian's Secret Storage** for token management, NOT:
 - ❌ `settings.json`
 - ❌ `plugin-data.json`
 - ❌ localStorage
 
-**Token Location**: `.obsidian/plugins/clawdian/.secrets/token`
+**Token Location**: `.obsidian/plugins/clawchat/.secrets/token`
 
 This ensures your gateway token is encrypted and isolated per-plugin.
 
@@ -223,7 +223,7 @@ The Gateway protocol enforces strict schema values:
 - `client.mode`: `'operator'`, `'node'`, `'cli'`, `'ui'`
 - `role`: `'operator'`
 
-This is a **Gateway security feature**, not a Clawdian bug.
+This is a **Gateway security feature**, not a Clawchat bug.
 
 ### UI not updating after connect
 
@@ -294,7 +294,7 @@ npm run build
 1. **Clone test vault**: `./clawdian-vault`
 2. **Copy build files**:
    ```bash
-   cp main.js manifest.json styles.css clawdian-vault/.obsidian/plugins/clawdian/
+   cp main.js manifest.json styles.css clawdian-vault/.obsidian/plugins/clawchat/
    ```
 3. **Reload Obsidian**: `Cmd/Ctrl + R`
 4. **Check logs**: `Cmd/Ctrl + Option + I` → look for `[Clawdian]` prefixed messages
@@ -349,7 +349,7 @@ test: Add unit tests for token storage
 
 ## Publishing to Obsidian Community Plugins
 
-To submit Clawdian to the official plugin directory:
+To submit Clawchat to the official plugin directory:
 
 1. **Update version** in `manifest.json` and `package.json` (Semantic Versioning)
 2. **Create GitHub release** with assets: `main.js`, `manifest.json`, `styles.css`
@@ -357,7 +357,7 @@ To submit Clawdian to the official plugin directory:
 4. **Add entry** to `community-plugins.json`:
    ```json
    {
-     "id": "clawdian",
+     "id": "clawchat",
      "name": "Clawchat",
      "author": "Neil Hoff",
      "description": "Chat with OpenClaw AI agents inside Obsidian with vault context",
