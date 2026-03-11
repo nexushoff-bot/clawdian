@@ -16,6 +16,45 @@ Clawchat embeds an intelligent chat interface directly into Obsidian, allowing y
 - 🔄 **Auto-connect** - automatically connect to Gateway on plugin startup
 - 🔐 **Secure auth** - tokens stored in Obsidian's Secret Storage
 
+## ⚡ Quick Start
+
+Get up and running in 3 steps:
+
+### 1. Install the Plugin
+```bash
+# Download latest release
+mkdir -p your-vault/.obsidian/plugins/clawchat
+cd your-vault/.obsidian/plugins/clawchat
+# Download main.js, manifest.json, styles.css from https://github.com/nexushoff-bot/clawdian/releases
+```
+
+Enable in Obsidian: **Settings → Community Plugins → Clawchat**
+
+### 2. Start OpenClaw Gateway
+```bash
+# Option A: Local (requires config - see below)
+openclaw gateway start
+
+# Option B: Tailscale (works out of the box!)
+openclaw gateway run --tailscale serve
+```
+
+### 3. Configure & Connect
+
+**If using Tailscale** (recommended):
+- Get your Tailscale URL: `wss://your-machine.tailXXXX.ts.net`
+- Use the token from your OpenClaw config
+
+**If using localhost:**
+```bash
+# One-time setup: allow Obsidian's origin
+openclaw config set gateway.controlUi.allowedOrigins '["*"]'
+openclaw gateway restart
+```
+Then use: `ws://127.0.0.1:18789`
+
+> **Why does Tailscale work without config?** Tailscale connections are trusted at the network level. Localhost connections require origin whitelisting because browsers/apps send origin headers.
+
 ## Features
 
 ### Core Capabilities
