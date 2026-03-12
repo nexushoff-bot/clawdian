@@ -30,30 +30,20 @@ cd your-vault/.obsidian/plugins/clawchat
 
 Enable in Obsidian: **Settings → Community Plugins → Clawchat**
 
-### 2. Start OpenClaw Gateway
+### 2. Start OpenClaw Gateway with Tailscale
 ```bash
-# Option A: Local (requires config - see below)
-openclaw gateway start
-
-# Option B: Tailscale (works out of the box!)
 openclaw gateway run --tailscale serve
 ```
 
+This starts the gateway and exposes it via your Tailscale network.
+
 ### 3. Configure & Connect
 
-**If using Tailscale** (recommended):
-- Get your Tailscale URL: `wss://your-machine.tailXXXX.ts.net`
-- Use the token from your OpenClaw config
+In Clawchat settings:
+- **Gateway URL**: `wss://your-machine.tailXXXX.ts.net` (your Tailscale URL)
+- **Token**: Get from `~/.openclaw/openclaw.json` → `gateway.auth.token`
 
-**If using localhost:**
-```bash
-# One-time setup: allow Obsidian's origin
-openclaw config set gateway.controlUi.allowedOrigins '["*"]'
-openclaw gateway restart
-```
-Then use: `ws://127.0.0.1:18789`
-
-> **Why does Tailscale work without config?** Tailscale connections are trusted at the network level. Localhost connections require origin whitelisting because browsers/apps send origin headers.
+> **Why Tailscale?** Obsidian runs as an Electron app with the origin `app://obsidian.md`. Browsers and apps send origin headers for security, but this non-standard origin isn't recognized by typical WebSocket origin checks. Tailscale bypasses this issue by authenticating at the network level — connections through your Tailscale network are automatically trusted.
 
 ## Features
 
@@ -84,7 +74,7 @@ Then use: `ws://127.0.0.1:18789`
 
 | Setting | Description | Default |
 |---------|-------------|---------|
-| Gateway URL | OpenClaw WebSocket endpoint | `ws://127.0.0.1:18789` |
+| Gateway URL | OpenClaw WebSocket endpoint | `wss://your-machine.tailXXXX.ts.net` |
 | Auto-connect | Connect on plugin startup | `Off` |
 | Default Agent | Agent to use when none selected | `Last used` |
 
@@ -92,7 +82,7 @@ Then use: `ws://127.0.0.1:18789`
 
 **This plugin connects to external services:**
 
-- **OpenClaw Gateway**: WebSocket connection to `ws://` or `wss://` endpoint for AI chat functionality
+- **OpenClaw Gateway**: WebSocket connection to your Tailscale endpoint (`wss://`) for AI chat functionality
 - **Your Data**: File content and chat messages are sent to your configured OpenClaw Gateway
 - **No External Telemetry**: Clawchat does NOT send any data to third-party services
 - **Local-First**: All chat history is stored locally in your vault (`.clawdian/chat-history.json`)
@@ -209,8 +199,8 @@ This ensures your gateway token is encrypted and isolated per-plugin.
 
 ### Network Security
 
-- **HTTPS/WSS**: Always use WebSocket Secure (`wss://`) for remote connections
-- **Local Development**: `ws://` is safe for localhost/Tailscale
+- **HTTPS/WSS**: Always use WebSocket Secure (`wss://`) via Tailscale
+- **Tailscale**: Network-level authentication — connections are automatically trusted
 - **Token Scopes**: Plugin requests `operator.read`, `operator.write`, `operator.admin`
 
 ### Vault Data Privacy
@@ -228,10 +218,9 @@ This ensures your gateway token is encrypted and isolated per-plugin.
 openclaw gateway status
 ```
 
-**Verify URL matches setup code:**
-- Settings → Gateway URL must match the WebSocket address from your token
-- For local: `ws://127.0.0.1:18789`
-- For Tailscale: `wss://your-node.tailscale.io:18789`
+**Verify URL matches your Tailscale address:**
+- Settings → Gateway URL should be `wss://your-machine.tailXXXX.ts.net`
+- Check your Tailscale machine name in the Tailscale app
 
 **Check firewall:**
 - macOS: System Settings → Network → Firewall
