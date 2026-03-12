@@ -1,3 +1,5 @@
+import { Platform } from 'obsidian';
+
 export interface ChatMessage {
     agent: string;
     content: string;
@@ -265,10 +267,10 @@ export class OpenClawClient {
     }
 
     private getPlatform(): string {
-        const platform = navigator.platform.toLowerCase();
-        if (platform.includes('mac')) return 'macos';
-        if (platform.includes('win')) return 'windows';
-        if (platform.includes('linux')) return 'linux';
+        if (Platform.isMacOS) return 'macos';
+        if (Platform.isWin) return 'windows';
+        if (Platform.isLinux) return 'linux';
+        if (Platform.isMobile) return 'mobile';
         return 'unknown';
     }
 

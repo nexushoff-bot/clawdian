@@ -56,7 +56,7 @@ export const CONTEXT_SIZES: Record<string, { label: string; chars: number }> = {
 
 export class ClawdianSettingTab extends PluginSettingTab {
     plugin: ClawdianPlugin;
-    selectedColorAgentId: string = '';
+    selectedColorAgentId = '';
     colorPickerEl: ColorComponent | null = null;
 
     constructor(app: App, plugin: ClawdianPlugin) {

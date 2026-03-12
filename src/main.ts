@@ -1,4 +1,4 @@
-import { Plugin, WorkspaceLeaf, Notice, Platform } from 'obsidian';
+import { Plugin, WorkspaceLeaf, Notice } from 'obsidian';
 import { ClawdianSettingTab, ClawdianSettings, DEFAULT_SETTINGS } from './settings';
 import { ChatView, VIEW_TYPE_CHAT } from './components/ChatView';
 import { OpenClawClient } from './utils/OpenClawClient';

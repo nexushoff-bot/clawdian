@@ -1,7 +1,6 @@
 import { ItemView, WorkspaceLeaf, Notice, TFile, FuzzySuggestModal, App } from 'obsidian';
 import { OpenClawClient, AgentInfo } from '../utils/OpenClawClient';
 import ClawdianPlugin, { ChatMessage } from '../main';
-import { TokenModal } from './TokenModal';
 import { CONTEXT_SIZES, AGENT_COLORS, DEFAULT_AGENT_COLORS } from '../settings';
 
 export const VIEW_TYPE_CHAT = 'clawdian-chat-view';
@@ -26,14 +25,14 @@ export class ChatView extends ItemView {
     isLoading = false;
     isStreaming = false;
     currentStreamingMessage: HTMLElement | null = null;
-    streamingText: string = '';
+    streamingText = '';
     sessionId: string;
     sessionIds: Map<string, string> = new Map();
     responseTimeout: ReturnType<typeof setTimeout> | null = null;
     statusPollingInterval: ReturnType<typeof setInterval> | null = null;
     currentRunId: string | null = null;
-    currentAgentId: string = '';
-    messageStartTime: number = 0;
+    currentAgentId = '';
+    messageStartTime = 0;
     hasShownConnected = false;
     processedRunIds = new Set<string>();
     readonly RESPONSE_TIMEOUT_MS = 60000;
@@ -900,7 +899,9 @@ export class ChatView extends ItemView {
                     results.push({ file, content });
                     if (results.length >= 5) break;
                 }
-            } catch (e) {}
+            } catch (e) {
+                        // Skip files that can't be read
+                    }
         }
         
         if (results.length === 0) {

@@ -14,6 +14,48 @@ export class LoadingIndicator {
         this.element = this.createElement();
     }
 
+    private createSvgIcon(): SVGSVGElement {
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', '18');
+        svg.setAttribute('height', '18');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('stroke', 'currentColor');
+        svg.setAttribute('stroke-width', '2');
+        svg.setAttribute('stroke-linecap', 'round');
+        svg.setAttribute('stroke-linejoin', 'round');
+
+        const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path1.setAttribute('d', 'M12 8V4H8');
+        svg.appendChild(path1);
+
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('width', '16');
+        rect.setAttribute('height', '12');
+        rect.setAttribute('x', '4');
+        rect.setAttribute('y', '8');
+        rect.setAttribute('rx', '2');
+        svg.appendChild(rect);
+
+        const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path2.setAttribute('d', 'M2 14h2');
+        svg.appendChild(path2);
+
+        const path3 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path3.setAttribute('d', 'M20 14h2');
+        svg.appendChild(path3);
+
+        const path4 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path4.setAttribute('d', 'M15 13v2');
+        svg.appendChild(path4);
+
+        const path5 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path5.setAttribute('d', 'M9 13v2');
+        svg.appendChild(path5);
+
+        return svg;
+    }
+
     private createElement(): HTMLElement {
         const wrapper = this.parent.createEl('div', { 
             cls: 'clawdian-loading-wrapper' 
@@ -32,7 +74,7 @@ export class LoadingIndicator {
         
         // Animated avatar with pulsing effect
         const avatarInner = avatarEl.createEl('div', { cls: 'clawdian-avatar-inner' });
-        avatarInner.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>`;
+        avatarInner.appendChild(this.createSvgIcon());
 
         // Content
         const contentEl = groupEl.createEl('div', { cls: 'clawdian-message-content' });
@@ -62,46 +104,42 @@ export class LoadingIndicator {
         const progressContainer = bubbleEl.createEl('div', { 
             cls: 'clawdian-loading-progress' 
         });
-        const progressBar = progressContainer.createEl('div', { 
+        progressContainer.createEl('div', { 
             cls: 'clawdian-loading-progress-bar' 
         });
 
         // Status text that cycles through different states
-        const statusEl = contentEl.createEl('div', { 
+        contentEl.createEl('div', { 
             cls: 'clawdian-loading-status-text' 
         });
 
         return wrapper;
     }
 
-    show() {
+    show(): void {
         if (this.isVisible) return;
         this.isVisible = true;
-        this.element.style.display = 'block';
-        
-        // Trigger enter animation
-        requestAnimationFrame(() => {
-            this.element.addClass('clawdian-loading-visible');
-        });
+        this.element.addClass('clawdian-loading-visible');
+        this.element.removeClass('clawdian-loading-hidden');
 
         // Start status cycling
         this.startStatusCycle();
     }
 
-    hide() {
+    hide(): void {
         if (!this.isVisible) return;
         this.isVisible = false;
         
         this.element.removeClass('clawdian-loading-visible');
+        this.element.addClass('clawdian-loading-hidden');
         
         // Wait for exit animation
         setTimeout(() => {
-            this.element.style.display = 'none';
             this.stopStatusCycle();
         }, 300);
     }
 
-    private startStatusCycle() {
+    private startStatusCycle(): void {
         const statuses = [
             'Thinking...',
             'Analyzing context...',
@@ -110,7 +148,7 @@ export class LoadingIndicator {
         ];
         let index = 0;
 
-        const updateStatus = () => {
+        const updateStatus = (): void => {
             if (!this.isVisible) return;
             const statusEl = this.element.querySelector('.clawdian-loading-status-text');
             if (statusEl) {
@@ -123,7 +161,7 @@ export class LoadingIndicator {
         this.animationInterval = window.setInterval(updateStatus, 2000);
     }
 
-    private stopStatusCycle() {
+    private stopStatusCycle(): void {
         if (this.animationInterval) {
             clearInterval(this.animationInterval);
             this.animationInterval = undefined;
@@ -133,10 +171,10 @@ export class LoadingIndicator {
     /**
      * Update loading progress (0-100)
      */
-    setProgress(percent: number) {
+    setProgress(percent: number): void {
         const progressBar = this.element.querySelector('.clawdian-loading-progress-bar');
-        if (progressBar) {
-            (progressBar as HTMLElement).style.width = `${Math.min(100, Math.max(0, percent))}%`;
+        if (progressBar instanceof HTMLElement) {
+            progressBar.style.width = `${Math.min(100, Math.max(0, percent))}%`;
             
             // Show progress bar when there's actual progress
             if (percent > 0) {
@@ -148,7 +186,7 @@ export class LoadingIndicator {
     /**
      * Set custom status message
      */
-    setStatus(message: string) {
+    setStatus(message: string): void {
         const statusEl = this.element.querySelector('.clawdian-loading-status');
         if (statusEl) {
             statusEl.textContent = message;
@@ -158,7 +196,7 @@ export class LoadingIndicator {
     /**
      * Destroy the indicator
      */
-    destroy() {
+    destroy(): void {
         this.stopStatusCycle();
         this.element.remove();
     }
@@ -181,11 +219,11 @@ export class LoadingSkeleton {
             });
             // Vary the width for realism
             const width = i === lines - 1 ? 60 : 100;
-            line.style.width = `${width}%`;
+            line.addClass(`clawdian-skeleton-width-${width}`);
         }
     }
 
-    remove() {
+    remove(): void {
         this.element.addClass('clawdian-skeleton-fade-out');
         setTimeout(() => this.element.remove(), 300);
     }
