@@ -51,6 +51,8 @@ export class ChatView extends ItemView {
     getIcon(): string { return 'message-square'; }
 
     async onOpen() {
+        // Ensure we return a promise as required by ItemView
+        await Promise.resolve();
         const container = this.containerEl.children[1] as HTMLElement;
         container.empty();
         container.addClass('clawdian-chat-container');
