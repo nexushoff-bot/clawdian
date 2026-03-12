@@ -1,4 +1,4 @@
-import { PluginSettingTab, Setting, App, Notice } from 'obsidian';
+import { PluginSettingTab, Setting, App, Notice, ColorComponent } from 'obsidian';
 import ClawdianPlugin from './main';
 
 // Default color palette for agents
@@ -36,7 +36,7 @@ export interface ClawdianSettings {
 }
 
 export const DEFAULT_SETTINGS: ClawdianSettings = {
-    gatewayUrl: 'ws://127.0.0.1:18789',
+    gatewayUrl: 'wss://your-machine.tailXXXX.ts.net',
     defaultAgent: '',
     lastAgent: '',
     agentColors: {},
@@ -57,7 +57,7 @@ export const CONTEXT_SIZES: Record<string, { label: string; chars: number }> = {
 export class ClawdianSettingTab extends PluginSettingTab {
     plugin: ClawdianPlugin;
     selectedColorAgentId: string = '';
-    colorPickerEl: any = null;
+    colorPickerEl: ColorComponent | null = null;
 
     constructor(app: App, plugin: ClawdianPlugin) {
         super(app, plugin);
@@ -67,7 +67,10 @@ export class ClawdianSettingTab extends PluginSettingTab {
     display(): void {
         const { containerEl } = this;
         containerEl.empty();
-        containerEl.createEl('h2', { text: 'Clawchat Settings' });
+        
+        new Setting(containerEl)
+            .setName('Clawchat')
+            .setHeading();
 
         const isConnected = this.plugin.client.isConnected();
         const agents = this.plugin.client.getAgents();
@@ -77,8 +80,10 @@ export class ClawdianSettingTab extends PluginSettingTab {
         }
 
         // Connection Status
-        containerEl.createEl('h3', { text: 'Connection' });
-        
+        new Setting(containerEl)
+            .setName('Connection')
+            .setHeading();
+
         new Setting(containerEl)
             .setName('Status')
             .setDesc(isConnected ? '✅ Connected' : '❌ Disconnected')
@@ -93,22 +98,23 @@ export class ClawdianSettingTab extends PluginSettingTab {
                 } else {
                     btn.setButtonText('Connect')
                         .setCta()
-                        .onClick(async () => {
-                            await this.plugin.tryConnect();
-                            this.display();
+                        .onClick(() => {
+                            void this.plugin.tryConnect().then(() => {
+                                this.display();
+                            });
                         });
                 }
             });
 
         new Setting(containerEl)
             .setName('Gateway URL')
-            .setDesc('OpenClaw Gateway WebSocket URL')
+            .setDesc('OpenClaw gateway WebSocket URL')
             .addText(text => text
                 .setPlaceholder('wss://your-gateway-url')
                 .setValue(this.plugin.settings.gatewayUrl)
-                .onChange(async (value) => {
+                .onChange((value) => {
                     this.plugin.settings.gatewayUrl = value;
-                    await this.plugin.saveSettings();
+                    void this.plugin.saveSettings();
                 }));
 
         new Setting(containerEl)
@@ -116,28 +122,30 @@ export class ClawdianSettingTab extends PluginSettingTab {
             .setDesc('Automatically connect when Obsidian starts')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.autoConnect)
-                .onChange(async (value) => {
+                .onChange((value) => {
                     this.plugin.settings.autoConnect = value;
-                    await this.plugin.saveSettings();
+                    void this.plugin.saveSettings();
                 }));
 
         new Setting(containerEl)
-            .setName('Reset Token')
+            .setName('Reset token')
             .setDesc('Clear stored gateway token (you\'ll need to re-enter it)')
             .addButton(btn => {
-                btn.setButtonText('Clear Token')
+                btn.setButtonText('Clear token')
                     .setWarning()
-                    .onClick(async () => {
-                        await this.plugin.clearToken();
+                    .onClick(() => {
+                        void this.plugin.clearToken();
                         new Notice('Token cleared. Reconnect to enter a new token.');
                     });
             });
 
         // Preferences
-        containerEl.createEl('h3', { text: 'Preferences' });
+        new Setting(containerEl)
+            .setName('Preferences')
+            .setHeading();
 
         const agentSetting = new Setting(containerEl)
-            .setName('Default Agent')
+            .setName('Default agent')
             .setDesc('Which agent to chat with by default');
         
         agentSetting.addDropdown(dropdown => {
@@ -149,10 +157,10 @@ export class ClawdianSettingTab extends PluginSettingTab {
                 dropdown.addOption('', 'Connect to see agents');
             }
             dropdown.setValue(this.plugin.settings.lastAgent || this.plugin.settings.defaultAgent);
-            dropdown.onChange(async (value) => {
+            dropdown.onChange((value) => {
                 this.plugin.settings.defaultAgent = value;
                 this.plugin.settings.lastAgent = value;
-                await this.plugin.saveSettings();
+                void this.plugin.saveSettings();
                 this.display();
             });
         });
@@ -160,7 +168,7 @@ export class ClawdianSettingTab extends PluginSettingTab {
         // Agent Color
         if (agents.length > 0) {
             const colorSetting = new Setting(containerEl)
-                .setName('Agent Color')
+                .setName('Agent color')
                 .setDesc('Customize chat color for selected agent');
             
             colorSetting.addDropdown(dropdown => {
@@ -168,7 +176,7 @@ export class ClawdianSettingTab extends PluginSettingTab {
                     dropdown.addOption(agent.id, agent.name || agent.id);
                 });
                 dropdown.setValue(this.selectedColorAgentId);
-                dropdown.onChange(async (value) => {
+                dropdown.onChange((value) => {
                     this.selectedColorAgentId = value;
                     const color = this.plugin.settings.agentColors[value] || 
                                  DEFAULT_AGENT_COLORS[value] || 
@@ -185,24 +193,26 @@ export class ClawdianSettingTab extends PluginSettingTab {
                              AGENT_COLORS[0];
                 picker.setValue(color);
                 this.colorPickerEl = picker;
-                picker.onChange(async (value) => {
+                picker.onChange((value) => {
                     this.plugin.settings.agentColors[this.selectedColorAgentId] = value;
-                    await this.plugin.saveSettings();
+                    void this.plugin.saveSettings();
                 });
             });
         }
 
         // Context
-        containerEl.createEl('h3', { text: 'Context' });
+        new Setting(containerEl)
+            .setName('Context')
+            .setHeading();
 
         new Setting(containerEl)
             .setName('Include vault context')
             .setDesc('Send current file as context with messages')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.includeVaultContext)
-                .onChange(async (value) => {
+                .onChange((value) => {
                     this.plugin.settings.includeVaultContext = value;
-                    await this.plugin.saveSettings();
+                    void this.plugin.saveSettings();
                 }));
 
         new Setting(containerEl)
@@ -214,9 +224,9 @@ export class ClawdianSettingTab extends PluginSettingTab {
                 dropdown.addOption('large', 'Large (3000 chars)');
                 dropdown.addOption('max', 'Max (entire file)');
                 dropdown.setValue(this.plugin.settings.contextSize);
-                dropdown.onChange(async (value: 'small' | 'medium' | 'large' | 'max') => {
+                dropdown.onChange((value: 'small' | 'medium' | 'large' | 'max') => {
                     this.plugin.settings.contextSize = value;
-                    await this.plugin.saveSettings();
+                    void this.plugin.saveSettings();
                 });
             });
 
@@ -225,9 +235,9 @@ export class ClawdianSettingTab extends PluginSettingTab {
             .setDesc('Include previous messages as context')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.includeChatHistory)
-                .onChange(async (value) => {
+                .onChange((value) => {
                     this.plugin.settings.includeChatHistory = value;
-                    await this.plugin.saveSettings();
+                    void this.plugin.saveSettings();
                 }));
 
         new Setting(containerEl)
@@ -239,9 +249,9 @@ export class ClawdianSettingTab extends PluginSettingTab {
                 dropdown.addOption('5', 'Last 5 messages');
                 dropdown.addOption('10', 'Last 10 messages');
                 dropdown.setValue(this.plugin.settings.chatHistoryDepth.toString());
-                dropdown.onChange(async (value) => {
+                dropdown.onChange((value) => {
                     this.plugin.settings.chatHistoryDepth = parseInt(value);
-                    await this.plugin.saveSettings();
+                    void this.plugin.saveSettings();
                 });
             });
     }

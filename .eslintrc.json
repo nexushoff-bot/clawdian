@@ -1,0 +1,30 @@
+{
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 2020,
+    "sourceType": "module"
+  },
+  "plugins": [
+    "@typescript-eslint",
+    "obsidian"
+  ],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "rules": {
+    "obsidian/no-obsidian-in-name": "error",
+    "obsidian/no-obsidian-in-description": "error",
+    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/require-await": "warn",
+    "@typescript-eslint/no-misused-promises": "warn",
+    "no-inner-declarations": "off",
+    "@typescript-eslint/no-inner-declarations": "off"
+  },
+  "ignorePatterns": [
+    "node_modules/",
+    "main.js"
+  ]
+}

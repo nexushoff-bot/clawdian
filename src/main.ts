@@ -1,4 +1,4 @@
-import { Plugin, WorkspaceLeaf, Notice, TFile } from 'obsidian';
+import { Plugin, WorkspaceLeaf, Notice, Platform } from 'obsidian';
 import { ClawdianSettingTab, ClawdianSettings, DEFAULT_SETTINGS } from './settings';
 import { ChatView, VIEW_TYPE_CHAT } from './components/ChatView';
 import { OpenClawClient } from './utils/OpenClawClient';
@@ -69,15 +69,14 @@ export default class ClawdianPlugin extends Plugin {
 
         // Add ribbon icon
         this.addRibbonIcon('message-square', 'Open Clawdian', () => {
-            this.activateView();
+            void this.activateView();
         });
 
         // Add command
         this.addCommand({
             id: 'open-clawdian',
             name: 'Open Clawdian chat',
-            hotkeys: [{ modifiers: ['Mod', 'Shift'], key: 'c' }],
-            callback: () => this.activateView()
+            callback: () => { void this.activateView(); }
         });
 
         // Add settings tab
@@ -87,7 +86,7 @@ export default class ClawdianPlugin extends Plugin {
         if (this.settings.autoConnect && token) {
             this.debugLog('Auto-connect enabled, attempting connection...');
             
-            this.tryConnect().then((connected) => {
+            void this.tryConnect().then((connected) => {
                 // Notice shown by ChatView.showConnected() to avoid duplicate
                 if (connected) {
                     this.debugLog('Auto-connect successful');
