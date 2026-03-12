@@ -79,6 +79,7 @@
     color: white;
     text-transform: uppercase;
     overflow: hidden;
+    background-color: var(--clawdian-avatar-color, #6366f1);
 }
 
 .clawdian-avatar-img {
@@ -554,10 +555,18 @@
 
 /* Command Palette */
 .clawdian-command-palette {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    right: 0;
     background: var(--background-primary);
     border: 1px solid var(--background-modifier-border);
     border-radius: 6px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    margin-bottom: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
 }
 
 .clawdian-command-item {
@@ -604,6 +613,12 @@
     padding: 2px 6px;
     border-radius: 4px;
     font-family: var(--font-monospace);
+}
+
+/* Token modal input width */
+.clawdian-token-modal input[type="text"],
+.clawdian-token-modal input[type="password"] {
+    width: 100%;
 }
 
 .clawdian-security-note {
@@ -681,4 +696,39 @@
 .clawdian-connect-overlay-content .clawdian-connect-btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Utility classes for dynamic visibility */
+.clawdian-hidden {
+    display: none !important;
+}
+
+.clawdian-visible {
+    display: flex !important;
+}
+
+.clawdian-visible-block {
+    display: block !important;
+}
+
+/* Input width utility */
+.clawdian-input-full {
+    width: 100%;
+}
+
+/* Loading indicator states */
+.clawdian-loading-visible {
+    display: flex !important;
+}
+
+.clawdian-loading-hidden {
+    display: none !important;
+}
+
+/* Empty history placeholder */
+.clawdian-empty-history {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 40px 20px;
+    font-style: italic;
 }

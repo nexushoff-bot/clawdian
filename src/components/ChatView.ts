@@ -80,14 +80,14 @@ export class ChatView extends ItemView {
         this.loadingEl.createEl('div', { cls: 'clawdian-spinner' });
         this.loadingEl.createEl('span', { cls: 'clawdian-loading-text' });
         this.updateLoadingText();
-        this.loadingEl.style.display = 'none';
+        this.loadingEl.addClass('clawdian-hidden');
 
         // Connect overlay (shown if NOT connected)
         this.createConnectOverlay(container);
 
         // Context bar (file attachments)
         this.contextBarEl = container.createEl('div', { cls: 'clawdian-context-bar' });
-        this.contextBarEl.style.display = 'none';
+        this.contextBarEl.addClass('clawdian-hidden');
 
         this.registerEvent(this.app.workspace.on('active-leaf-change', () => {
             this.updateCurrentFile();
@@ -97,7 +97,7 @@ export class ChatView extends ItemView {
 
         // Input container
         this.inputContainerEl = container.createEl('div', { cls: 'clawdian-input-container' });
-        this.inputContainerEl.style.display = 'none';
+        this.inputContainerEl.addClass('clawdian-hidden');
 
         this.inputEl = this.inputContainerEl.createEl('textarea', {
             cls: 'clawdian-input',
@@ -130,7 +130,7 @@ export class ChatView extends ItemView {
 
     createConnectOverlay(container: HTMLElement) {
         this.connectOverlayEl = container.createEl('div', { cls: 'clawdian-connect-overlay' });
-        this.connectOverlayEl.style.display = 'none';
+        this.connectOverlayEl.addClass('clawdian-hidden');
         
         const overlayContent = this.connectOverlayEl.createEl('div', { cls: 'clawdian-connect-overlay-content' });
         overlayContent.createEl('h2', { text: 'Connect to OpenClaw' });
@@ -143,7 +143,7 @@ export class ChatView extends ItemView {
         step1.createEl('span', { text: 'Run ' });
         step1.createEl('code', { text: 'openclaw dashboard' });
         
-        ol.createEl('li', { text: 'Click "Overview" and copy the Gateway Token' });
+        ol.createEl('li', { text: 'Click "Overview" and copy the gateway token' });
         ol.createEl('li', { text: 'Click Connect below and paste the token' });
 
         const connectBtn = overlayContent.createEl('button', {
@@ -151,24 +151,27 @@ export class ChatView extends ItemView {
             text: 'Connect'
         });
         
-        connectBtn.addEventListener('click', async () => {
-            const connected = await this.plugin.tryConnect();
-            if (!connected) {
-                // No token stored or connection failed - show modal to enter credentials
-                this.plugin.showTokenModal();
-            }
+        connectBtn.addEventListener('click', () => {
+            void (async () => {
+                const connected = await this.plugin.tryConnect();
+                if (!connected) {
+                    // No token stored or connection failed - show modal to enter credentials
+                    this.plugin.showTokenModal();
+                }
+            })();
         });
     }
 
     showConnectOverlay() {
         if (this.connectOverlayEl) {
-            this.connectOverlayEl.style.display = 'flex';
+            this.connectOverlayEl.removeClass('clawdian-hidden');
+            this.connectOverlayEl.addClass('clawdian-visible');
         }
     }
 
     hideConnectOverlay() {
         if (this.connectOverlayEl) {
-            this.connectOverlayEl.style.display = 'none';
+            this.connectOverlayEl.addClass('clawdian-hidden');
         }
     }
 
@@ -359,29 +362,37 @@ export class ChatView extends ItemView {
                 if (agent.id === selectedAgent) option.selected = true;
             });
             
-            this.agentSelectEl.addEventListener('change', async () => {
-                const selectedValue = this.agentSelectEl?.value;
-                if (selectedValue) {
-                    this.plugin.settings.lastAgent = selectedValue;
-                    await this.plugin.saveSettings();
-                    if (!this.sessionIds.has(selectedValue)) {
-                        this.sessionIds.set(selectedValue, 'obsidian-chat-' + this.generateSessionId());
+            this.agentSelectEl.addEventListener('change', () => {
+                void (async () => {
+                    const selectedValue = this.agentSelectEl?.value;
+                    if (selectedValue) {
+                        this.plugin.settings.lastAgent = selectedValue;
+                        await this.plugin.saveSettings();
+                        if (!this.sessionIds.has(selectedValue)) {
+                            this.sessionIds.set(selectedValue, 'obsidian-chat-' + this.generateSessionId());
+                        }
+                        this.sessionId = this.sessionIds.get(selectedValue)!;
+                        this.currentAgentId = selectedValue;
+                        
+                        // Re-render history for this agent
+                        this.renderHistory();
                     }
-                    this.sessionId = this.sessionIds.get(selectedValue)!;
-                    this.currentAgentId = selectedValue;
-                    
-                    // Re-render history for this agent
-                    this.renderHistory();
-                }
+                })();
             });
         }
     }
 
     showConnected() {
         this.hideConnectOverlay();
-        if (this.connectOverlayEl) this.connectOverlayEl.style.display = 'none';
-        if (this.contextBarEl) this.contextBarEl.style.display = 'flex';
-        if (this.inputContainerEl) this.inputContainerEl.style.display = 'flex';
+        if (this.connectOverlayEl) this.connectOverlayEl.addClass('clawdian-hidden');
+        if (this.contextBarEl) {
+            this.contextBarEl.removeClass('clawdian-hidden');
+            this.contextBarEl.addClass('clawdian-visible');
+        }
+        if (this.inputContainerEl) {
+            this.inputContainerEl.removeClass('clawdian-hidden');
+            this.inputContainerEl.addClass('clawdian-visible');
+        }
         
         // Only show notice once
         if (!this.hasShownConnected) {
@@ -394,8 +405,8 @@ export class ChatView extends ItemView {
         if (!this.plugin.settings.autoConnect) {
             this.showConnectOverlay();
         }
-        if (this.contextBarEl) this.contextBarEl.style.display = 'none';
-        if (this.inputContainerEl) this.inputContainerEl.style.display = 'none';
+        if (this.contextBarEl) this.contextBarEl.addClass('clawdian-hidden');
+        if (this.inputContainerEl) this.inputContainerEl.addClass('clawdian-hidden');
     }
 
     renderHistory() {
@@ -461,7 +472,7 @@ export class ChatView extends ItemView {
             } else {
                 avatarEl.setText(avatar);
             }
-            avatarEl.style.backgroundColor = agentColor;
+            avatarEl.style.setProperty('--clawdian-avatar-color', agentColor);
             
             const block = msgContainer.createEl('div', { cls: 'clawdian-message-block' });
             block.createEl('div', { cls: 'clawdian-message-sender', text: agentName });
@@ -658,7 +669,7 @@ export class ChatView extends ItemView {
             } else {
                 avatarEl.setText(avatar);
             }
-            avatarEl.style.backgroundColor = agentColor;
+            avatarEl.style.setProperty('--clawdian-avatar-color', agentColor);
             
             const block = msgContainer.createEl('div', { cls: 'clawdian-message-block' });
             block.createEl('div', { cls: 'clawdian-message-sender', text: agentName });
@@ -672,7 +683,10 @@ export class ChatView extends ItemView {
 
     showLoading() {
         this.isLoading = true;
-        if (this.loadingEl) this.loadingEl.style.display = 'flex';
+        if (this.loadingEl) {
+            this.loadingEl.removeClass('clawdian-hidden');
+            this.loadingEl.addClass('clawdian-visible');
+        }
         requestAnimationFrame(() => {
             this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
         });
@@ -681,7 +695,7 @@ export class ChatView extends ItemView {
 
     hideLoading() {
         this.isLoading = false;
-        if (this.loadingEl) this.loadingEl.style.display = 'none';
+        if (this.loadingEl) this.loadingEl.addClass('clawdian-hidden');
         this.stopStatusPolling();
         if (this.responseTimeout) {
             clearTimeout(this.responseTimeout);
@@ -782,36 +796,19 @@ export class ChatView extends ItemView {
         const palette = document.createElement('div');
         palette.className = 'clawdian-command-palette';
         this.commandPaletteEl = palette;
-        palette.style.cssText = `
-            position: absolute;
-            bottom: 100%;
-            left: 0;
-            right: 0;
-            background: var(--background-primary);
-            border: 1px solid var(--background-modifier-border);
-            border-radius: 6px;
-            margin-bottom: 4px;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 1000;
-        `;
         
         commands.forEach(cmd => {
             const item = palette.createEl('div', { cls: 'clawdian-command-item' });
-            item.style.cssText = `padding: 8px 12px; cursor: pointer; display: flex; align-items: center; gap: 8px;`;
             item.createEl('span', { text: cmd.label, cls: 'clawdian-command-label' });
             
             item.addEventListener('click', () => {
                 this.executeCommand(cmd.id);
                 this.closeCommandPalette();
             });
-            
-            item.addEventListener('mouseenter', () => item.style.backgroundColor = 'var(--background-modifier-hover)');
-            item.addEventListener('mouseleave', () => item.style.backgroundColor = 'transparent');
         });
         
         if (this.inputContainerEl) {
-            this.inputContainerEl.style.position = 'relative';
+            this.inputContainerEl.addClass('clawdian-input-container');
             this.inputContainerEl.appendChild(palette);
         }
         

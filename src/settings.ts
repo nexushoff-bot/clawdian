@@ -68,10 +68,7 @@ export class ClawdianSettingTab extends PluginSettingTab {
         const { containerEl } = this;
         containerEl.empty();
         
-        new Setting(containerEl)
-            .setName('Clawchat')
-            .setHeading();
-
+        // Connection status header
         const isConnected = this.plugin.client.isConnected();
         const agents = this.plugin.client.getAgents();
         

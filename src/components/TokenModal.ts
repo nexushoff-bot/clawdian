@@ -34,7 +34,7 @@ export class TokenModal extends Modal {
         step1.createEl('code', { text: 'openclaw dashboard' });
         
         ol.createEl('li', { text: 'Click on "Overview" in the dashboard' });
-        ol.createEl('li', { text: 'Copy the Gateway Token' });
+        ol.createEl('li', { text: 'Copy the gateway token' });
 
         // Gateway URL input
         new Setting(contentEl)
@@ -44,7 +44,6 @@ export class TokenModal extends Modal {
                 this.gatewayInput = text.inputEl;
                 text.setPlaceholder('wss://your-gateway-url');
                 text.setValue(this.gatewayUrl);
-                this.gatewayInput.style.width = '100%';
             });
 
         // Token input
@@ -55,7 +54,6 @@ export class TokenModal extends Modal {
                 this.tokenInput = text.inputEl;
                 text.setPlaceholder('your-gateway-token');
                 text.inputEl.type = 'password';
-                this.tokenInput.style.width = '100%';
                 this.tokenInput.addEventListener('input', () => {
                     this.token = this.tokenInput.value;
                 });
