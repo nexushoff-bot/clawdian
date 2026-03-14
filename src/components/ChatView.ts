@@ -522,7 +522,7 @@ export class ChatView extends ItemView {
         });
     }
 
-    async addFile(file: TFile) {
+    addFile(file: TFile) {
         // TFile objects from Obsidian vault are already validated
         // But add a check for safety
         if (!file || !file.path) {

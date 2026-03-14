@@ -67,7 +67,7 @@ export class OpenClawClient {
             const timeout = setTimeout(() => resolve([]), 5000);
 
             const originalHandler = this.handleMessage.bind(this);
-            this.handleMessage = async (data) => {
+            this.handleMessage = (data) => {
                 if (data.id === requestId) {
                     clearTimeout(timeout);
                     this.handleMessage = originalHandler;
@@ -157,12 +157,12 @@ export class OpenClawClient {
                     this.onDisconnect?.();
                 };
             } catch (err) {
-                reject(err);
+                reject(err instanceof Error ? err : new Error(String(err)));
             }
         });
     }
 
-    private handleConnectChallenge(nonce: string) {
+    private handleConnectChallenge(_nonce: string) {
         // For now, just send connect without nonce - token auth should work
         // console.log('[Clawdian] Received challenge, sending connect...');
         this.sendConnectRequest();
