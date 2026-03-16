@@ -71,9 +71,7 @@ export class ChatView extends ItemView {
 
         // Render history FIRST (before connection UI)
         // Small delay to ensure plugin.onload() has completed
-        setTimeout(() => {
-            this.renderHistory();
-        }, 50);
+        setTimeout(() => { void this.renderHistory(); }, 50);
 
         // Loading indicator
         this.loadingEl = container.createEl('div', { cls: 'clawdian-loading' });
@@ -109,7 +107,7 @@ export class ChatView extends ItemView {
             text: 'Send'
         });
 
-        sendBtn.addEventListener('click', () => this.sendMessage());
+        sendBtn.addEventListener('click', () => { void this.sendMessage(); });
         this.inputEl.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -160,6 +158,7 @@ export class ChatView extends ItemView {
                 }
             })();
         });
+        void connectBtn;
     }
 
     showConnectOverlay() {
@@ -232,9 +231,13 @@ export class ChatView extends ItemView {
                             }
                         }
                         
+                        interface MessageContent {
+                            type: string;
+                            text?: string;
+                        }
                         const textContent = payload.message.content
-                            .filter((item: any) => item.type === 'text')
-                            .map((item: any) => item.text)
+                            .filter((item: MessageContent) => item.type === 'text')
+                            .map((item: MessageContent) => item.text || '')
                             .join('');
                         
                         // Get agent info - use payload agent if available, fallback to selected
@@ -508,7 +511,7 @@ export class ChatView extends ItemView {
             cls: 'clawdian-context-add-btn',
             text: '+ Add file'
         });
-        addBtn.addEventListener('click', () => new FileSuggestModal(this.app, this).open());
+        addBtn.addEventListener('click', () => { new FileSuggestModal(this.app, this).open(); });
 
         this.attachedFiles.forEach((file, index) => {
             if (!this.contextBarEl) return;
@@ -591,7 +594,7 @@ export class ChatView extends ItemView {
         this.inputEl.value = '';
         this.showLoading();
 
-        const context: any = {};
+        const context: { currentFile?: string; fileContent?: string } = {};
         const maxChars = CONTEXT_SIZES[this.plugin.settings.contextSize].chars;
         
         if (this.attachedFiles.length > 0) {
@@ -606,6 +609,7 @@ export class ChatView extends ItemView {
                     }
                 } catch (e) {
                     // console.log('[Clawdian] Could not read file:', file.path, e);
+                    void e;
                 }
             }
             if (fileContents.length > 0) {
@@ -626,6 +630,7 @@ export class ChatView extends ItemView {
         } catch (err) {
             this.hideLoading();
             this.addMessage('assistant', '⚠️ Failed to send. Connection lost?');
+            void err;
         }
     }
 
@@ -666,11 +671,12 @@ export class ChatView extends ItemView {
             if (useImageAvatar) {
                 const img = avatarEl.createEl('img', { cls: 'clawdian-avatar-img', attr: { src: avatar, alt: agentName } });
                 img.onerror = () => { avatarEl.empty(); avatarEl.setText(agentName.charAt(0).toUpperCase()); };
+                void img;
             } else {
                 avatarEl.setText(avatar);
             }
             avatarEl.style.setProperty('--clawdian-avatar-color', agentColor);
-            
+
             const block = msgContainer.createEl('div', { cls: 'clawdian-message-block' });
             block.createEl('div', { cls: 'clawdian-message-sender', text: agentName });
             block.createEl('div', { cls: 'clawdian-message-bubble', text });
@@ -715,7 +721,7 @@ export class ChatView extends ItemView {
 
     startStatusPolling() {
         this.stopStatusPolling();
-        this.statusPollingInterval = setInterval(() => this.checkSessionStatus(), this.STATUS_POLLING_MS);
+        this.statusPollingInterval = setInterval(() => { void this.checkSessionStatus(); }, this.STATUS_POLLING_MS);
     }
 
     stopStatusPolling() {
@@ -754,17 +760,19 @@ export class ChatView extends ItemView {
             }
         } catch (err) {
             // console.log('[Clawdian] Status check failed:', err);
+            void err;
         }
     }
 
     showInfoText(text: string) {
         const infoEl = this.messagesEl.createEl('div', { cls: 'clawdian-info-text', text });
-        setTimeout(() => infoEl.remove(), 5000);
+        setTimeout(() => { infoEl.remove(); }, 5000);
         this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
     }
 
     showErrorText(text: string) {
         const errorEl = this.messagesEl.createEl('div', { cls: 'clawdian-error-text', text });
+        void errorEl;
         this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
     }
 

@@ -30,13 +30,13 @@ export default class ClawdianPlugin extends Plugin {
     // Debug logging - set DEBUG_CLAWDIAN=1 in .env for production debugging
     private debug = false;
     
-    private debugLog(...args: any[]) {
+    private debugLog(...args: unknown[]) {
         if (this.debug) {
             // console.log('[Clawdian]', ...args);
         }
     }
     
-    private debugError(...args: any[]) {
+    private debugError(...args: unknown[]) {
         console.error('[Clawdian]', ...args);
     }
 
@@ -117,8 +117,9 @@ export default class ClawdianPlugin extends Plugin {
             } else {
                 this.chatHistory = { messages: [], lastUpdated: Date.now() };
             }
-        } catch (e: any) {
-            this.debugError('Error loading history:', e.message || e);
+        } catch (e: unknown) {
+            const errorMsg = e instanceof Error ? e.message : String(e);
+            this.debugError('Error loading history:', errorMsg);
             this.chatHistory = { messages: [], lastUpdated: Date.now() };
         }
     }
@@ -139,9 +140,10 @@ export default class ClawdianPlugin extends Plugin {
                 if (!dirExists) {
                     await adapter.mkdir(dir);
                 }
-            } catch (folderError: any) {
+            } catch (folderError: unknown) {
                 // Ignore "already exists" errors
-                if (!folderError.message?.includes('already exists')) {
+                const folderErrorMsg = folderError instanceof Error ? folderError.message : String(folderError);
+                if (!folderErrorMsg.includes('already exists')) {
                     throw folderError;
                 }
             }
@@ -151,8 +153,9 @@ export default class ClawdianPlugin extends Plugin {
             
             // Write file directly
             await adapter.write(this.HISTORY_FILE, content);
-        } catch (e: any) {
-            this.debugError('Failed to save history:', e.message || e);
+        } catch (e: unknown) {
+            const errorMsg = e instanceof Error ? e.message : String(e);
+            this.debugError('Failed to save history:', errorMsg);
         }
     }
 
@@ -275,8 +278,9 @@ export default class ClawdianPlugin extends Plugin {
                 
                 try {
                     await this.client.connect();
-                } catch (err: any) {
-                    new Notice('❌ Connection failed: ' + err.message);
+                } catch (err: unknown) {
+                    const errorMsg = err instanceof Error ? err.message : String(err);
+                    new Notice('❌ Connection failed: ' + errorMsg);
                 }
             }
         );
@@ -293,8 +297,9 @@ export default class ClawdianPlugin extends Plugin {
         try {
             await this.client.connect();
             return true;
-        } catch (err: any) {
-            console.error('[Clawdian] Connection failed:', err.message);
+        } catch (err: unknown) {
+            const errorMsg = err instanceof Error ? err.message : String(err);
+            console.error('[Clawdian] Connection failed:', errorMsg);
             return false;
         }
     }

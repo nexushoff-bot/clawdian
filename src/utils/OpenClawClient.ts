@@ -14,8 +14,8 @@ interface GatewayMessage {
     type: string;
     event?: string;
     id?: string;
-    payload?: any;
-    error?: any;
+    payload?: unknown;
+    error?: unknown;
     ok?: boolean;
 }
 
@@ -71,8 +71,8 @@ export class OpenClawClient {
                 if (data.id === requestId) {
                     clearTimeout(timeout);
                     this.handleMessage = originalHandler;
-                    if (data.type === 'res' && data.payload?.agents) {
-                        this.agents = data.payload.agents;
+                    if (data.type === 'res' && (data.payload as { agents?: AgentInfo[] })?.agents) {
+                        this.agents = (data.payload as { agents: AgentInfo[] }).agents;
                         this.onAgentsUpdated?.(this.agents);
                     }
                     resolve(this.agents);
@@ -174,7 +174,8 @@ export class OpenClawClient {
         // Handle connect.challenge event
         if (data.type === 'event' && data.event === 'connect.challenge') {
             // console.log('[Clawdian] Challenge received, responding...');
-            this.handleConnectChallenge(data.payload?.nonce);
+            const nonce = (data.payload as { nonce?: string })?.nonce;
+            if (nonce) this.handleConnectChallenge(nonce);
             return;
         }
         
@@ -187,7 +188,7 @@ export class OpenClawClient {
                 
             case 'res':
                 // Handle connect response (hello-ok)
-                if (data.payload?.type === 'hello-ok' || data.ok === true) {
+                if ((data.payload as { type?: string })?.type === 'hello-ok' || data.ok === true) {
                     this.connected = true;
                     // console.log('[Clawdian] Connected successfully');
                     this.onConnect?.();
@@ -195,14 +196,14 @@ export class OpenClawClient {
                     this.connectionResolve = null;
                     this.connectionReject = null;
                 } else if (data.error) {
-                    const errorMsg = data.error.message || data.error || 'Connection failed';
+                    const errorMsg = (data.error as { message?: string }).message || String(data.error) || 'Connection failed';
                     console.error('[Clawdian] Connection error:', errorMsg);
                     this.onAuthError?.(errorMsg);
                     this.connectionReject?.(new Error(errorMsg));
                     this.connectionResolve = null;
                     this.connectionReject = null;
-                } else if (data.payload?.agents) {
-                    this.agents = data.payload.agents;
+                } else if ((data.payload as { agents?: AgentInfo[] })?.agents) {
+                    this.agents = (data.payload as { agents: AgentInfo[] }).agents;
                     this.onAgentsUpdated?.(this.agents);
                 }
                 break;
@@ -217,7 +218,7 @@ export class OpenClawClient {
                     this.connectionResolve = null;
                     this.connectionReject = null;
                 } else if (data.error) {
-                    const errorMsg = data.error.message || data.error || 'Auth failed';
+                    const errorMsg = (data.error as { message?: string }).message || String(data.error) || 'Auth failed';
                     console.error('[Clawdian] Auth error:', errorMsg);
                     this.onAuthError?.(errorMsg);
                     this.connectionReject?.(new Error(errorMsg));
@@ -339,9 +340,10 @@ export class OpenClawClient {
                     // console.log('[Clawdian] getSessionStatus response:', JSON.stringify(data, null, 2));
                     
                     // Try different response structures
-                    const state = data.payload?.state || 
-                                  data.payload?.status ||
-                                  data.payload?.session?.state ||
+                    const payload = data.payload as { state?: string; status?: string; session?: { state?: string } };
+                    const state = payload?.state ||
+                                  payload?.status ||
+                                  payload?.session?.state ||
                                   (data.ok ? 'running' : null);
                     resolve(state);
                 } else {

@@ -43,7 +43,7 @@ export class ContextChips {
     /**
      * Add a file context chip
      */
-    async addFile(path: string): Promise<ContextItem> {
+    addFile(path: string): ContextItem {
         const item: ContextItem = {
             id: crypto.randomUUID(),
             type: 'file',
@@ -152,7 +152,7 @@ export class ContextChips {
     /**
      * Get all context items
      */
-    getContext(): Record<string, any> {
+    getContext(): Record<string, string | string[] | undefined> {
         const result: Record<string, any> = {};
         
         this.items.forEach(item => {
@@ -227,6 +227,7 @@ export class ContextChips {
             cls: 'clawdian-chip-badge',
             text: this.getTypeLabel(item.type)
         });
+        void badgeEl;
 
         // Remove button
         const removeBtn = chipEl.createEl('button', {
@@ -452,6 +453,7 @@ export class MentionSuggestion {
                 cls: 'clawdian-mention-item',
                 attr: { 'data-index': i.toString() }
             });
+            void el;
             // ... render item
         });
     }
