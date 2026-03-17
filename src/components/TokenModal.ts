@@ -38,7 +38,7 @@ export class TokenModal extends Modal {
 
         // Gateway URL input
         new Setting(contentEl)
-            .setName('Gateway URL')
+            .setName('Gateway url')
             .setDesc('Your OpenClaw Gateway WebSocket URL')
             .addText(text => {
                 this.gatewayInput = text.inputEl;
