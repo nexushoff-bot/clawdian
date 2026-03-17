@@ -48,7 +48,7 @@ export class TokenModal extends Modal {
 
         // Token input
         new Setting(contentEl)
-            .setName('Gateway Token')
+            .setName('Gateway token')
             .setDesc('Paste the token from your dashboard')
             .addText(text => {
                 this.tokenInput = text.inputEl;

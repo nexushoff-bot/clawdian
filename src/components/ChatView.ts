@@ -267,7 +267,7 @@ export class ChatView extends ItemView {
         
         this.client.onConnect = () => {
             this.showConnected();
-            this.fetchAndUpdateAgents();
+            void this.fetchAndUpdateAgents();
         };
         
         this.client.onAgentsUpdated = (agents) => {

@@ -4,6 +4,14 @@ import { ChatView, VIEW_TYPE_CHAT } from './components/ChatView';
 import { OpenClawClient } from './utils/OpenClawClient';
 import { TokenModal } from './components/TokenModal';
 
+// Vault adapter interface for Secret Storage
+interface VaultAdapter {
+    read: (path: string) => Promise<string>;
+    write: (path: string, data: string) => Promise<void>;
+    mkdir: (path: string) => Promise<void>;
+    remove: (path: string) => Promise<void>;
+}
+
 // Global chat history interface
 export interface ChatMessage {
     id: string;
@@ -75,7 +83,7 @@ export default class ClawdianPlugin extends Plugin {
         // Add command
         this.addCommand({
             id: 'open-clawdian',
-            name: 'Open Clawdian chat',
+            name: 'Open clawdian chat',
             callback: () => { void this.activateView(); }
         });
 
@@ -188,7 +196,7 @@ export default class ClawdianPlugin extends Plugin {
      */
     async loadToken(): Promise<string | null> {
         try {
-            const adapter = (this.app.vault as any).adapter;
+            const adapter = (this.app.vault as { adapter?: VaultAdapter }).adapter;
             if (adapter?.read) {
                 const secretPath = `.obsidian/plugins/${this.manifest.id}/.secrets/token`;
                 try {

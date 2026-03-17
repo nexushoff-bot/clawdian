@@ -152,8 +152,8 @@ export class ContextChips {
     /**
      * Get all context items
      */
-    getContext(): Record<string, string | string[] | undefined> {
-        const result: Record<string, any> = {};
+    getContext(): Record<string, string[] | undefined> {
+        const result: Record<string, string[]> = {};
         
         this.items.forEach(item => {
             switch (item.type) {
