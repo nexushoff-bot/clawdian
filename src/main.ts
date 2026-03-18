@@ -77,14 +77,14 @@ export default class ClawdianPlugin extends Plugin {
 
         // Add ribbon icon
         this.addRibbonIcon('message-square', 'Open Claw Chat', () => {
-            void this.activateView();
+            void void this.activateView();
         });
 
         // Add command
         this.addCommand({
             id: 'open-clawdian',
             name: 'Open Claw Chat',
-            callback: () => { void this.activateView(); }
+            callback: () => { void void this.activateView(); }
         });
 
         // Add settings tab
@@ -94,7 +94,7 @@ export default class ClawdianPlugin extends Plugin {
         if (this.settings.autoConnect && token) {
             this.debugLog('Auto-connect enabled, attempting connection...');
             
-            void this.tryConnect().then((connected) => {
+            void void this.tryConnect().then((connected: boolean) => {
                 // Notice shown by ChatView.showConnected() to avoid duplicate
                 if (connected) {
                     this.debugLog('Auto-connect successful');
@@ -341,7 +341,7 @@ export default class ClawdianPlugin extends Plugin {
 
         // Connect when opening if not already connected
         if (!this.client.isConnected()) {
-            await this.tryConnect();
+            await void this.tryConnect();
         }
     }
 }

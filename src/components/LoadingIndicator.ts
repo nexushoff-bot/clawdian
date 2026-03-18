@@ -83,11 +83,11 @@ export class LoadingIndicator {
         const headerEl = contentEl.createEl('div', { cls: 'clawdian-message-header' });
         headerEl.createEl('span', { 
             cls: 'clawdian-message-author',
-            text: 'Clawchat'
+            text: 'Claw Chat'
         });
         headerEl.createEl('span', { 
             cls: 'clawdian-loading-status',
-            text: 'thinking...'
+            text: 'Thinking...'
         });
 
         // Typing bubble with animated dots

@@ -107,11 +107,11 @@ export class ChatView extends ItemView {
             text: 'Send'
         });
 
-        sendBtn.addEventListener('click', () => { void this.sendMessage(); });
+        sendBtn.addEventListener('click', () => { void void this.sendMessage(); });
         this.inputEl.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                this.sendMessage();
+                void this.sendMessage();
             }
         });
         this.inputEl.addEventListener('input', () => this.handleSlashCommands());
@@ -261,13 +261,14 @@ export class ChatView extends ItemView {
                 }
 
             } catch (e) {
+                void e;
                 // Ignore parse errors
             }
         };
         
         this.client.onConnect = () => {
             this.showConnected();
-            void this.fetchAndUpdateAgents();
+            void void this.fetchAndUpdateAgents();
         };
         
         this.client.onAgentsUpdated = (agents) => {
@@ -567,7 +568,7 @@ export class ChatView extends ItemView {
                 // Validate command
                 if (this.validateCommand(commandId)) {
                     this.inputEl.value = '';
-                    await this.executeCommand(commandId, args);
+                    await void this.executeCommand(commandId, args);
                     return;
                 }
             }
@@ -810,7 +811,7 @@ export class ChatView extends ItemView {
             item.createEl('span', { text: cmd.label, cls: 'clawdian-command-label' });
             
             item.addEventListener('click', () => {
-                this.executeCommand(cmd.id);
+                void this.executeCommand(cmd.id);
                 this.closeCommandPalette();
             });
         });
@@ -846,7 +847,7 @@ export class ChatView extends ItemView {
                     if (match) {
                         const commandId = match[1];
                         const args = match[2] || '';
-                        this.executeCommand(commandId, args);
+                        void this.executeCommand(commandId, args);
                     }
                 }
             };
