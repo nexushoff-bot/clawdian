@@ -76,15 +76,15 @@ export default class ClawdianPlugin extends Plugin {
         );
 
         // Add ribbon icon
-        this.addRibbonIcon('message-square', 'Open Claw Chat', () => {
-            void void this.activateView();
+        this.addRibbonIcon('message-square', 'Open claw chat', () => {
+            void this.activateView();
         });
 
         // Add command
         this.addCommand({
             id: 'open-clawdian',
-            name: 'Open Claw Chat',
-            callback: () => { void void this.activateView(); }
+            name: 'Open claw chat',
+            callback: () => { void this.activateView(); }
         });
 
         // Add settings tab

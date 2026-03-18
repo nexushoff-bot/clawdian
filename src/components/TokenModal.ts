@@ -22,7 +22,7 @@ export class TokenModal extends Modal {
         contentEl.empty();
         contentEl.addClass('clawdian-token-modal');
 
-        contentEl.createEl('h2', { text: 'Connect to OpenClaw' });
+        new Setting(contentEl).setName('Connect to OpenClaw').setHeading();
 
         // Instructions
         const instructions = contentEl.createEl('div', { cls: 'clawdian-instructions' });

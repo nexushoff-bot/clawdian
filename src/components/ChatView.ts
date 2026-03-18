@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, Notice, TFile, FuzzySuggestModal, App } from 'obsidian';
+import { ItemView, WorkspaceLeaf, Notice, TFile, FuzzySuggestModal, App, Setting } from 'obsidian';
 import { OpenClawClient, AgentInfo } from '../utils/OpenClawClient';
 import ClawdianPlugin, { ChatMessage } from '../main';
 import { CONTEXT_SIZES, AGENT_COLORS, DEFAULT_AGENT_COLORS } from '../settings';
@@ -50,9 +50,9 @@ export class ChatView extends ItemView {
     getDisplayText(): string { return 'Clawchat'; }
     getIcon(): string { return 'message-square'; }
 
-    async onOpen() {
-        // Ensure we return a promise as required by ItemView
-        await Promise.resolve();
+    // eslint-disable-next-line @typescript-eslint/require-await
+    async onOpen(): Promise<void> {
+        // Render immediately - no async work needed
         const container = this.containerEl.children[1] as HTMLElement;
         container.empty();
         container.addClass('clawdian-chat-container');
@@ -131,7 +131,7 @@ export class ChatView extends ItemView {
         this.connectOverlayEl.addClass('clawdian-hidden');
         
         const overlayContent = this.connectOverlayEl.createEl('div', { cls: 'clawdian-connect-overlay-content' });
-        overlayContent.createEl('h2', { text: 'Connect to OpenClaw' });
+        new Setting(overlayContent).setName('Connect to OpenClaw').setHeading();
         
         const instructions = overlayContent.createEl('div', { cls: 'clawdian-instructions' });
         instructions.createEl('p', { text: 'To connect:' });
