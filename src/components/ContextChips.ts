@@ -59,7 +59,7 @@ export class ContextChips {
     /**
      * Add selected text as context
      */
-    addText(text: string, source?: string): ContextItem {
+    addText(text: string, _source?: string): ContextItem {
         const truncated = text.length > 50 ? text.slice(0, 50) + '...' : text;
         const item: ContextItem = {
             id: crypto.randomUUID(),
@@ -377,7 +377,7 @@ export class MentionSuggestion {
         });
     }
 
-    handleInput(e: Event) {
+    handleInput(_e: Event) {
         const value = this.input.value;
         const cursor = this.input.selectionStart || 0;
         const beforeCursor = value.slice(0, cursor);
@@ -441,7 +441,7 @@ export class MentionSuggestion {
         });
     }
 
-    filterItems(query: string) {
+    filterItems(_query: string) {
         // Filter logic here - would be populated from vault files
         this.renderItems();
     }

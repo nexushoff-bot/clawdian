@@ -279,7 +279,7 @@ export class ChatView extends ItemView {
             this.showDisconnected();
         };
         
-        this.client.onAuthError = (msg) => {
+        this.client.onAuthError = (_msg) => {
             this.showDisconnected();
             this.plugin.showTokenModal();
         };
@@ -347,18 +347,19 @@ export class ChatView extends ItemView {
 
     populateAgentDropdown(agents?: AgentInfo[]) {
         if (!this.agentSelectEl) return;
-        this.agentSelectEl.empty();
+        const selectEl = this.agentSelectEl;
+        selectEl.empty();
         const agentsList = agents?.length ? agents : this.client.getAgents();
         
         if (agentsList.length === 0) {
-            this.agentSelectEl.createEl('option', {
+            selectEl.createEl('option', {
                 text: 'No agents available',
                 value: '',
                 attr: { disabled: 'true', selected: 'true' }
             });
         } else {
             agentsList.forEach(agent => {
-                const option = this.agentSelectEl!.createEl('option', { 
+                const option = selectEl.createEl('option', { 
                     text: agent.name || agent.id,
                     value: agent.id 
                 });
@@ -366,16 +367,16 @@ export class ChatView extends ItemView {
                 if (agent.id === selectedAgent) option.selected = true;
             });
             
-            this.agentSelectEl.addEventListener('change', () => {
+            selectEl.addEventListener('change', () => {
                 void (async () => {
-                    const selectedValue = this.agentSelectEl?.value;
+                    const selectedValue = selectEl.value;
                     if (selectedValue) {
                         this.plugin.settings.lastAgent = selectedValue;
                         await this.plugin.saveSettings();
                         if (!this.sessionIds.has(selectedValue)) {
                             this.sessionIds.set(selectedValue, 'obsidian-chat-' + this.generateSessionId());
                         }
-                        this.sessionId = this.sessionIds.get(selectedValue)!;
+                        this.sessionId = this.sessionIds.get(selectedValue) ?? this.generateSessionId();
                         this.currentAgentId = selectedValue;
                         
                         // Re-render history for this agent
@@ -1018,5 +1019,5 @@ class FileSuggestModal extends FuzzySuggestModal<TFile> {
     }
     getItems(): TFile[] { return this.app.vault.getMarkdownFiles(); }
     getItemText(file: TFile): string { return file.basename; }
-    onChooseItem(file: TFile, evt: MouseEvent | KeyboardEvent): void { this.chatView.addFile(file); }
+    onChooseItem(file: TFile, _evt: MouseEvent | KeyboardEvent): void { this.chatView.addFile(file); }
 }

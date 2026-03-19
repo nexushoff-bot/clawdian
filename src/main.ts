@@ -38,7 +38,7 @@ export default class ClawdianPlugin extends Plugin {
     // Debug logging - set DEBUG_CLAWDIAN=1 in .env for production debugging
     private debug = false;
     
-    private debugLog(...args: unknown[]) {
+    private debugLog(..._args: unknown[]) {
         if (this.debug) {
             // console.log('[Clawdian]', ...args);
         }
@@ -242,7 +242,7 @@ export default class ClawdianPlugin extends Plugin {
      * Clear stored token from Secret Storage
      */
     async clearToken(): Promise<void> {
-        const adapter = (this.app.vault as any).adapter;
+        const adapter = (this.app.vault as { adapter?: VaultAdapter }).adapter;
         if (adapter?.remove) {
             const secretPath = `.obsidian/plugins/${this.manifest.id}/.secrets/token`;
             try {

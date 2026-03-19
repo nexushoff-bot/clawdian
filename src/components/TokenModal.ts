@@ -3,8 +3,8 @@ import { Modal, App, Setting, Notice } from 'obsidian';
 export class TokenModal extends Modal {
     private gatewayUrl: string;
     private token = '';
-    private gatewayInput: HTMLInputElement = null!;
-    private tokenInput: HTMLInputElement = null!;
+    private gatewayInput!: HTMLInputElement;
+    private tokenInput!: HTMLInputElement;
     private onConnect: (gateway: string, token: string) => void;
 
     constructor(

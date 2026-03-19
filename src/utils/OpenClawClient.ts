@@ -81,7 +81,7 @@ export class OpenClawClient {
                 }
             };
 
-            this.ws!.send(JSON.stringify({
+            this.ws?.send(JSON.stringify({
                 type: 'req',
                 id: requestId,
                 method: 'agents.list',
@@ -352,7 +352,7 @@ export class OpenClawClient {
             };
 
             // Try sessions.get with sessionKey instead of runId
-            this.ws!.send(JSON.stringify({
+            this.ws?.send(JSON.stringify({
                 type: 'req',
                 id: requestId,
                 method: 'sessions.get',
