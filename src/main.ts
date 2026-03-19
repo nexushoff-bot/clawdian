@@ -219,7 +219,7 @@ export default class ClawdianPlugin extends Plugin {
      * Save token to Obsidian's Secret Storage
      */
     async saveToken(token: string): Promise<void> {
-        const adapter = (this.app.vault as any).adapter;
+        const adapter = (this.app.vault as { adapter?: VaultAdapter }).adapter;
         if (adapter?.write && adapter?.mkdir) {
             const secretDir = `.obsidian/plugins/${this.manifest.id}/.secrets`;
             const secretPath = `${secretDir}/token`;
