@@ -33,13 +33,13 @@ export class TokenModal extends Modal {
         step1.createEl('span', { text: 'Open a terminal and run: ' });
         step1.createEl('code', { text: 'openclaw dashboard' });
         
-        ol.createEl('li', { text: 'Click on "Overview" in the dashboard' });
+        ol.createEl('li', { text: 'Click on "overview" in the dashboard' });
         ol.createEl('li', { text: 'Copy the gateway token' });
 
         // Gateway URL input
         new Setting(contentEl)
             .setName('Gateway URL')
-            .setDesc('Your OpenClaw gateway WebSocket URL')
+            .setDesc('Your OpenClaw gateway websocket URL')
             .addText(text => {
                 this.gatewayInput = text.inputEl;
                 text.setPlaceholder('wss://your-gateway-url');

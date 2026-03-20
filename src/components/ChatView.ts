@@ -140,8 +140,8 @@ export class ChatView extends ItemView {
         step1.createEl('span', { text: 'Run ' });
         step1.createEl('code', { text: 'openclaw dashboard' });
         
-        ol.createEl('li', { text: 'Click "Overview" and copy the gateway token' });
-        ol.createEl('li', { text: 'Click Connect below and paste the token' });
+        ol.createEl('li', { text: 'Click "overview" and copy the gateway token' });
+        ol.createEl('li', { text: 'Click connect below and paste the token' });
 
         const connectBtn = overlayContent.createEl('button', {
             cls: 'clawdian-connect-btn',
@@ -546,7 +546,7 @@ export class ChatView extends ItemView {
         // console.log('[Clawdian] sendMessage() called');
         
         if (!this.client.isConnected()) {
-            new Notice('Not connected. Click Connect first.');
+            new Notice('Not connected. Click connect first.');
             return;
         }
         if (this.isLoading) return;
