@@ -174,100 +174,101 @@ export class ChatView extends ItemView {
     }
 
     setupCallbacks() {
-        this.client.onMessage = async (text: string) => {
-            try {
-                const data = JSON.parse(text);
-                
-                // Handle agent lifecycle events
-                if (data.type === 'event' && data.event === 'agent') {
-                    const payload = data.payload;
+        this.client.onMessage = (text: string) => {
+            void (async () => {
+                try {
+                    const data = JSON.parse(text);
                     
-                    if (payload?.sessionKey) {
-                        const messageSessionId = payload.sessionKey.split(':session:')[1];
-                        if (messageSessionId !== this.sessionId) return;
-                    }
-                    
-                    if (payload?.stream === 'lifecycle') {
-                        if (payload?.data?.phase === 'start') {
-                            this.messageStartTime = Date.now();
-                        }
-                    }
-                    
-                    if (payload?.state === 'error') {
-                        const errorMsg = payload?.error || 'An error occurred';
-                        const isAborted = errorMsg.includes('aborted') || errorMsg.includes('timeout');
+                    // Handle agent lifecycle events
+                    if (data.type === 'event' && data.event === 'agent') {
+                        const payload = data.payload;
                         
-                        this.hideLoading();
+                        if (payload?.sessionKey) {
+                            const messageSessionId = payload.sessionKey.split(':session:')[1];
+                            if (messageSessionId !== this.sessionId) return;
+                        }
                         
-                        if (isAborted) {
-                            this.showErrorText('⚠️ Agent timed out after 10 minutes. Try a shorter request.');
-                        } else {
-                            this.showErrorText('⚠️ ' + errorMsg);
-                        }
-                    }
-                    return;
-                }
-                
-                // Handle chat events
-                if (data.type === 'event' && data.event === 'chat') {
-                    const payload = data.payload;
-                    
-                    if (payload?.sessionKey) {
-                        const messageSessionId = payload.sessionKey.split(':session:')[1];
-                        if (messageSessionId !== this.sessionId) return;
-                    }
-                    
-                    if (payload?.state === 'final' && payload?.message?.content) {
-                        const runId = payload.runId;
-                        if (runId && this.processedRunIds.has(runId)) {
-                            return;
-                        }
-                        if (runId) {
-                            this.processedRunIds.add(runId);
-                            if (this.processedRunIds.size > 100) {
-                                const ids = Array.from(this.processedRunIds);
-                                this.processedRunIds = new Set(ids.slice(-50));
+                        if (payload?.stream === 'lifecycle') {
+                            if (payload?.data?.phase === 'start') {
+                                this.messageStartTime = Date.now();
                             }
                         }
                         
-                        interface MessageContent {
-                            type: string;
-                            text?: string;
+                        if (payload?.state === 'error') {
+                            const errorMsg = payload?.error || 'An error occurred';
+                            const isAborted = errorMsg.includes('aborted') || errorMsg.includes('timeout');
+                            
+                            this.hideLoading();
+                            
+                            if (isAborted) {
+                                this.showErrorText('⚠️ Agent timed out after 10 minutes. Try a shorter request.');
+                            } else {
+                                this.showErrorText('⚠️ ' + errorMsg);
+                            }
                         }
-                        const textContent = payload.message.content
-                            .filter((item: MessageContent) => item.type === 'text')
-                            .map((item: MessageContent) => item.text || '')
-                            .join('');
-                        
-                        // Get agent info - use payload agent if available, fallback to selected
-                        const agentId = payload.agent || this.agentSelectEl?.value || this.plugin.settings.defaultAgent || 'main';
-                        const agentName = this.agentSelectEl?.options[this.agentSelectEl.selectedIndex]?.text || agentId;
-                        const agentEmoji = this.getAgentEmoji(agentId);
-                        
-                        // Save to history
-                        await this.plugin.addMessageToHistory({
-                            agentId,
-                            agentName,
-                            agentEmoji,
-                            role: 'assistant',
-                            content: textContent
-                        });
-                        
-                        this.hideLoading();
-                        this.addMessage('assistant', textContent, agentEmoji);
+                        return;
                     }
-                    return;
-                }
+                    
+                    // Handle chat events
+                    if (data.type === 'event' && data.event === 'chat') {
+                        const payload = data.payload;
+                        
+                        if (payload?.sessionKey) {
+                            const messageSessionId = payload.sessionKey.split(':session:')[1];
+                            if (messageSessionId !== this.sessionId) return;
+                        }
+                        
+                        if (payload?.state === 'final' && payload?.message?.content) {
+                            const runId = payload.runId;
+                            if (runId && this.processedRunIds.has(runId)) {
+                                return;
+                            }
+                            if (runId) {
+                                this.processedRunIds.add(runId);
+                                if (this.processedRunIds.size > 100) {
+                                    const ids = Array.from(this.processedRunIds);
+                                    this.processedRunIds = new Set(ids.slice(-50));
+                                }
+                            }
+                            
+                            interface MessageContent {
+                                type: string;
+                                text?: string;
+                            }
+                            const textContent = payload.message.content
+                                .filter((item: MessageContent) => item.type === 'text')
+                                .map((item: MessageContent) => item.text || '')
+                                .join('');
+                            
+                            // Get agent info - use payload agent if available, fallback to selected
+                            const agentId = payload.agent || this.agentSelectEl?.value || this.plugin.settings.defaultAgent || 'main';
+                            const agentName = this.agentSelectEl?.options[this.agentSelectEl.selectedIndex]?.text || agentId;
+                            const agentEmoji = this.getAgentEmoji(agentId);
+                            
+                            // Save to history
+                            await this.plugin.addMessageToHistory({
+                                agentId,
+                                agentName,
+                                agentEmoji,
+                                role: 'assistant',
+                                content: textContent
+                            });
+                            
+                            this.hideLoading();
+                            this.addMessage('assistant', textContent, agentEmoji);
+                        }
+                        return;
+                    }
 
-            } catch (e) {
-                void e;
-                // Ignore parse errors
-            }
+                } catch (_e) {
+                    // Ignore parse errors
+                }
+            })();
         };
         
         this.client.onConnect = () => {
             this.showConnected();
-            void void this.fetchAndUpdateAgents();
+            void this.fetchAndUpdateAgents();
         };
         
         this.client.onAgentsUpdated = (agents) => {

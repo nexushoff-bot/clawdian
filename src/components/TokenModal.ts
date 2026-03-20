@@ -38,8 +38,8 @@ export class TokenModal extends Modal {
 
         // Gateway URL input
         new Setting(contentEl)
-            .setName('Gateway url')
-            .setDesc('Your OpenClaw Gateway WebSocket URL')
+            .setName('Gateway URL')
+            .setDesc('Your OpenClaw gateway WebSocket URL')
             .addText(text => {
                 this.gatewayInput = text.inputEl;
                 text.setPlaceholder('wss://your-gateway-url');

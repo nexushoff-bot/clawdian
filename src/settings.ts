@@ -104,7 +104,7 @@ export class ClawdianSettingTab extends PluginSettingTab {
             });
 
         new Setting(containerEl)
-            .setName('Gateway url')
+            .setName('Gateway URL')
             .setDesc('OpenClaw gateway WebSocket URL')
             .addText(text => text
                 .setPlaceholder('wss://your-gateway-url')
