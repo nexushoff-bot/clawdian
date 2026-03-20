@@ -50,9 +50,8 @@ export class ChatView extends ItemView {
     getDisplayText(): string { return 'Clawchat'; }
     getIcon(): string { return 'message-square'; }
 
-    // eslint-disable-next-line @typescript-eslint/require-await
+    // eslint-disable-next-line @typescript-eslint/require-await -- onOpen must be async per Obsidian ItemView API
     async onOpen(): Promise<void> {
-        // Render immediately - no async work needed
         const container = this.containerEl.children[1] as HTMLElement;
         container.empty();
         container.addClass('clawdian-chat-container');
@@ -569,7 +568,7 @@ export class ChatView extends ItemView {
                 // Validate command
                 if (this.validateCommand(commandId)) {
                     this.inputEl.value = '';
-                    await void this.executeCommand(commandId, args);
+                    void this.executeCommand(commandId, args);
                     return;
                 }
             }

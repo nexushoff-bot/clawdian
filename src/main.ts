@@ -276,20 +276,18 @@ export default class ClawdianPlugin extends Plugin {
         const modal = new TokenModal(
             this.app,
             this.settings.gatewayUrl,
-            async (gateway: string, token: string) => {
+            (gateway: string, token: string) => {
                 this.settings.gatewayUrl = gateway;
-                await this.saveSettings();
+                void this.saveSettings();
                 
-                await this.saveToken(token);
+                void this.saveToken(token);
                 
                 this.client.updateConfig(gateway, token);
                 
-                try {
-                    await this.client.connect();
-                } catch (err: unknown) {
+                void this.client.connect().catch((err: unknown) => {
                     const errorMsg = err instanceof Error ? err.message : String(err);
                     new Notice('❌ Connection failed: ' + errorMsg);
-                }
+                });
             }
         );
         modal.open();
@@ -341,7 +339,7 @@ export default class ClawdianPlugin extends Plugin {
 
         // Connect when opening if not already connected
         if (!this.client.isConnected()) {
-            await void this.tryConnect();
+            void this.tryConnect();
         }
     }
 }
