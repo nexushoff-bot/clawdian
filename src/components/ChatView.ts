@@ -58,7 +58,7 @@ export class ChatView extends ItemView {
 
         // Header
         const header = container.createEl('div', { cls: 'clawdian-header' });
-        header.createEl('span', { text: '🦞 Claw Chat', cls: 'clawdian-title' });
+        header.createEl('span', { text: '🦞 Claw chat', cls: 'clawdian-title' });
         
         // Agent selector
         const headerRight = header.createEl('div', { cls: 'clawdian-header-right' });
