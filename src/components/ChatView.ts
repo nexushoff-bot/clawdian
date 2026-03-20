@@ -907,7 +907,7 @@ export class ChatView extends ItemView {
                     results.push({ file, content });
                     if (results.length >= 5) break;
                 }
-            } catch (e) {
+            } catch (_e) {
                         // Skip files that can't be read
                     }
         }

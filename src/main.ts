@@ -209,7 +209,7 @@ export default class ClawdianPlugin extends Plugin {
                 }
             }
             return null;
-        } catch (e) {
+        } catch (_e) {
             // console.log('[Clawdian] No stored token found');
             return null;
         }
@@ -226,7 +226,7 @@ export default class ClawdianPlugin extends Plugin {
             
             try {
                 await adapter.mkdir(secretDir);
-            } catch (e) {
+            } catch (_e) {
                 // Directory may already exist
             }
             
