@@ -339,7 +339,9 @@ export default class ClawdianPlugin extends Plugin {
 
         // Connect when opening if not already connected
         if (!this.client.isConnected()) {
-            void this.tryConnect();
+            void this.tryConnect().catch(() => {
+                // Connection failed silently - user can retry manually
+            });
         }
     }
 }
