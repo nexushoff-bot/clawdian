@@ -196,8 +196,10 @@ export class OpenClawClient {
                     this.connectionResolve = null;
                     this.connectionReject = null;
                 } else if (data.error) {
-                    const errorMsg = (data.error as { message?: string }).message || String(data.error) || 'Connection failed';
-                    console.error('[Clawdian] Connection error:', errorMsg);
+                    const errorMsg = (data.error as { message?: string }).message 
+                        || (typeof data.error === 'string' ? data.error : JSON.stringify(data.error))
+                        || 'Connection failed';
+                    console.error('[Claw Chat] Connection error:', errorMsg);
                     this.onAuthError?.(errorMsg);
                     this.connectionReject?.(new Error(errorMsg));
                     this.connectionResolve = null;
@@ -221,7 +223,7 @@ export class OpenClawClient {
                     const errorMsg = (data.error as { message?: string }).message 
                         || (typeof data.error === 'string' ? data.error : JSON.stringify(data.error))
                         || 'Auth failed';
-                    console.error('[Clawdian] Auth error:', errorMsg);
+                    console.error('[Claw Chat] Auth error:', errorMsg);
                     this.onAuthError?.(errorMsg);
                     this.connectionReject?.(new Error(errorMsg));
                     this.connectionResolve = null;

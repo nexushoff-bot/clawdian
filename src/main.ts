@@ -94,7 +94,7 @@ export default class ClawdianPlugin extends Plugin {
         if (this.settings.autoConnect && token) {
             this.debugLog('Auto-connect enabled, attempting connection...');
             
-            void void this.tryConnect().then((connected: boolean) => {
+            void this.tryConnect().then((connected: boolean) => {
                 // Notice shown by ChatView.showConnected() to avoid duplicate
                 if (connected) {
                     this.debugLog('Auto-connect successful');
@@ -247,7 +247,7 @@ export default class ClawdianPlugin extends Plugin {
             const secretPath = `.obsidian/plugins/${this.manifest.id}/.secrets/token`;
             try {
                 await adapter.remove(secretPath);
-            } catch (e) {
+            } catch (_e) {
                 // File may not exist
             }
         }
