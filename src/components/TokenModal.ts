@@ -22,7 +22,7 @@ export class TokenModal extends Modal {
         contentEl.empty();
         contentEl.addClass('clawdian-token-modal');
 
-        new Setting(contentEl).setName('Connect to OpenClaw').setHeading();
+        new Setting(contentEl).setName('Connect to openclaw').setHeading();
 
         // Instructions
         const instructions = contentEl.createEl('div', { cls: 'clawdian-instructions' });
@@ -39,7 +39,7 @@ export class TokenModal extends Modal {
         // Gateway URL input
         new Setting(contentEl)
             .setName('Gateway URL')
-            .setDesc('Your OpenClaw gateway websocket URL')
+            .setDesc('Your openclaw gateway websocket URL')
             .addText(text => {
                 this.gatewayInput = text.inputEl;
                 text.setPlaceholder('wss://your-gateway-url');

@@ -94,14 +94,17 @@ export default class ClawdianPlugin extends Plugin {
         if (this.settings.autoConnect && token) {
             this.debugLog('Auto-connect enabled, attempting connection...');
             
-            void this.tryConnect().then((connected: boolean) => {
-                // Notice shown by ChatView.showConnected() to avoid duplicate
-                if (connected) {
-                    this.debugLog('Auto-connect successful');
+            void (async () => {
+                try {
+                    const connected = await this.tryConnect();
+                    if (connected) {
+                        this.debugLog('Auto-connect successful');
+                    }
+                } catch (err: unknown) {
+                    const errorMsg = err instanceof Error ? err.message : String(err);
+                    this.debugLog('Auto-connect failed:', errorMsg);
                 }
-            }).catch((err: Error) => {
-                this.debugLog('Auto-connect failed:', err.message);
-            });
+            })();
         }
 
         this.debugLog('Plugin loaded');

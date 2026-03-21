@@ -130,7 +130,7 @@ export class ChatView extends ItemView {
         this.connectOverlayEl.addClass('clawdian-hidden');
         
         const overlayContent = this.connectOverlayEl.createEl('div', { cls: 'clawdian-connect-overlay-content' });
-        new Setting(overlayContent).setName('Connect to OpenClaw').setHeading();
+        new Setting(overlayContent).setName('Connect to openclaw').setHeading();
         
         const instructions = overlayContent.createEl('div', { cls: 'clawdian-instructions' });
         instructions.createEl('p', { text: 'To connect:' });
