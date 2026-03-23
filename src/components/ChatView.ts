@@ -141,7 +141,7 @@ export class ChatView extends ItemView {
         step1.createEl('code', { text: 'openclaw dashboard' });
         
         ol.createEl('li', { text: 'Click "overview" and copy the gateway token' });
-        ol.createEl('li', { text: 'Click Connect below and paste the token' });
+        ol.createEl('li', { text: 'Click connect below and paste the token' });
 
         const connectBtn = overlayContent.createEl('button', {
             cls: 'clawdian-connect-btn',
