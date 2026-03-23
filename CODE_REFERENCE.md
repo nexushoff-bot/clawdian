@@ -187,7 +187,7 @@ interface AttachedFile {
     content?: string;  // Optional cached content
 }
 
-const VIEW_TYPE_CHAT = 'clawdian-chat-view';
+const VIEW_TYPE_CHAT = 'clawchat-chat-view';
 ```
 
 ### Dependencies
@@ -424,89 +424,89 @@ All styling for the ChatView UI. Uses Obsidian CSS variables for theming compati
 
 | Class | Purpose |
 |-------|---------|
-| `.clawdian-chat-container` | Main flex container, 100% height, padding |
-| `.clawdian-header` | Top bar with title and agent selector |
-| `.clawdian-messages` | Scrollable message area, flex column |
-| `.clawdian-input-container` | Bottom input area with textarea and button |
-| `.clawdian-context-bar` | File attachment chips bar |
-| `.clawdian-connect-overlay` | Full-screen blur overlay when disconnected |
+| `.clawchat-chat-container` | Main flex container, 100% height, padding |
+| `.clawchat-header` | Top bar with title and agent selector |
+| `.clawchat-messages` | Scrollable message area, flex column |
+| `.clawchat-input-container` | Bottom input area with textarea and button |
+| `.clawchat-context-bar` | File attachment chips bar |
+| `.clawchat-connect-overlay` | Full-screen blur overlay when disconnected |
 
 #### Header Elements
 
 | Class | Purpose |
 |-------|---------|
-| `.clawdian-title` | Plugin title "🦞 Clawdian" |
-| `.clawdian-header-right` | Flex container for agent selector |
-| `.clawdian-agent-label` | "Agent:" label |
-| `.clawdian-agent-select` | Agent dropdown select |
+| `.clawchat-title` | Plugin title "🦞 ClawChat" |
+| `.clawchat-header-right` | Flex container for agent selector |
+| `.clawchat-agent-label` | "Agent:" label |
+| `.clawchat-agent-select` | Agent dropdown select |
 
 #### Messages
 
 | Class | Purpose |
 |-------|---------|
-| `.clawdian-message-container` | Wrapper for message + avatar |
-| `.clawdian-message-container-user` | User messages (right-aligned) |
-| `.clawdian-message-container-agent` | Agent messages (left-aligned) |
-| `.clawdian-avatar` | Agent avatar circle (32x32) |
-| `.clawdian-avatar-img` | Image avatar fallback |
-| `.clawdian-message-block` | Sender name + bubble container |
-| `.clawdian-message-sender` | Sender name text |
-| `.clawdian-message-bubble` | Message content bubble |
-| `.clawdian-user-bubble` | Blue gradient user bubble |
-| `.clawdian-user-block` | Aligns user content to right |
+| `.clawchat-message-container` | Wrapper for message + avatar |
+| `.clawchat-message-container-user` | User messages (right-aligned) |
+| `.clawchat-message-container-agent` | Agent messages (left-aligned) |
+| `.clawchat-avatar` | Agent avatar circle (32x32) |
+| `.clawchat-avatar-img` | Image avatar fallback |
+| `.clawchat-message-block` | Sender name + bubble container |
+| `.clawchat-message-sender` | Sender name text |
+| `.clawchat-message-bubble` | Message content bubble |
+| `.clawchat-user-bubble` | Blue gradient user bubble |
+| `.clawchat-user-block` | Aligns user content to right |
 
 #### Input
 
 | Class | Purpose |
 |-------|---------|
-| `.clawdian-input` | Multi-line textarea |
-| `.clawdian-send-btn` | Send button (accent color) |
+| `.clawchat-input` | Multi-line textarea |
+| `.clawchat-send-btn` | Send button (accent color) |
 
 #### Context Bar
 
 | Class | Purpose |
 |-------|---------|
-| `.clawdian-context-bar` | File attachment area |
-| `.clawdian-context-add-btn` | "+ Add file" button |
-| `.clawdian-context-file-chip` | Attached file chip |
-| `.clawdian-context-file-name` | Filename in chip |
-| `.clawdian-context-file-remove` | × remove button |
+| `.clawchat-context-bar` | File attachment area |
+| `.clawchat-context-add-btn` | "+ Add file" button |
+| `.clawchat-context-file-chip` | Attached file chip |
+| `.clawchat-context-file-name` | Filename in chip |
+| `.clawchat-context-file-remove` | × remove button |
 
 #### Loading/Status
 
 | Class | Purpose |
 |-------|---------|
-| `.clawdian-loading` | Loading container |
-| `.clawdian-spinner` | Animated spinner |
-| `.clawdian-loading-text` | "Agent is thinking..." text |
-| `.clawdian-info-text` | Temporary info message (fades) |
-| `.clawdian-error-text` | Error message with background |
+| `.clawchat-loading` | Loading container |
+| `.clawchat-spinner` | Animated spinner |
+| `.clawchat-loading-text` | "Agent is thinking..." text |
+| `.clawchat-info-text` | Temporary info message (fades) |
+| `.clawchat-error-text` | Error message with background |
 
 #### Connect Overlay
 
 | Class | Purpose |
 |-------|---------|
-| `.clawdian-connect-overlay` | Blur backdrop |
-| `.clawdian-connect-overlay-content` | Centered card |
-| `.clawdian-connect-btn` | Connect button |
-| `.clawdian-instructions` | Instruction list container |
+| `.clawchat-connect-overlay` | Blur backdrop |
+| `.clawchat-connect-overlay-content` | Centered card |
+| `.clawchat-connect-btn` | Connect button |
+| `.clawchat-instructions` | Instruction list container |
 
 #### Command Palette
 
 | Class | Purpose |
 |-------|---------|
-| `.clawdian-command-palette` | Slash command dropdown |
-| `.clawdian-command-item` | Individual command option |
-| `.clawdian-command-label` | Command text |
+| `.clawchat-command-palette` | Slash command dropdown |
+| `.clawchat-command-item` | Individual command option |
+| `.clawchat-command-label` | Command text |
 
 #### Deprecated (backwards compat)
 
 | Class | Purpose |
 |-------|---------|
-| `.clawdian-message` | Old single-div message |
-| `.clawdian-message-user` | Old user style |
-| `.clawdian-message-agent` | Old agent style |
-| `.clawdian-message-text` | Old message text wrapper |
+| `.clawchat-message` | Old single-div message |
+| `.clawchat-message-user` | Old user style |
+| `.clawchat-message-agent` | Old agent style |
+| `.clawchat-message-text` | Old message text wrapper |
 
 ### CSS Variables Used
 

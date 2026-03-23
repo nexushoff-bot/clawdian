@@ -20,12 +20,12 @@ export class TokenModal extends Modal {
     onOpen() {
         const { contentEl } = this;
         contentEl.empty();
-        contentEl.addClass('clawdian-token-modal');
+        contentEl.addClass('clawchat-token-modal');
 
         new Setting(contentEl).setName('Connect to openclaw').setHeading();
 
         // Instructions
-        const instructions = contentEl.createEl('div', { cls: 'clawdian-instructions' });
+        const instructions = contentEl.createEl('div', { cls: 'clawchat-instructions' });
         instructions.createEl('p', { text: 'To get your gateway token:' });
         
         const ol = instructions.createEl('ol');
@@ -60,7 +60,7 @@ export class TokenModal extends Modal {
             });
 
         // Security note
-        const securityNote = contentEl.createEl('div', { cls: 'clawdian-security-note' });
+        const securityNote = contentEl.createEl('div', { cls: 'clawchat-security-note' });
         securityNote.createEl('small', { 
             text: '🔒 Your token is stored securely using obsidian\'s Secret Storage API.' 
         });

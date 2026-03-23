@@ -36,7 +36,7 @@ In Clawchat settings:
 | Feature | Description |
 |---------|-------------|
 | **Vault Context** | Current note content sent with messages |
-| **Chat History** | Saved locally in `.clawdian/chat-history.json` |
+| **Chat History** | Saved locally in `.clawchat/chat-history.json` |
 | **File Attachments** | Attach vault files as context |
 | **Slash Commands** | `/search`, `/create`, `/summarize`, `/clear` |
 | **Multi-Agent** | Switch between agents with color themes |
@@ -97,7 +97,7 @@ Generate a new token with `operator.read`, `operator.write`, `operator.admin` sc
 Hard reload: `Cmd/Ctrl + Shift + R`
 
 ### Chat history not loading
-Normal for new installs. Check `.clawdian/chat-history.json` exists.
+Normal for new installs. Check `.clawchat/chat-history.json` exists.
 
 ---
 
@@ -105,7 +105,7 @@ Normal for new installs. Check `.clawdian/chat-history.json` exists.
 
 ```bash
 git clone https://github.com/nexushoff-bot/clawdian.git
-cd clawdian
+cd clawchat-fix
 npm install
 npm run build
 cp main.js manifest.json styles.css /path/to/vault/.obsidian/plugins/clawchat/

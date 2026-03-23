@@ -58,59 +58,59 @@ export class LoadingIndicator {
 
     private createElement(): HTMLElement {
         const wrapper = this.parent.createEl('div', { 
-            cls: 'clawdian-loading-wrapper' 
+            cls: 'clawchat-loading-wrapper' 
         });
 
         // Create message group structure matching ChatView
         const groupEl = wrapper.createEl('div', { 
-            cls: 'clawdian-message-group clawdian-message-group-agent clawdian-loading-group' 
+            cls: 'clawchat-message-group clawchat-message-group-agent clawchat-loading-group' 
         });
 
         // Avatar
         const avatarEl = groupEl.createEl('div', { 
-            cls: 'clawdian-avatar clawdian-avatar-agent' 
+            cls: 'clawchat-avatar clawchat-avatar-agent' 
         });
         avatarEl.setAttribute('data-agent', 'loading');
         
         // Animated avatar with pulsing effect
-        const avatarInner = avatarEl.createEl('div', { cls: 'clawdian-avatar-inner' });
+        const avatarInner = avatarEl.createEl('div', { cls: 'clawchat-avatar-inner' });
         avatarInner.appendChild(this.createSvgIcon());
 
         // Content
-        const contentEl = groupEl.createEl('div', { cls: 'clawdian-message-content' });
+        const contentEl = groupEl.createEl('div', { cls: 'clawchat-message-content' });
         
         // Header
-        const headerEl = contentEl.createEl('div', { cls: 'clawdian-message-header' });
+        const headerEl = contentEl.createEl('div', { cls: 'clawchat-message-header' });
         headerEl.createEl('span', { 
-            cls: 'clawdian-message-author',
+            cls: 'clawchat-message-author',
             text: 'Claw chat'
         });
         headerEl.createEl('span', { 
-            cls: 'clawdian-loading-status',
+            cls: 'clawchat-loading-status',
             text: 'Thinking...'
         });
 
         // Typing bubble with animated dots
         const bubbleEl = contentEl.createEl('div', { 
-            cls: 'clawdian-message-bubble clawdian-loading-bubble'
+            cls: 'clawchat-message-bubble clawchat-loading-bubble'
         });
 
-        const dotsContainer = bubbleEl.createEl('div', { cls: 'clawdian-typing-dots' });
+        const dotsContainer = bubbleEl.createEl('div', { cls: 'clawchat-typing-dots' });
         for (let i = 0; i < 3; i++) {
-            dotsContainer.createEl('span', { cls: 'clawdian-typing-dot' });
+            dotsContainer.createEl('span', { cls: 'clawchat-typing-dot' });
         }
 
         // Progress bar for long operations
         const progressContainer = bubbleEl.createEl('div', { 
-            cls: 'clawdian-loading-progress' 
+            cls: 'clawchat-loading-progress' 
         });
         progressContainer.createEl('div', { 
-            cls: 'clawdian-loading-progress-bar' 
+            cls: 'clawchat-loading-progress-bar' 
         });
 
         // Status text that cycles through different states
         contentEl.createEl('div', { 
-            cls: 'clawdian-loading-status-text' 
+            cls: 'clawchat-loading-status-text' 
         });
 
         return wrapper;
@@ -119,8 +119,8 @@ export class LoadingIndicator {
     show(): void {
         if (this.isVisible) return;
         this.isVisible = true;
-        this.element.addClass('clawdian-loading-visible');
-        this.element.removeClass('clawdian-loading-hidden');
+        this.element.addClass('clawchat-loading-visible');
+        this.element.removeClass('clawchat-loading-hidden');
 
         // Start status cycling
         this.startStatusCycle();
@@ -130,8 +130,8 @@ export class LoadingIndicator {
         if (!this.isVisible) return;
         this.isVisible = false;
         
-        this.element.removeClass('clawdian-loading-visible');
-        this.element.addClass('clawdian-loading-hidden');
+        this.element.removeClass('clawchat-loading-visible');
+        this.element.addClass('clawchat-loading-hidden');
         
         // Wait for exit animation
         setTimeout(() => {
@@ -150,7 +150,7 @@ export class LoadingIndicator {
 
         const updateStatus = (): void => {
             if (!this.isVisible) return;
-            const statusEl = this.element.querySelector('.clawdian-loading-status-text');
+            const statusEl = this.element.querySelector('.clawchat-loading-status-text');
             if (statusEl) {
                 statusEl.textContent = statuses[index];
                 index = (index + 1) % statuses.length;
@@ -172,13 +172,13 @@ export class LoadingIndicator {
      * Update loading progress (0-100)
      */
     setProgress(percent: number): void {
-        const progressBar = this.element.querySelector('.clawdian-loading-progress-bar');
+        const progressBar = this.element.querySelector('.clawchat-loading-progress-bar');
         if (progressBar instanceof HTMLElement) {
             progressBar.style.width = `${Math.min(100, Math.max(0, percent))}%`;
             
             // Show progress bar when there's actual progress
             if (percent > 0) {
-                this.element.addClass('clawdian-loading-has-progress');
+                this.element.addClass('clawchat-loading-has-progress');
             }
         }
     }
@@ -187,7 +187,7 @@ export class LoadingIndicator {
      * Set custom status message
      */
     setStatus(message: string): void {
-        const statusEl = this.element.querySelector('.clawdian-loading-status');
+        const statusEl = this.element.querySelector('.clawchat-loading-status');
         if (statusEl) {
             statusEl.textContent = message;
         }
@@ -210,21 +210,21 @@ export class LoadingSkeleton {
     element: HTMLElement;
 
     constructor(parent: HTMLElement, lines = 3) {
-        this.element = parent.createEl('div', { cls: 'clawdian-skeleton' });
+        this.element = parent.createEl('div', { cls: 'clawchat-skeleton' });
         
         for (let i = 0; i < lines; i++) {
             const line = this.element.createEl('div', { 
-                cls: 'clawdian-skeleton-line',
+                cls: 'clawchat-skeleton-line',
                 attr: { style: `--skeleton-delay: ${i * 0.1}s` }
             });
             // Vary the width for realism
             const width = i === lines - 1 ? 60 : 100;
-            line.addClass(`clawdian-skeleton-width-${width}`);
+            line.addClass(`clawchat-skeleton-width-${width}`);
         }
     }
 
     remove(): void {
-        this.element.addClass('clawdian-skeleton-fade-out');
+        this.element.addClass('clawchat-skeleton-fade-out');
         setTimeout(() => this.element.remove(), 300);
     }
 }

@@ -21,17 +21,17 @@ export class ContextChips {
 
     constructor(parent: HTMLElement) {
         this.container = parent.createEl('div', { 
-            cls: 'clawdian-context-container' 
+            cls: 'clawchat-context-container' 
         });
         
         // Chips wrapper
         this.chipsEl = this.container.createEl('div', { 
-            cls: 'clawdian-context-chips' 
+            cls: 'clawchat-context-chips' 
         });
 
         // Empty state hint
         const hintEl = this.container.createEl('div', { 
-            cls: 'clawdian-context-hint',
+            cls: 'clawchat-context-hint',
             text: 'Drop files or click + to add context'
         });
 
@@ -124,7 +124,7 @@ export class ContextChips {
         this.emitChange();
 
         // Show container if it was hidden
-        this.container.addClass('clawdian-context-has-items');
+        this.container.addClass('clawchat-context-has-items');
     }
 
     /**
@@ -136,14 +136,14 @@ export class ContextChips {
 
         const chipEl = this.chipsEl.querySelector(`[data-chip-id="${id}"]`);
         if (chipEl) {
-            chipEl.addClass('clawdian-chip-removing');
+            chipEl.addClass('clawchat-chip-removing');
             setTimeout(() => {
                 chipEl.remove();
                 this.items.splice(index, 1);
                 this.emitChange();
 
                 if (this.items.length === 0) {
-                    this.container.removeClass('clawdian-context-has-items');
+                    this.container.removeClass('clawchat-context-has-items');
                 }
             }, 200);
         }
@@ -192,7 +192,7 @@ export class ContextChips {
     clear(): void {
         this.items = [];
         this.chipsEl.empty();
-        this.container.removeClass('clawdian-context-has-items');
+        this.container.removeClass('clawchat-context-has-items');
         this.emitChange();
     }
 
@@ -205,33 +205,33 @@ export class ContextChips {
 
     private renderChip(item: ContextItem) {
         const chipEl = this.chipsEl.createEl('div', {
-            cls: `clawdian-chip clawdian-chip-${item.type}`,
+            cls: `clawchat-chip clawchat-chip-${item.type}`,
             attr: { 'data-chip-id': item.id, 'data-context-type': item.type }
         });
 
         // Icon
         if (item.icon) {
-            const iconEl = chipEl.createEl('span', { cls: 'clawdian-chip-icon' });
+            const iconEl = chipEl.createEl('span', { cls: 'clawchat-chip-icon' });
             setIcon(iconEl, item.icon);
         }
 
         // Label
         chipEl.createEl('span', { 
-            cls: 'clawdian-chip-label',
+            cls: 'clawchat-chip-label',
             text: item.label,
             attr: { title: item.value }
         });
 
         // Type indicator (small badge)
         const badgeEl = chipEl.createEl('span', { 
-            cls: 'clawdian-chip-badge',
+            cls: 'clawchat-chip-badge',
             text: this.getTypeLabel(item.type)
         });
         void badgeEl;
 
         // Remove button
         const removeBtn = chipEl.createEl('button', {
-            cls: 'clawdian-chip-remove',
+            cls: 'clawchat-chip-remove',
             attr: { 'aria-label': 'Remove', type: 'button' }
         });
         setIcon(removeBtn, 'x');
@@ -242,7 +242,7 @@ export class ContextChips {
 
         // Click to preview (for files and notes)
         if (item.type === 'file' || item.type === 'note') {
-            chipEl.addClass('clawdian-chip-clickable');
+            chipEl.addClass('clawchat-chip-clickable');
             chipEl.addEventListener('click', (e) => {
                 if (e.target !== removeBtn && !removeBtn.contains(e.target as Node)) {
                     this.previewItem(item);
@@ -252,21 +252,21 @@ export class ContextChips {
 
         // Animate in
         requestAnimationFrame(() => {
-            chipEl.addClass('clawdian-chip-visible');
+            chipEl.addClass('clawchat-chip-visible');
         });
     }
 
     private flashChip(id: string) {
         const chipEl = this.chipsEl.querySelector(`[data-chip-id="${id}"]`);
         if (chipEl) {
-            chipEl.addClass('clawdian-chip-flash');
-            setTimeout(() => chipEl.removeClass('clawdian-chip-flash'), 600);
+            chipEl.addClass('clawchat-chip-flash');
+            setTimeout(() => chipEl.removeClass('clawchat-chip-flash'), 600);
         }
     }
 
     private previewItem(item: ContextItem) {
         // Dispatch custom event that ChatView can handle
-        const event = new CustomEvent('clawdian:preview-context', {
+        const event = new CustomEvent('clawchat:preview-context', {
             detail: item,
             bubbles: true
         });
@@ -311,29 +311,29 @@ export class QuickActionButtons {
 
     constructor(parent: HTMLElement, actions: QuickAction[]) {
         this.container = parent.createEl('div', { 
-            cls: 'clawdian-quick-actions' 
+            cls: 'clawchat-quick-actions' 
         });
 
         actions.forEach(action => {
             const btn = this.container.createEl('button', {
-                cls: 'clawdian-quick-action',
+                cls: 'clawchat-quick-action',
                 attr: { title: action.description || action.label }
             });
             
             if (action.icon) {
-                const iconEl = btn.createEl('span', { cls: 'clawdian-quick-action-icon' });
+                const iconEl = btn.createEl('span', { cls: 'clawchat-quick-action-icon' });
                 setIcon(iconEl, action.icon);
             }
             
             btn.createEl('span', { 
-                cls: 'clawdian-quick-action-label',
+                cls: 'clawchat-quick-action-label',
                 text: action.label 
             });
 
             btn.addEventListener('click', () => {
                 action.onClick();
-                btn.addClass('clawdian-quick-action-active');
-                setTimeout(() => btn.removeClass('clawdian-quick-action-active'), 200);
+                btn.addClass('clawchat-quick-action-active');
+                setTimeout(() => btn.removeClass('clawchat-quick-action-active'), 200);
             });
         });
     }
@@ -359,7 +359,7 @@ export class MentionSuggestion {
 
     constructor(parent: HTMLElement, input: HTMLTextAreaElement) {
         this.container = parent.createEl('div', { 
-            cls: 'clawdian-mention-popup' 
+            cls: 'clawchat-mention-popup' 
         });
         this.input = input;
         this.setupListeners();
@@ -417,14 +417,14 @@ export class MentionSuggestion {
 
     open(query: string) {
         this.isOpen = true;
-        this.container.addClass('clawdian-mention-visible');
+        this.container.addClass('clawchat-mention-visible');
         this.updatePosition();
         this.filterItems(query);
     }
 
     close() {
         this.isOpen = false;
-        this.container.removeClass('clawdian-mention-visible');
+        this.container.removeClass('clawchat-mention-visible');
     }
 
     updatePosition() {
@@ -435,9 +435,9 @@ export class MentionSuggestion {
     }
 
     updateSelection() {
-        const items = this.container.querySelectorAll('.clawdian-mention-item');
+        const items = this.container.querySelectorAll('.clawchat-mention-item');
         items.forEach((item, i) => {
-            item.toggleClass('clawdian-mention-selected', i === this.selectedIndex);
+            item.toggleClass('clawchat-mention-selected', i === this.selectedIndex);
         });
     }
 
@@ -450,7 +450,7 @@ export class MentionSuggestion {
         this.container.empty();
         this.items.forEach((item, i) => {
             const el = this.container.createEl('div', {
-                cls: 'clawdian-mention-item',
+                cls: 'clawchat-mention-item',
                 attr: { 'data-index': i.toString() }
             });
             void el;

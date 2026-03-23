@@ -3,7 +3,7 @@ import { OpenClawClient, AgentInfo } from '../utils/OpenClawClient';
 import ClawChatPlugin, { ChatMessage } from '../main';
 import { CONTEXT_SIZES, AGENT_COLORS, DEFAULT_AGENT_COLORS } from '../settings';
 
-export const VIEW_TYPE_CHAT = 'clawdian-chat-view';
+export const VIEW_TYPE_CHAT = 'clawchat-chat-view';
 
 interface AttachedFile {
     path: string;
@@ -54,37 +54,37 @@ export class ChatView extends ItemView {
     async onOpen(): Promise<void> {
         const container = this.containerEl.children[1] as HTMLElement;
         container.empty();
-        container.addClass('clawdian-chat-container');
+        container.addClass('clawchat-chat-container');
 
         // Header
-        const header = container.createEl('div', { cls: 'clawdian-header' });
-        header.createEl('span', { text: '🦞 Claw chat', cls: 'clawdian-title' });
+        const header = container.createEl('div', { cls: 'clawchat-header' });
+        header.createEl('span', { text: '🦞 ClawChat', cls: 'clawchat-title' });
         
         // Agent selector
-        const headerRight = header.createEl('div', { cls: 'clawdian-header-right' });
-        headerRight.createEl('label', { text: 'agent:', cls: 'clawdian-agent-label' });
-        this.agentSelectEl = headerRight.createEl('select', { cls: 'clawdian-agent-select' });
+        const headerRight = header.createEl('div', { cls: 'clawchat-header-right' });
+        headerRight.createEl('label', { text: 'agent:', cls: 'clawchat-agent-label' });
+        this.agentSelectEl = headerRight.createEl('select', { cls: 'clawchat-agent-select' });
 
         // Messages area
-        this.messagesEl = container.createEl('div', { cls: 'clawdian-messages' });
+        this.messagesEl = container.createEl('div', { cls: 'clawchat-messages' });
 
         // Render history FIRST (before connection UI)
         // Small delay to ensure plugin.onload() has completed
         setTimeout(() => { void this.renderHistory(); }, 50);
 
         // Loading indicator
-        this.loadingEl = container.createEl('div', { cls: 'clawdian-loading' });
-        this.loadingEl.createEl('div', { cls: 'clawdian-spinner' });
-        this.loadingEl.createEl('span', { cls: 'clawdian-loading-text' });
+        this.loadingEl = container.createEl('div', { cls: 'clawchat-loading' });
+        this.loadingEl.createEl('div', { cls: 'clawchat-spinner' });
+        this.loadingEl.createEl('span', { cls: 'clawchat-loading-text' });
         this.updateLoadingText();
-        this.loadingEl.addClass('clawdian-hidden');
+        this.loadingEl.addClass('clawchat-hidden');
 
         // Connect overlay (shown if NOT connected)
         this.createConnectOverlay(container);
 
         // Context bar (file attachments)
-        this.contextBarEl = container.createEl('div', { cls: 'clawdian-context-bar' });
-        this.contextBarEl.addClass('clawdian-hidden');
+        this.contextBarEl = container.createEl('div', { cls: 'clawchat-context-bar' });
+        this.contextBarEl.addClass('clawchat-hidden');
 
         this.registerEvent(this.app.workspace.on('active-leaf-change', () => {
             this.updateCurrentFile();
@@ -93,16 +93,16 @@ export class ChatView extends ItemView {
         this.initContextFiles();
 
         // Input container
-        this.inputContainerEl = container.createEl('div', { cls: 'clawdian-input-container' });
-        this.inputContainerEl.addClass('clawdian-hidden');
+        this.inputContainerEl = container.createEl('div', { cls: 'clawchat-input-container' });
+        this.inputContainerEl.addClass('clawchat-hidden');
 
         this.inputEl = this.inputContainerEl.createEl('textarea', {
-            cls: 'clawdian-input',
+            cls: 'clawchat-input',
             attr: { placeholder: 'Type your message...' }
         });
 
         const sendBtn = this.inputContainerEl.createEl('button', {
-            cls: 'clawdian-send-btn',
+            cls: 'clawchat-send-btn',
             text: 'Send'
         });
 
@@ -126,13 +126,13 @@ export class ChatView extends ItemView {
     }
 
     createConnectOverlay(container: HTMLElement) {
-        this.connectOverlayEl = container.createEl('div', { cls: 'clawdian-connect-overlay' });
-        this.connectOverlayEl.addClass('clawdian-hidden');
+        this.connectOverlayEl = container.createEl('div', { cls: 'clawchat-connect-overlay' });
+        this.connectOverlayEl.addClass('clawchat-hidden');
         
-        const overlayContent = this.connectOverlayEl.createEl('div', { cls: 'clawdian-connect-overlay-content' });
+        const overlayContent = this.connectOverlayEl.createEl('div', { cls: 'clawchat-connect-overlay-content' });
         new Setting(overlayContent).setName('Connect to openclaw').setHeading();
         
-        const instructions = overlayContent.createEl('div', { cls: 'clawdian-instructions' });
+        const instructions = overlayContent.createEl('div', { cls: 'clawchat-instructions' });
         instructions.createEl('p', { text: 'To connect:' });
         
         const ol = instructions.createEl('ol');
@@ -144,7 +144,7 @@ export class ChatView extends ItemView {
         ol.createEl('li', { text: 'Click connect below and paste the token' });
 
         const connectBtn = overlayContent.createEl('button', {
-            cls: 'clawdian-connect-btn',
+            cls: 'clawchat-connect-btn',
             text: 'Connect'
         });
         
@@ -162,14 +162,14 @@ export class ChatView extends ItemView {
 
     showConnectOverlay() {
         if (this.connectOverlayEl) {
-            this.connectOverlayEl.removeClass('clawdian-hidden');
-            this.connectOverlayEl.addClass('clawdian-visible');
+            this.connectOverlayEl.removeClass('clawchat-hidden');
+            this.connectOverlayEl.addClass('clawchat-visible');
         }
     }
 
     hideConnectOverlay() {
         if (this.connectOverlayEl) {
-            this.connectOverlayEl.addClass('clawdian-hidden');
+            this.connectOverlayEl.addClass('clawchat-hidden');
         }
     }
 
@@ -389,14 +389,14 @@ export class ChatView extends ItemView {
 
     showConnected() {
         this.hideConnectOverlay();
-        if (this.connectOverlayEl) this.connectOverlayEl.addClass('clawdian-hidden');
+        if (this.connectOverlayEl) this.connectOverlayEl.addClass('clawchat-hidden');
         if (this.contextBarEl) {
-            this.contextBarEl.removeClass('clawdian-hidden');
-            this.contextBarEl.addClass('clawdian-visible');
+            this.contextBarEl.removeClass('clawchat-hidden');
+            this.contextBarEl.addClass('clawchat-visible');
         }
         if (this.inputContainerEl) {
-            this.inputContainerEl.removeClass('clawdian-hidden');
-            this.inputContainerEl.addClass('clawdian-visible');
+            this.inputContainerEl.removeClass('clawchat-hidden');
+            this.inputContainerEl.addClass('clawchat-visible');
         }
         
         // Only show notice once
@@ -410,8 +410,8 @@ export class ChatView extends ItemView {
         if (!this.plugin.settings.autoConnect) {
             this.showConnectOverlay();
         }
-        if (this.contextBarEl) this.contextBarEl.addClass('clawdian-hidden');
-        if (this.inputContainerEl) this.inputContainerEl.addClass('clawdian-hidden');
+        if (this.contextBarEl) this.contextBarEl.addClass('clawchat-hidden');
+        if (this.inputContainerEl) this.inputContainerEl.addClass('clawchat-hidden');
     }
 
     renderHistory() {
@@ -426,7 +426,7 @@ export class ChatView extends ItemView {
         if (!messages || messages.length === 0) {
             // Optionally show a placeholder
             this.messagesEl.createEl('div', { 
-                cls: 'clawdian-empty-history',
+                cls: 'clawchat-empty-history',
                 text: 'No chat history yet. Start a conversation!' 
             });
             return;
@@ -459,29 +459,29 @@ export class ChatView extends ItemView {
         
         if (msg.role === 'user') {
             const msgContainer = this.messagesEl.createEl('div', {
-                cls: 'clawdian-message-container clawdian-message-container-user'
+                cls: 'clawchat-message-container clawchat-message-container-user'
             });
-            const block = msgContainer.createEl('div', { cls: 'clawdian-message-block clawdian-user-block' });
-            block.createEl('div', { cls: 'clawdian-message-sender clawdian-user-sender', text: 'You' });
-            block.createEl('div', { cls: 'clawdian-message-bubble clawdian-user-bubble', text: msg.content });
+            const block = msgContainer.createEl('div', { cls: 'clawchat-message-block clawchat-user-block' });
+            block.createEl('div', { cls: 'clawchat-message-sender clawchat-user-sender', text: 'You' });
+            block.createEl('div', { cls: 'clawchat-message-bubble clawchat-user-bubble', text: msg.content });
         } else {
             const msgContainer = this.messagesEl.createEl('div', {
-                cls: 'clawdian-message-container clawdian-message-container-agent'
+                cls: 'clawchat-message-container clawchat-message-container-agent'
             });
             msgContainer.style.setProperty('--agent-color', agentColor);
             
-            const avatarEl = msgContainer.createEl('div', { cls: 'clawdian-avatar' });
+            const avatarEl = msgContainer.createEl('div', { cls: 'clawchat-avatar' });
             if (useImageAvatar) {
-                const img = avatarEl.createEl('img', { cls: 'clawdian-avatar-img', attr: { src: avatar, alt: agentName } });
+                const img = avatarEl.createEl('img', { cls: 'clawchat-avatar-img', attr: { src: avatar, alt: agentName } });
                 img.onerror = () => { avatarEl.empty(); avatarEl.setText(agentName.charAt(0).toUpperCase()); };
             } else {
                 avatarEl.setText(avatar);
             }
-            avatarEl.style.setProperty('--clawdian-avatar-color', agentColor);
+            avatarEl.style.setProperty('--clawchat-avatar-color', agentColor);
             
-            const block = msgContainer.createEl('div', { cls: 'clawdian-message-block' });
-            block.createEl('div', { cls: 'clawdian-message-sender', text: agentName });
-            block.createEl('div', { cls: 'clawdian-message-bubble', text: msg.content });
+            const block = msgContainer.createEl('div', { cls: 'clawchat-message-block' });
+            block.createEl('div', { cls: 'clawchat-message-sender', text: agentName });
+            block.createEl('div', { cls: 'clawchat-message-bubble', text: msg.content });
         }
     }
 
@@ -510,16 +510,16 @@ export class ChatView extends ItemView {
         this.contextBarEl.empty();
 
         const addBtn = this.contextBarEl.createEl('button', {
-            cls: 'clawdian-context-add-btn',
+            cls: 'clawchat-context-add-btn',
             text: '+ Add file'
         });
         addBtn.addEventListener('click', () => { new FileSuggestModal(this.app, this).open(); });
 
         this.attachedFiles.forEach((file, index) => {
             if (!this.contextBarEl) return;
-            const chip = this.contextBarEl.createEl('div', { cls: 'clawdian-context-file-chip' });
-            chip.createEl('span', { text: file.name, cls: 'clawdian-context-file-name' });
-            const removeBtn = chip.createEl('button', { cls: 'clawdian-context-file-remove', text: '×' });
+            const chip = this.contextBarEl.createEl('div', { cls: 'clawchat-context-file-chip' });
+            chip.createEl('span', { text: file.name, cls: 'clawchat-context-file-name' });
+            const removeBtn = chip.createEl('button', { cls: 'clawchat-context-file-remove', text: '×' });
             removeBtn.addEventListener('click', () => {
                 this.attachedFiles.splice(index, 1);
                 this.renderContextBar();
@@ -658,30 +658,30 @@ export class ChatView extends ItemView {
         
         if (role === 'user') {
             const msgContainer = this.messagesEl.createEl('div', {
-                cls: 'clawdian-message-container clawdian-message-container-user'
+                cls: 'clawchat-message-container clawchat-message-container-user'
             });
-            const block = msgContainer.createEl('div', { cls: 'clawdian-message-block clawdian-user-block' });
-            block.createEl('div', { cls: 'clawdian-message-sender clawdian-user-sender', text: 'You' });
-            block.createEl('div', { cls: 'clawdian-message-bubble clawdian-user-bubble', text });
+            const block = msgContainer.createEl('div', { cls: 'clawchat-message-block clawchat-user-block' });
+            block.createEl('div', { cls: 'clawchat-message-sender clawchat-user-sender', text: 'You' });
+            block.createEl('div', { cls: 'clawchat-message-bubble clawchat-user-bubble', text });
         } else {
             const msgContainer = this.messagesEl.createEl('div', {
-                cls: 'clawdian-message-container clawdian-message-container-agent'
+                cls: 'clawchat-message-container clawchat-message-container-agent'
             });
             msgContainer.style.setProperty('--agent-color', agentColor);
             
-            const avatarEl = msgContainer.createEl('div', { cls: 'clawdian-avatar' });
+            const avatarEl = msgContainer.createEl('div', { cls: 'clawchat-avatar' });
             if (useImageAvatar) {
-                const img = avatarEl.createEl('img', { cls: 'clawdian-avatar-img', attr: { src: avatar, alt: agentName } });
+                const img = avatarEl.createEl('img', { cls: 'clawchat-avatar-img', attr: { src: avatar, alt: agentName } });
                 img.onerror = () => { avatarEl.empty(); avatarEl.setText(agentName.charAt(0).toUpperCase()); };
                 void img;
             } else {
                 avatarEl.setText(avatar);
             }
-            avatarEl.style.setProperty('--clawdian-avatar-color', agentColor);
+            avatarEl.style.setProperty('--clawchat-avatar-color', agentColor);
 
-            const block = msgContainer.createEl('div', { cls: 'clawdian-message-block' });
-            block.createEl('div', { cls: 'clawdian-message-sender', text: agentName });
-            block.createEl('div', { cls: 'clawdian-message-bubble', text });
+            const block = msgContainer.createEl('div', { cls: 'clawchat-message-block' });
+            block.createEl('div', { cls: 'clawchat-message-sender', text: agentName });
+            block.createEl('div', { cls: 'clawchat-message-bubble', text });
         }
         
         requestAnimationFrame(() => {
@@ -692,8 +692,8 @@ export class ChatView extends ItemView {
     showLoading() {
         this.isLoading = true;
         if (this.loadingEl) {
-            this.loadingEl.removeClass('clawdian-hidden');
-            this.loadingEl.addClass('clawdian-visible');
+            this.loadingEl.removeClass('clawchat-hidden');
+            this.loadingEl.addClass('clawchat-visible');
         }
         requestAnimationFrame(() => {
             this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
@@ -703,7 +703,7 @@ export class ChatView extends ItemView {
 
     hideLoading() {
         this.isLoading = false;
-        if (this.loadingEl) this.loadingEl.addClass('clawdian-hidden');
+        if (this.loadingEl) this.loadingEl.addClass('clawchat-hidden');
         this.stopStatusPolling();
         if (this.responseTimeout) {
             clearTimeout(this.responseTimeout);
@@ -717,7 +717,7 @@ export class ChatView extends ItemView {
         const agentName = (this.agentSelectEl && this.agentSelectEl.selectedIndex >= 0 
             ? this.agentSelectEl.options[this.agentSelectEl.selectedIndex]?.text 
             : null) || agentId;
-        const loadingText = this.loadingEl.querySelector('.clawdian-loading-text');
+        const loadingText = this.loadingEl.querySelector('.clawchat-loading-text');
         if (loadingText) loadingText.setText(`${agentName} is thinking...`);
     }
 
@@ -767,13 +767,13 @@ export class ChatView extends ItemView {
     }
 
     showInfoText(text: string) {
-        const infoEl = this.messagesEl.createEl('div', { cls: 'clawdian-info-text', text });
+        const infoEl = this.messagesEl.createEl('div', { cls: 'clawchat-info-text', text });
         setTimeout(() => { infoEl.remove(); }, 5000);
         this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
     }
 
     showErrorText(text: string) {
-        const errorEl = this.messagesEl.createEl('div', { cls: 'clawdian-error-text', text });
+        const errorEl = this.messagesEl.createEl('div', { cls: 'clawchat-error-text', text });
         void errorEl;
         this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
     }
@@ -804,12 +804,12 @@ export class ChatView extends ItemView {
         ];
         
         const palette = document.createElement('div');
-        palette.className = 'clawdian-command-palette';
+        palette.className = 'clawchat-command-palette';
         this.commandPaletteEl = palette;
         
         commands.forEach(cmd => {
-            const item = palette.createEl('div', { cls: 'clawdian-command-item' });
-            item.createEl('span', { text: cmd.label, cls: 'clawdian-command-label' });
+            const item = palette.createEl('div', { cls: 'clawchat-command-item' });
+            item.createEl('span', { text: cmd.label, cls: 'clawchat-command-label' });
             
             item.addEventListener('click', () => {
                 void this.executeCommand(cmd.id);
@@ -818,7 +818,7 @@ export class ChatView extends ItemView {
         });
         
         if (this.inputContainerEl) {
-            this.inputContainerEl.addClass('clawdian-input-container');
+            this.inputContainerEl.addClass('clawchat-input-container');
             this.inputContainerEl.appendChild(palette);
         }
         
