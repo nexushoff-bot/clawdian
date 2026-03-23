@@ -1,5 +1,5 @@
 import { PluginSettingTab, Setting, App, Notice, ColorComponent } from 'obsidian';
-import ClawdianPlugin from './main';
+import ClawChatPlugin from './main';
 
 // Default color palette for agents
 export const AGENT_COLORS = [
@@ -23,7 +23,7 @@ export const DEFAULT_AGENT_COLORS: Record<string, string> = {
     'orion': '#10b981',
 };
 
-export interface ClawdianSettings {
+export interface ClawChatSettings {
     gatewayUrl: string;
     defaultAgent: string;
     lastAgent: string;
@@ -35,7 +35,7 @@ export interface ClawdianSettings {
     autoConnect: boolean;
 }
 
-export const DEFAULT_SETTINGS: ClawdianSettings = {
+export const DEFAULT_SETTINGS: ClawChatSettings = {
     gatewayUrl: 'wss://your-machine.tailXXXX.ts.net',
     defaultAgent: '',
     lastAgent: '',
@@ -54,12 +54,12 @@ export const CONTEXT_SIZES: Record<string, { label: string; chars: number }> = {
     'max': { label: 'Max (entire file)', chars: Infinity }
 };
 
-export class ClawdianSettingTab extends PluginSettingTab {
-    plugin: ClawdianPlugin;
+export class ClawChatSettingTab extends PluginSettingTab {
+    plugin: ClawChatPlugin;
     selectedColorAgentId = '';
     colorPickerEl: ColorComponent | null = null;
 
-    constructor(app: App, plugin: ClawdianPlugin) {
+    constructor(app: App, plugin: ClawChatPlugin) {
         super(app, plugin);
         this.plugin = plugin;
     }

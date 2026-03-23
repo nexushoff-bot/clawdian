@@ -120,17 +120,17 @@ export class OpenClawClient {
             // Validate URL before attempting connection
             if (!this.validateGatewayUrl(this.url)) {
                 const errorMsg = 'Invalid Gateway URL. Must use wss:// or ws:// protocol.';
-                console.error('[Clawdian] ' + errorMsg);
+                console.error('[ClawChat] ' + errorMsg);
                 reject(new Error(errorMsg));
                 return;
             }
             
             try {
-                // console.log('[Clawdian] Connecting to:', this.url);
+                // console.log('[ClawChat] Connecting to:', this.url);
                 this.ws = new WebSocket(this.url);
                 
                 this.ws.onopen = () => {
-                    // console.log('[Clawdian] WebSocket connected, waiting for challenge...');
+                    // console.log('[ClawChat] WebSocket connected, waiting for challenge...');
                     // Don't send connect here - wait for connect.challenge event
                 };
 
@@ -144,7 +144,7 @@ export class OpenClawClient {
                 };
 
                 this.ws.onerror = (err) => {
-                    console.error('[Clawdian] WebSocket error:', err);
+                    console.error('[ClawChat] WebSocket error:', err);
                     this.onError?.(new Error('WebSocket connection failed'));
                     this.connectionReject?.(new Error('WebSocket connection failed'));
                     this.connectionResolve = null;
@@ -152,7 +152,7 @@ export class OpenClawClient {
                 };
 
                 this.ws.onclose = () => {
-                    // console.log('[Clawdian] WebSocket closed');
+                    // console.log('[ClawChat] WebSocket closed');
                     this.connected = false;
                     this.onDisconnect?.();
                 };
@@ -164,16 +164,16 @@ export class OpenClawClient {
 
     private handleConnectChallenge(_nonce: string) {
         // For now, just send connect without nonce - token auth should work
-        // console.log('[Clawdian] Received challenge, sending connect...');
+        // console.log('[ClawChat] Received challenge, sending connect...');
         this.sendConnectRequest();
     }
 
     private handleMessage(data: GatewayMessage) {
-        // console.log('[Clawdian] Received:', data.type, data.event || '', data);
+        // console.log('[ClawChat] Received:', data.type, data.event || '', data);
         
         // Handle connect.challenge event
         if (data.type === 'event' && data.event === 'connect.challenge') {
-            // console.log('[Clawdian] Challenge received, responding...');
+            // console.log('[ClawChat] Challenge received, responding...');
             const nonce = (data.payload as { nonce?: string })?.nonce;
             if (nonce) this.handleConnectChallenge(nonce);
             return;
@@ -190,7 +190,7 @@ export class OpenClawClient {
                 // Handle connect response (hello-ok)
                 if ((data.payload as { type?: string })?.type === 'hello-ok' || data.ok === true) {
                     this.connected = true;
-                    // console.log('[Clawdian] Connected successfully');
+                    // console.log('[ClawChat] Connected successfully');
                     this.onConnect?.();
                     this.connectionResolve?.();
                     this.connectionResolve = null;
@@ -214,7 +214,7 @@ export class OpenClawClient {
             case 'connected':
                 if (data.ok === true) {
                     this.connected = true;
-                    // console.log('[Clawdian] Auth successful');
+                    // console.log('[ClawChat] Auth successful');
                     this.onConnect?.();
                     this.connectionResolve?.();
                     this.connectionResolve = null;
@@ -232,13 +232,13 @@ export class OpenClawClient {
                 break;
                 
             default:
-                // console.log('[Clawdian] Unknown message type:', data.type);
+                // console.log('[ClawChat] Unknown message type:', data.type);
         }
     }
 
     private sendConnectRequest() {
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-            console.error('[Clawdian] WebSocket not ready');
+            console.error('[ClawChat] WebSocket not ready');
             return;
         }
 
@@ -263,7 +263,7 @@ export class OpenClawClient {
             }
         };
 
-        // console.log('[Clawdian] Sending connect request');
+        // console.log('[ClawChat] Sending connect request');
         this.ws.send(JSON.stringify(request));
     }
 
@@ -310,7 +310,7 @@ export class OpenClawClient {
                 }
             };
 
-            // console.log('[Clawdian] Sending to agent:', agentId, 'sessionKey:', sessionKey);
+            // console.log('[ClawChat] Sending to agent:', agentId, 'sessionKey:', sessionKey);
             this.ws.send(JSON.stringify(request));
             resolve(request.id);
         });
@@ -330,7 +330,7 @@ export class OpenClawClient {
         return new Promise((resolve) => {
             const requestId = this.generateId();
             const timeout = setTimeout(() => {
-                // console.log('[Clawdian] getSessionStatus timeout');
+                // console.log('[ClawChat] getSessionStatus timeout');
                 resolve(null);
             }, 5000);
 
@@ -341,7 +341,7 @@ export class OpenClawClient {
                     this.handleMessage = originalHandler;
                     
                     // Log full response for debugging
-                    // console.log('[Clawdian] getSessionStatus response:', JSON.stringify(data, null, 2));
+                    // console.log('[ClawChat] getSessionStatus response:', JSON.stringify(data, null, 2));
                     
                     // Try different response structures
                     const payload = data.payload as { state?: string; status?: string; session?: { state?: string } };

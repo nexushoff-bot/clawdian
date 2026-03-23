@@ -16,7 +16,7 @@ export interface VaultContext {
 }
 
 // Plugin settings
-export interface ClawdianSettings {
+export interface ClawChatSettings {
   gatewayUrl: string;
   gatewayToken: string;
   defaultAgent: string;

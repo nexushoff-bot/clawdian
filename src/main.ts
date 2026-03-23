@@ -1,5 +1,5 @@
 import { Plugin, WorkspaceLeaf, Notice } from 'obsidian';
-import { ClawdianSettingTab, ClawdianSettings, DEFAULT_SETTINGS } from './settings';
+import { ClawChatSettingTab, ClawChatSettings, DEFAULT_SETTINGS } from './settings';
 import { ChatView, VIEW_TYPE_CHAT } from './components/ChatView';
 import { OpenClawClient } from './utils/OpenClawClient';
 import { TokenModal } from './components/TokenModal';
@@ -28,24 +28,24 @@ export interface ChatHistory {
     lastUpdated: number;
 }
 
-export default class ClawdianPlugin extends Plugin {
-    settings: ClawdianSettings;
+export default class ClawChatPlugin extends Plugin {
+    settings: ClawChatSettings;
     client: OpenClawClient;
-    private tokenKey = 'clawdian-gateway-token';
+    private tokenKey = 'clawchat-gateway-token';
     chatHistory: ChatHistory = { messages: [], lastUpdated: 0 };
-    readonly HISTORY_FILE = '.clawdian/chat-history.json';
+    readonly HISTORY_FILE = '.clawchat/chat-history.json';
     
     // Debug logging - set DEBUG_CLAWDIAN=1 in .env for production debugging
     private debug = false;
     
     private debugLog(..._args: unknown[]) {
         if (this.debug) {
-            // console.log('[Clawdian]', ...args);
+            // console.log('[ClawChat]', ...args);
         }
     }
     
     private debugError(...args: unknown[]) {
-        console.error('[Clawdian]', ...args);
+        console.error('[ClawChat]', ...args);
     }
 
     async onload() {
@@ -82,13 +82,13 @@ export default class ClawdianPlugin extends Plugin {
 
         // Add command
         this.addCommand({
-            id: 'open-clawdian',
+            id: 'open-clawchat',
             name: 'Open claw chat',
             callback: () => { void this.activateView(); }
         });
 
         // Add settings tab
-        this.addSettingTab(new ClawdianSettingTab(this.app, this));
+        this.addSettingTab(new ClawChatSettingTab(this.app, this));
 
         // Auto-connect if enabled and we have a token
         if (this.settings.autoConnect && token) {
@@ -144,7 +144,7 @@ export default class ClawdianPlugin extends Plugin {
             const adapter = this.app.vault.adapter;
             
             // Ensure directory exists
-            const dir = '.clawdian';
+            const dir = '.clawchat';
             
             try {
                 const dirExists = await adapter.exists(dir);
@@ -213,7 +213,7 @@ export default class ClawdianPlugin extends Plugin {
             }
             return null;
         } catch (_e) {
-            // console.log('[Clawdian] No stored token found');
+            // console.log('[ClawChat] No stored token found');
             return null;
         }
     }
@@ -234,9 +234,9 @@ export default class ClawdianPlugin extends Plugin {
             }
             
             await adapter.write(secretPath, token);
-            // console.log('[Clawdian] Token saved to Secret Storage');
+            // console.log('[ClawChat] Token saved to Secret Storage');
         } else {
-            console.error('[Clawdian] Secret Storage not available!');
+            console.error('[ClawChat] Secret Storage not available!');
             throw new Error('Secret Storage not available');
         }
     }
@@ -258,19 +258,19 @@ export default class ClawdianPlugin extends Plugin {
 
     setupClientCallbacks() {
         this.client.onConnect = () => {
-            // console.log('[Clawdian] Connected to Gateway');
+            // console.log('[ClawChat] Connected to Gateway');
         };
 
         this.client.onDisconnect = () => {
-            // console.log('[Clawdian] Disconnected from Gateway');
+            // console.log('[ClawChat] Disconnected from Gateway');
         };
 
         this.client.onError = (err) => {
-            console.error('[Clawdian] Client error:', err);
+            console.error('[ClawChat] Client error:', err);
         };
 
         this.client.onAuthError = (msg) => {
-            console.error('[Clawdian] Auth error:', msg);
+            console.error('[ClawChat] Auth error:', msg);
             this.showTokenModal();
         };
     }
@@ -308,7 +308,7 @@ export default class ClawdianPlugin extends Plugin {
             return true;
         } catch (err: unknown) {
             const errorMsg = err instanceof Error ? err.message : String(err);
-            console.error('[Clawdian] Connection failed:', errorMsg);
+            console.error('[ClawChat] Connection failed:', errorMsg);
             return false;
         }
     }

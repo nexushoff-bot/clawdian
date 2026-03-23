@@ -1,4 +1,4 @@
-# Clawdian Specification
+# ClawChat Specification
 
 ## Overview
 Connect Obsidian to OpenClaw agents with full context awareness.
@@ -33,7 +33,7 @@ Connect Obsidian to OpenClaw agents with full context awareness.
 ## API Surface
 
 ```typescript
-interface ClawdianSettings {
+interface ClawChatSettings {
   gatewayUrl: string;
   gatewayToken: string;
   defaultAgent: 'nexus' | 'prism' | 'orion' | 'aristotowl';

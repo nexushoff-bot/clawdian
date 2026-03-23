@@ -1,6 +1,6 @@
 # Clawchat Plugin Code Reference
 
-Comprehensive documentation of the Clawdian Obsidian plugin to prevent future bugs and ease onboarding.
+Comprehensive documentation of the ClawChat Obsidian plugin to prevent future bugs and ease onboarding.
 
 ---
 
@@ -21,7 +21,7 @@ Comprehensive documentation of the Clawdian Obsidian plugin to prevent future bu
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    ClawdianPlugin                            │
+│                    ClawChatPlugin                            │
 │                    (main.ts)                                  │
 │  - Settings management                                       │
 │  - Chat history storage                                      │
@@ -52,14 +52,14 @@ Main plugin class that handles:
 
 ### Key Classes/Functions
 
-#### `ClawdianPlugin` (default export)
+#### `ClawChatPlugin` (default export)
 Extends Obsidian's `Plugin` class.
 
 **Properties:**
-- `settings: ClawdianSettings` - Plugin configuration
+- `settings: ClawChatSettings` - Plugin configuration
 - `client: OpenClawClient` - WebSocket connection handler
 - `chatHistory: ChatHistory` - In-memory message cache
-- `HISTORY_FILE: string` - Path to persisted history (`.clawdian/chat-history.json`)
+- `HISTORY_FILE: string` - Path to persisted history (`.clawchat/chat-history.json`)
 
 **Methods:**
 
@@ -67,7 +67,7 @@ Extends Obsidian's `Plugin` class.
 |--------|---------|
 | `onload()` | Initializes plugin: loads settings, history, token, registers view, adds ribbon icon, creates command, adds settings tab, auto-connects if enabled |
 | `onunload()` | Disconnects WebSocket client |
-| `loadChatHistory()` | Reads `.clawdian/chat-history.json` from vault |
+| `loadChatHistory()` | Reads `.clawchat/chat-history.json` from vault |
 | `saveChatHistory()` | Writes chat history to file (auto-creates `.clawdian` directory) |
 | `addMessageToHistory(msg)` | Adds message to history, keeps only last 500 messages |
 | `loadToken()` | Retrieves token from Obsidian Secret Storage at `.obsidian/plugins/{plugin-id}/.secrets/token` |
@@ -100,7 +100,7 @@ interface ChatHistory {
 ### Dependencies
 
 - `obsidian` - Plugin, WorkspaceLeaf, Notice, TFile
-- `./settings` - ClawdianSettingTab, ClawdianSettings, DEFAULT_SETTINGS
+- `./settings` - ClawChatSettingTab, ClawChatSettings, DEFAULT_SETTINGS
 - `./components/ChatView` - ChatView, VIEW_TYPE_CHAT
 - `./utils/OpenClawClient` - OpenClawClient
 - `./components/TokenModal` - TokenModal
@@ -140,7 +140,7 @@ Extends Obsidian's `ItemView`.
 | Property | Type | Purpose |
 |----------|------|---------|
 | `client` | OpenClawClient | WebSocket handler |
-| `plugin` | ClawdianPlugin | Reference to main plugin |
+| `plugin` | ClawChatPlugin | Reference to main plugin |
 | `messagesEl` | HTMLElement | Message container |
 | `inputEl` | HTMLTextAreaElement | User input |
 | `agentSelectEl` | HTMLSelectElement | Agent dropdown |
@@ -194,7 +194,7 @@ const VIEW_TYPE_CHAT = 'clawdian-chat-view';
 
 - `obsidian` - ItemView, WorkspaceLeaf, Notice, TFile, FuzzySuggestModal, App
 - `../utils/OpenClawClient` - OpenClawClient, AgentInfo
-- `../main` - ClawdianPlugin, ChatMessage
+- `../main` - ClawChatPlugin, ChatMessage
 - `./TokenModal` - TokenModal
 - `../settings` - CONTEXT_SIZES, AGENT_COLORS, DEFAULT_AGENT_COLORS
 
@@ -323,13 +323,13 @@ None (standalone utility class)
 ### Purpose
 
 Plugin settings management:
-- Setting tab UI (ClawdianSettingTab)
+- Setting tab UI (ClawChatSettingTab)
 - Default configuration values
 - Agent color palette definitions
 
 ### Key Classes/Functions
 
-#### `ClawdianSettingTab`
+#### `ClawChatSettingTab`
 Extends Obsidian's `PluginSettingTab`.
 
 **Methods:**
@@ -360,7 +360,7 @@ Extends Obsidian's `PluginSettingTab`.
 ### Data Structures
 
 ```typescript
-interface ClawdianSettings {
+interface ClawChatSettings {
     gatewayUrl: string;               // WebSocket URL (default: ws://127.0.0.1:18789)
     defaultAgent: string;             // Default agent ID
     lastAgent: string;                // Last selected agent (persists across sessions)
@@ -372,7 +372,7 @@ interface ClawdianSettings {
     autoConnect: boolean;             // Connect on startup
 }
 
-const DEFAULT_SETTINGS: ClawdianSettings = {
+const DEFAULT_SETTINGS: ClawChatSettings = {
     gatewayUrl: 'ws://127.0.0.1:18789',
     defaultAgent: '',
     lastAgent: '',
@@ -408,7 +408,7 @@ const DEFAULT_AGENT_COLORS: Record<string, string> = {
 ### Dependencies
 
 - `obsidian` - PluginSettingTab, Setting, App, Notice
-- `./main` - ClawdianPlugin
+- `./main` - ClawChatPlugin
 
 ---
 
@@ -589,7 +589,7 @@ interface AgentInfo {
 }
 
 // settings.ts
-interface ClawdianSettings {
+interface ClawChatSettings {
     gatewayUrl: string;
     defaultAgent: string;
     lastAgent: string;
@@ -673,7 +673,7 @@ client.disconnect()
 
 1. **Token Storage**: Uses Obsidian's Secret Storage, not plugin data. Token path includes plugin ID for isolation.
 
-2. **History Loading**: Loads BEFORE view opens to ensure messages available immediately. File stored at `.clawdian/chat-history.json`.
+2. **History Loading**: Loads BEFORE view opens to ensure messages available immediately. File stored at `.clawchat/chat-history.json`.
 
 3. **Message Deduplication**: Uses `processedRunIds` Set to prevent duplicate messages from gateway. Limited to 50 IDs.
 
@@ -689,4 +689,4 @@ client.disconnect()
 
 ---
 
-*Generated for Clawdian v1.0+*
+*Generated for ClawChat v1.0+*

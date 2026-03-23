@@ -9,7 +9,7 @@
 
 ## Release 0.1.0 - 2026-03-02
 
-- Initial release of Clawdian Obsidian plugin
+- Initial release of ClawChat Obsidian plugin
 - WebSocket connection to OpenClaw Gateway
 - Device identity-based authentication with setup code support
 - Chat interface with agent selection (Nexus, Prism, Orion, Aristotowl)
