@@ -4,7 +4,7 @@
   "description": "Connect Obsidian to OpenClaw agents",
   "main": "main.js",
   "scripts": {
-    "dev": "npm run build && cp main.js manifest.json styles.css /Users/nexus/clawdian/.obsidian/plugins/clawchat/",
+    "dev": "npm run build && cp main.js manifest.json /Users/nexus/clawdian/.obsidian/plugins/clawchat/",
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
     "version": "node version-bump.mjs && git add manifest.json versions.json"
   },
