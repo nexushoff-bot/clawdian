@@ -58,11 +58,11 @@ export class ChatView extends ItemView {
 
         // Header
         const header = container.createEl('div', { cls: 'clawchat-header' });
-        header.createEl('span', { text: '🦞 Claw chat', cls: 'clawchat-title' });
+        header.createEl('span', { text: '🦞 claw chat', cls: 'clawchat-title' });
         
         // Agent selector
         const headerRight = header.createEl('div', { cls: 'clawchat-header-right' });
-        headerRight.createEl('label', { text: 'Agent:', cls: 'clawchat-agent-label' });
+        headerRight.createEl('label', { text: 'agent:', cls: 'clawchat-agent-label' });
         this.agentSelectEl = headerRight.createEl('select', { cls: 'clawchat-agent-select' });
 
         // Messages area

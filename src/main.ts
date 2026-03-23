@@ -82,7 +82,7 @@ export default class ClawChatPlugin extends Plugin {
 
         // Add command
         this.addCommand({
-            id: 'open-claw-chat',
+            id: 'open-chat',
             name: 'Open claw chat',
             callback: () => { void this.activateView(); }
         });
