@@ -58,11 +58,11 @@ export class ChatView extends ItemView {
 
         // Header
         const header = container.createEl('div', { cls: 'clawchat-header' });
-        header.createEl('span', { text: '🦞 ClawChat', cls: 'clawchat-title' });
+        header.createEl('span', { text: '🦞 Claw chat', cls: 'clawchat-title' });
         
         // Agent selector
         const headerRight = header.createEl('div', { cls: 'clawchat-header-right' });
-        headerRight.createEl('label', { text: 'agent:', cls: 'clawchat-agent-label' });
+        headerRight.createEl('label', { text: 'Agent:', cls: 'clawchat-agent-label' });
         this.agentSelectEl = headerRight.createEl('select', { cls: 'clawchat-agent-select' });
 
         // Messages area
@@ -103,10 +103,10 @@ export class ChatView extends ItemView {
 
         const sendBtn = this.inputContainerEl.createEl('button', {
             cls: 'clawchat-send-btn',
-            text: 'Send'
+            text: 'send'
         });
 
-        sendBtn.addEventListener('click', () => { void void this.sendMessage(); });
+        sendBtn.addEventListener('click', () => { void this.sendMessage(); });
         this.inputEl.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -137,15 +137,15 @@ export class ChatView extends ItemView {
         
         const ol = instructions.createEl('ol');
         const step1 = ol.createEl('li');
-        step1.createEl('span', { text: 'Run ' });
+        step1.createEl('span', { text: 'run ' });
         step1.createEl('code', { text: 'openclaw dashboard' });
         
-        ol.createEl('li', { text: 'Click "overview" and copy the gateway token' });
-        ol.createEl('li', { text: 'Click connect below and paste the token' });
+        ol.createEl('li', { text: 'click "overview" and copy the gateway token' });
+        ol.createEl('li', { text: 'click connect below and paste the token' });
 
         const connectBtn = overlayContent.createEl('button', {
             cls: 'clawchat-connect-btn',
-            text: 'Connect'
+            text: 'connect'
         });
         
         connectBtn.addEventListener('click', () => {
@@ -353,7 +353,7 @@ export class ChatView extends ItemView {
         
         if (agentsList.length === 0) {
             selectEl.createEl('option', {
-                text: 'No agents available',
+                text: 'no agents available',
                 value: '',
                 attr: { disabled: 'true', selected: 'true' }
             });
@@ -401,7 +401,7 @@ export class ChatView extends ItemView {
         
         // Only show notice once
         if (!this.hasShownConnected) {
-            new Notice('🦞 Connected');
+            new Notice('🦞 connected');
             this.hasShownConnected = true;
         }
     }
@@ -427,7 +427,7 @@ export class ChatView extends ItemView {
             // Optionally show a placeholder
             this.messagesEl.createEl('div', { 
                 cls: 'clawchat-empty-history',
-                text: 'No chat history yet. Start a conversation!' 
+                text: 'no chat history yet. start a conversation!' 
             });
             return;
         }
@@ -511,7 +511,7 @@ export class ChatView extends ItemView {
 
         const addBtn = this.contextBarEl.createEl('button', {
             cls: 'clawchat-context-add-btn',
-            text: '+ Add file'
+            text: '+ add file'
         });
         addBtn.addEventListener('click', () => { new FileSuggestModal(this.app, this).open(); });
 
@@ -531,11 +531,11 @@ export class ChatView extends ItemView {
         // TFile objects from Obsidian vault are already validated
         // But add a check for safety
         if (!file || !file.path) {
-            new Notice('Invalid file');
+            new Notice('invalid file');
             return;
         }
         if (this.attachedFiles.some(f => f.path === file.path)) {
-            new Notice('File already attached');
+            new Notice('file already attached');
             return;
         }
         this.attachedFiles.push({ path: file.path, name: file.name });
@@ -546,7 +546,7 @@ export class ChatView extends ItemView {
         // console.log('[ClawChat] sendMessage() called');
         
         if (!this.client.isConnected()) {
-            new Notice('Not connected. Click connect first.');
+            new Notice('not connected. click connect first.');
             return;
         }
         if (this.isLoading) return;
@@ -554,7 +554,7 @@ export class ChatView extends ItemView {
         const text = this.inputEl.value.trim();
         const MAX_MESSAGE_LENGTH = 50000;
         if (text.length > MAX_MESSAGE_LENGTH) {
-            new Notice('Message too long. Maximum ' + MAX_MESSAGE_LENGTH + ' characters.');
+            new Notice('message too long. maximum ' + MAX_MESSAGE_LENGTH + ' characters.');
             return;
         }
         if (!text) return;
@@ -869,7 +869,7 @@ export class ChatView extends ItemView {
     async executeCommand(commandId: string, args?: string): Promise<void> {
         // Validate command ID before executing
         if (!this.validateCommand(commandId)) {
-            new Notice(`"${commandId}" is not a valid command. Use /search, /create, /summarize, or /clear`);
+            new Notice(`"${commandId}" is not a valid command. use /search, /create, /summarize, or /clear`);
             this.closeCommandPalette();
             return;
         }
@@ -892,11 +892,11 @@ export class ChatView extends ItemView {
     }
 
     async commandSearch(query: string): Promise<void> {
-        if (!query.trim()) { new Notice('Usage: /search <query>'); return; }
+        if (!query.trim()) { new Notice('usage: /search <query>'); return; }
         // Sanitize query input
         const sanitizedQuery = this.sanitizeInput(query);
-        if (!sanitizedQuery) { new Notice('Invalid query'); return; }
-        new Notice(`🔍 Searching for "${sanitizedQuery}"...`);
+        if (!sanitizedQuery) { new Notice('invalid query'); return; }
+        new Notice(`🔍 searching for "${sanitizedQuery}"...`);
         
         const files = this.app.vault.getMarkdownFiles();
         const results: { file: TFile; content: string }[] = [];

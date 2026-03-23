@@ -82,7 +82,7 @@ export default class ClawChatPlugin extends Plugin {
 
         // Add command
         this.addCommand({
-            id: 'open-clawchat',
+            id: 'open-claw-chat',
             name: 'Open claw chat',
             callback: () => { void this.activateView(); }
         });
@@ -342,9 +342,13 @@ export default class ClawChatPlugin extends Plugin {
 
         // Connect when opening if not already connected
         if (!this.client.isConnected()) {
-            void this.tryConnect().catch(() => {
-                // Connection failed silently - user can retry manually
-            });
+            void (async () => {
+                try {
+                    await this.tryConnect();
+                } catch {
+                    // Connection failed silently - user can retry manually
+                }
+            })();
         }
     }
 }
