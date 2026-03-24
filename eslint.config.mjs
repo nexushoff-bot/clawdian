@@ -17,10 +17,7 @@ export default [
       }
     },
     rules: {
-      "obsidianmd/ui/sentence-case": ["error", { 
-        enforceCamelCaseLower: true,
-        ignoreRegex: [/wss:\/\//, /http:\/\//, /https:\/\//]
-      }],
+      "obsidianmd/ui/sentence-case": ["error", { enforceCamelCaseLower: true }],
       "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
       "@typescript-eslint/require-await": "off",
       "prefer-const": "warn",
