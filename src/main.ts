@@ -4,6 +4,9 @@ import { ChatView, VIEW_TYPE_CHAT } from './components/ChatView';
 import { OpenClawClient } from './utils/OpenClawClient';
 import { TokenModal } from './components/TokenModal';
 
+// Import styles
+import './styles';
+
 // Vault adapter interface for Secret Storage
 interface VaultAdapter {
     read: (path: string) => Promise<string>;
