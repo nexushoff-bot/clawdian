@@ -49,7 +49,7 @@ export default class ClawChatPlugin extends Plugin {
     }
 
     async onload() {
-        this.debugLog('Plugin loading...');
+        this.debugLog('plugin loading...');
         
         // Load settings first
         await this.loadSettings();
@@ -76,14 +76,14 @@ export default class ClawChatPlugin extends Plugin {
         );
 
         // Add ribbon icon
-        this.addRibbonIcon('message-square', 'Open claw chat', () => {
+        this.addRibbonIcon('message-square', 'open claw chat', () => {
             void this.activateView();
         });
 
         // Add command
         this.addCommand({
             id: 'open-chat',
-            name: 'Open claw chat',
+            name: 'open claw chat',
             callback: () => { void this.activateView(); }
         });
 
@@ -92,22 +92,22 @@ export default class ClawChatPlugin extends Plugin {
 
         // Auto-connect if enabled and we have a token
         if (this.settings.autoConnect && token) {
-            this.debugLog('Auto-connect enabled, attempting connection...');
+            this.debugLog('auto-connect enabled, attempting connection...');
             
             void (async () => {
                 try {
                     const connected = await this.tryConnect();
                     if (connected) {
-                        this.debugLog('Auto-connect successful');
+                        this.debugLog('auto-connect successful');
                     }
                 } catch (err: unknown) {
                     const errorMsg = err instanceof Error ? err.message : String(err);
-                    this.debugLog('Auto-connect failed:', errorMsg);
+                    this.debugLog('auto-connect failed:', errorMsg);
                 }
             })();
         }
 
-        this.debugLog('Plugin loaded');
+        this.debugLog('plugin loaded');
     }
 
     /**
@@ -130,7 +130,7 @@ export default class ClawChatPlugin extends Plugin {
             }
         } catch (e: unknown) {
             const errorMsg = e instanceof Error ? e.message : String(e);
-            this.debugError('Error loading history:', errorMsg);
+            this.debugError('error loading history:', errorMsg);
             this.chatHistory = { messages: [], lastUpdated: Date.now() };
         }
     }
@@ -166,7 +166,7 @@ export default class ClawChatPlugin extends Plugin {
             await adapter.write(this.HISTORY_FILE, content);
         } catch (e: unknown) {
             const errorMsg = e instanceof Error ? e.message : String(e);
-            this.debugError('Failed to save history:', errorMsg);
+            this.debugError('failed to save history:', errorMsg);
         }
     }
 

@@ -48,10 +48,10 @@ export const DEFAULT_SETTINGS: ClawChatSettings = {
 };
 
 export const CONTEXT_SIZES: Record<string, { label: string; chars: number }> = {
-    'small': { label: 'Small (500 chars)', chars: 500 },
-    'medium': { label: 'Medium (1500 chars)', chars: 1500 },
-    'large': { label: 'Large (3000 chars)', chars: 3000 },
-    'max': { label: 'Max (entire file)', chars: Infinity }
+    'small': { label: 'small (500 chars)', chars: 500 },
+    'medium': { label: 'medium (1500 chars)', chars: 1500 },
+    'large': { label: 'large (3000 chars)', chars: 3000 },
+    'max': { label: 'max (entire file)', chars: Infinity }
 };
 
 export class ClawChatSettingTab extends PluginSettingTab {
@@ -151,7 +151,7 @@ export class ClawChatSettingTab extends PluginSettingTab {
                     dropdown.addOption(agent.id, agent.name || agent.id);
                 });
             } else {
-                dropdown.addOption('', 'Connect to see agents');
+                dropdown.addOption('', 'connect to see agents');
             }
             dropdown.setValue(this.plugin.settings.lastAgent || this.plugin.settings.defaultAgent);
             dropdown.onChange((value) => {
@@ -216,10 +216,10 @@ export class ClawChatSettingTab extends PluginSettingTab {
             .setName('context size')
             .setDesc('maximum characters from file to include')
             .addDropdown(dropdown => {
-                dropdown.addOption('small', 'Small (500 chars)');
-                dropdown.addOption('medium', 'Medium (1500 chars)');
-                dropdown.addOption('large', 'Large (3000 chars)');
-                dropdown.addOption('max', 'Max (entire file)');
+                dropdown.addOption('small', 'small (500 chars)');
+                dropdown.addOption('medium', 'medium (1500 chars)');
+                dropdown.addOption('large', 'large (3000 chars)');
+                dropdown.addOption('max', 'max (entire file)');
                 dropdown.setValue(this.plugin.settings.contextSize);
                 dropdown.onChange((value: 'small' | 'medium' | 'large' | 'max') => {
                     this.plugin.settings.contextSize = value;
@@ -241,10 +241,10 @@ export class ClawChatSettingTab extends PluginSettingTab {
             .setName('chat history depth')
             .setDesc('number of previous messages to include')
             .addDropdown(dropdown => {
-                dropdown.addOption('1', 'Last 1 message');
-                dropdown.addOption('3', 'Last 3 messages');
-                dropdown.addOption('5', 'Last 5 messages');
-                dropdown.addOption('10', 'Last 10 messages');
+                dropdown.addOption('1', 'last 1 message');
+                dropdown.addOption('3', 'last 3 messages');
+                dropdown.addOption('5', 'last 5 messages');
+                dropdown.addOption('10', 'last 10 messages');
                 dropdown.setValue(this.plugin.settings.chatHistoryDepth.toString());
                 dropdown.onChange((value) => {
                     this.plugin.settings.chatHistoryDepth = parseInt(value);
