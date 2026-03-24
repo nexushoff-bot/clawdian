@@ -83,7 +83,7 @@ export class ClawChatSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('status')
-            .setDesc(isConnected ? '✅ Connected' : '❌ Disconnected')
+            .setDesc(isConnected ? '✅ connected' : '❌ disconnected')
             .addButton(btn => {
                 if (isConnected) {
                     btn.setButtonText('disconnect')

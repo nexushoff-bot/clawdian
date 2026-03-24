@@ -462,7 +462,7 @@ export class ChatView extends ItemView {
                 cls: 'clawchat-message-container clawchat-message-container-user'
             });
             const block = msgContainer.createEl('div', { cls: 'clawchat-message-block clawchat-user-block' });
-            block.createEl('div', { cls: 'clawchat-message-sender clawchat-user-sender', text: 'You' });
+            block.createEl('div', { cls: 'clawchat-message-sender clawchat-user-sender', text: 'you' });
             block.createEl('div', { cls: 'clawchat-message-bubble clawchat-user-bubble', text: msg.content });
         } else {
             const msgContainer = this.messagesEl.createEl('div', {
@@ -661,7 +661,7 @@ export class ChatView extends ItemView {
                 cls: 'clawchat-message-container clawchat-message-container-user'
             });
             const block = msgContainer.createEl('div', { cls: 'clawchat-message-block clawchat-user-block' });
-            block.createEl('div', { cls: 'clawchat-message-sender clawchat-user-sender', text: 'You' });
+            block.createEl('div', { cls: 'clawchat-message-sender clawchat-user-sender', text: 'you' });
             block.createEl('div', { cls: 'clawchat-message-bubble clawchat-user-bubble', text });
         } else {
             const msgContainer = this.messagesEl.createEl('div', {
@@ -974,7 +974,7 @@ export class ChatView extends ItemView {
 
     async commandSummarize(): Promise<void> {
         const activeFile = this.app.workspace.getActiveFile();
-        if (!activeFile) { new Notice('No file active. Open a note first.'); return; }
+        if (!activeFile) { new Notice('no file active. open a note first.'); return; }
         
         try {
             const content = await this.app.vault.read(activeFile);

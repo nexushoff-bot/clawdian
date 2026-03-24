@@ -26,7 +26,7 @@ export class TokenModal extends Modal {
 
         // Instructions
         const instructions = contentEl.createEl('div', { cls: 'clawchat-instructions' });
-        instructions.createEl('p', { text: 'To get your gateway token:' });
+        instructions.createEl('p', { text: 'to get your gateway token:' });
         
         const ol = instructions.createEl('ol');
         const step1 = ol.createEl('li');
