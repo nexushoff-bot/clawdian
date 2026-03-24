@@ -83,11 +83,11 @@ export class LoadingIndicator {
         const headerEl = contentEl.createEl('div', { cls: 'clawchat-message-header' });
         headerEl.createEl('span', { 
             cls: 'clawchat-message-author',
-            text: 'Claw chat'
+            text: 'claw chat'
         });
         headerEl.createEl('span', { 
             cls: 'clawchat-loading-status',
-            text: 'Thinking...'
+            text: 'thinking...'
         });
 
         // Typing bubble with animated dots
@@ -144,7 +144,7 @@ export class LoadingIndicator {
             'thinking...',
             'analyzing context...',
             'processing...',
-            'Generating response...'
+            'generating response...'
         ];
         let index = 0;
 
