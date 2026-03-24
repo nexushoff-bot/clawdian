@@ -952,7 +952,7 @@ export class ChatView extends ItemView {
         
         try {
             const file = await this.app.vault.create(path, `# ${title}\n\n`);
-            new Notice(`Created: ${path}`);
+            new Notice(`created: ${path}`);
             
             // Open in a new tab instead of current tab
             const leaf = this.app.workspace.getLeaf('tab');
@@ -968,7 +968,7 @@ export class ChatView extends ItemView {
             this.addMessage('user', `/create ${title}`);
             this.addMessage('assistant', `Created note: [[${path}]]`);
         } catch (e) {
-            new Notice(`Failed to create note: ${e}`);
+            new Notice(`failed to create note: ${e}`);
         }
     }
 
@@ -997,7 +997,7 @@ export class ChatView extends ItemView {
                 sessionId: this.sessionId
             });
         } catch (e) {
-            new Notice(`Failed to read file: ${e}`);
+            new Notice(`failed to read file: ${e}`);
         }
     }
 

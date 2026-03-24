@@ -289,7 +289,7 @@ export default class ClawChatPlugin extends Plugin {
                 
                 void this.client.connect().catch((err: unknown) => {
                     const errorMsg = err instanceof Error ? err.message : String(err);
-                    new Notice('❌ Connection failed: ' + errorMsg);
+                    new Notice('❌ connection failed: ' + errorMsg);
                 });
             }
         );
