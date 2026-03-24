@@ -78,22 +78,22 @@ export class ClawChatSettingTab extends PluginSettingTab {
 
         // Connection Status
         new Setting(containerEl)
-            .setName('connection')
+            .setName('Connection')
             .setHeading();
 
         new Setting(containerEl)
-            .setName('status')
+            .setName('Status')
             .setDesc(isConnected ? '✅ connected' : '❌ disconnected')
             .addButton(btn => {
                 if (isConnected) {
-                    btn.setButtonText('disconnect')
+                    btn.setButtonText('Disconnect')
                         .onClick(() => {
                             this.plugin.client.disconnect();
-                            new Notice('disconnected');
+                            new Notice('Disconnected');
                             this.display();
                         });
                 } else {
-                    btn.setButtonText('connect')
+                    btn.setButtonText('Connect')
                         .setCta()
                         .onClick(() => {
                             void this.plugin.tryConnect().then(() => {
@@ -104,8 +104,8 @@ export class ClawChatSettingTab extends PluginSettingTab {
             });
 
         new Setting(containerEl)
-            .setName('gateway url')
-            .setDesc('openclaw gateway websocket url')
+            .setName('Gateway URL')
+            .setDesc('Openclaw gateway websocket URL')
             .addText(text => text
                 .setPlaceholder('wss://your-gateway-url')
                 .setValue(this.plugin.settings.gatewayUrl)
@@ -115,8 +115,8 @@ export class ClawChatSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('auto-connect on startup')
-            .setDesc('automatically connect when obsidian starts')
+            .setName('Auto-connect on startup')
+            .setDesc('Automatically connect when Obsidian starts')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.autoConnect)
                 .onChange((value) => {
@@ -125,25 +125,25 @@ export class ClawChatSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('reset token')
-            .setDesc('clear stored gateway token (you\'ll need to re-enter it)')
+            .setName('Reset token')
+            .setDesc('Clear stored gateway token (you\'ll need to re-enter it)')
             .addButton(btn => {
-                btn.setButtonText('clear token')
+                btn.setButtonText('Clear token')
                     .setWarning()
                     .onClick(() => {
                         void this.plugin.clearToken();
-                        new Notice('token cleared. reconnect to enter a new token.');
+                        new Notice('Token cleared. Reconnect to enter a new token.');
                     });
             });
 
         // Preferences
         new Setting(containerEl)
-            .setName('preferences')
+            .setName('Preferences')
             .setHeading();
 
         const agentSetting = new Setting(containerEl)
-            .setName('default agent')
-            .setDesc('which agent to chat with by default');
+            .setName('Default agent')
+            .setDesc('Which agent to chat with by default');
         
         agentSetting.addDropdown(dropdown => {
             if (agents.length > 0) {
@@ -151,7 +151,7 @@ export class ClawChatSettingTab extends PluginSettingTab {
                     dropdown.addOption(agent.id, agent.name || agent.id);
                 });
             } else {
-                dropdown.addOption('', 'connect to see agents');
+                dropdown.addOption('', 'Connect to see agents');
             }
             dropdown.setValue(this.plugin.settings.lastAgent || this.plugin.settings.defaultAgent);
             dropdown.onChange((value) => {
@@ -165,8 +165,8 @@ export class ClawChatSettingTab extends PluginSettingTab {
         // Agent Color
         if (agents.length > 0) {
             const colorSetting = new Setting(containerEl)
-                .setName('agent color')
-                .setDesc('customize chat color for selected agent');
+                .setName('Agent color')
+                .setDesc('Customize chat color for selected agent');
             
             colorSetting.addDropdown(dropdown => {
                 agents.forEach(agent => {
@@ -199,12 +199,12 @@ export class ClawChatSettingTab extends PluginSettingTab {
 
         // Context
         new Setting(containerEl)
-            .setName('context')
+            .setName('Context')
             .setHeading();
 
         new Setting(containerEl)
-            .setName('include vault context')
-            .setDesc('send current file as context with messages')
+            .setName('Include vault context')
+            .setDesc('Send current file as context with messages')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.includeVaultContext)
                 .onChange((value) => {
@@ -213,13 +213,13 @@ export class ClawChatSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('context size')
-            .setDesc('maximum characters from file to include')
+            .setName('Context size')
+            .setDesc('Maximum characters from file to include')
             .addDropdown(dropdown => {
-                dropdown.addOption('small', 'small (500 chars)');
-                dropdown.addOption('medium', 'medium (1500 chars)');
-                dropdown.addOption('large', 'large (3000 chars)');
-                dropdown.addOption('max', 'max (entire file)');
+                dropdown.addOption('small', 'Small (500 chars)');
+                dropdown.addOption('medium', 'Medium (1500 chars)');
+                dropdown.addOption('large', 'Large (3000 chars)');
+                dropdown.addOption('max', 'Max (entire file)');
                 dropdown.setValue(this.plugin.settings.contextSize);
                 dropdown.onChange((value: 'small' | 'medium' | 'large' | 'max') => {
                     this.plugin.settings.contextSize = value;
@@ -228,8 +228,8 @@ export class ClawChatSettingTab extends PluginSettingTab {
             });
 
         new Setting(containerEl)
-            .setName('include chat history')
-            .setDesc('include previous messages as context')
+            .setName('Include chat history')
+            .setDesc('Include previous messages as context')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.includeChatHistory)
                 .onChange((value) => {
@@ -238,13 +238,13 @@ export class ClawChatSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('chat history depth')
-            .setDesc('number of previous messages to include')
+            .setName('Chat history depth')
+            .setDesc('Number of previous messages to include')
             .addDropdown(dropdown => {
-                dropdown.addOption('1', 'last 1 message');
-                dropdown.addOption('3', 'last 3 messages');
-                dropdown.addOption('5', 'last 5 messages');
-                dropdown.addOption('10', 'last 10 messages');
+                dropdown.addOption('1', 'Last 1 message');
+                dropdown.addOption('3', 'Last 3 messages');
+                dropdown.addOption('5', 'Last 5 messages');
+                dropdown.addOption('10', 'Last 10 messages');
                 dropdown.setValue(this.plugin.settings.chatHistoryDepth.toString());
                 dropdown.onChange((value) => {
                     this.plugin.settings.chatHistoryDepth = parseInt(value);
