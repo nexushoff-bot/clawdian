@@ -224,6 +224,18 @@ export class ChatView extends ItemView {
                             if (messageSessionId !== this.sessionId) return;
                         }
                         
+                        // Hide loading on any chat response
+                        if (payload?.state === 'final' || payload?.state === 'complete' || payload?.state === 'done') {
+                            console.log('[ClawChat] Hiding loading, state:', payload?.state);
+                            this.hideLoading();
+                        }
+                        
+                        // Also hide loading if we receive any message content
+                        if (payload?.message?.content && payload?.message?.content.length > 0) {
+                            console.log('[ClawChat] Received message content, hiding loading');
+                            this.hideLoading();
+                        }
+                        
                         if (payload?.state === 'final' && payload?.message?.content) {
                             const runId = payload.runId;
                             if (runId && this.processedRunIds.has(runId)) {
