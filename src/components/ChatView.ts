@@ -98,7 +98,7 @@ export class ChatView extends ItemView {
 
         this.inputEl = this.inputContainerEl.createEl('textarea', {
             cls: 'clawchat-input',
-            attr: { placeholder: 'Type your message...' }
+            attr: { placeholder: 'type your message...' }
         });
 
         const sendBtn = this.inputContainerEl.createEl('button', {
@@ -130,10 +130,10 @@ export class ChatView extends ItemView {
         this.connectOverlayEl.addClass('clawchat-hidden');
         
         const overlayContent = this.connectOverlayEl.createEl('div', { cls: 'clawchat-connect-overlay-content' });
-        new Setting(overlayContent).setName('Connect to openclaw').setHeading();
+        new Setting(overlayContent).setName('connect to openclaw').setHeading();
         
         const instructions = overlayContent.createEl('div', { cls: 'clawchat-instructions' });
-        instructions.createEl('p', { text: 'To connect:' });
+        instructions.createEl('p', { text: 'to connect:' });
         
         const ol = instructions.createEl('ol');
         const step1 = ol.createEl('li');
@@ -195,7 +195,7 @@ export class ChatView extends ItemView {
                         }
                         
                         if (payload?.state === 'error') {
-                            const errorMsg = payload?.error || 'An error occurred';
+                            const errorMsg = payload?.error || 'an error occurred';
                             const isAborted = errorMsg.includes('aborted') || errorMsg.includes('timeout');
                             
                             this.hideLoading();
@@ -942,7 +942,7 @@ export class ChatView extends ItemView {
     }
 
     async commandCreate(title: string): Promise<void> {
-        if (!title.trim()) { new Notice('Usage: /create <title>'); return; }
+        if (!title.trim()) { new Notice('usage: /create <title>'); return; }
         
         // Sanitize title input
         const sanitizedTitle = this.sanitizeInput(title).replace(/[^a-zA-Z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
@@ -1006,7 +1006,7 @@ export class ChatView extends ItemView {
         this.plugin.chatHistory.messages = [];
         await this.plugin.saveChatHistory();
         this.messagesEl.empty();
-        new Notice('Chat history cleared');
+        new Notice('chat history cleared');
     }
 }
 
@@ -1015,7 +1015,7 @@ class FileSuggestModal extends FuzzySuggestModal<TFile> {
     constructor(app: App, chatView: ChatView) {
         super(app);
         this.chatView = chatView;
-        this.setPlaceholder('Search files to add...');
+        this.setPlaceholder('search files to add...');
     }
     getItems(): TFile[] { return this.app.vault.getMarkdownFiles(); }
     getItemText(file: TFile): string { return file.basename; }
