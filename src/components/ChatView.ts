@@ -151,7 +151,9 @@ export class ChatView extends ItemView {
         connectBtn.addEventListener('click', () => {
             void (async () => {
                 const connected = await this.plugin.tryConnect();
-                if (!connected) {
+                if (connected) {
+                    this.showConnected();
+                } else {
                     // No token stored or connection failed - show modal to enter credentials
                     this.plugin.showTokenModal();
                 }
