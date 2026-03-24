@@ -303,11 +303,14 @@ export default class ClawChatPlugin extends Plugin {
         const token = await this.loadToken();
         
         if (!token) {
+            console.log('[ClawChat] No token found');
             return false;
         }
 
         try {
+            console.log('[ClawChat] Attempting connection...');
             await this.client.connect();
+            console.log('[ClawChat] Connection succeeded');
             return true;
         } catch (err: unknown) {
             const errorMsg = err instanceof Error ? err.message : String(err);

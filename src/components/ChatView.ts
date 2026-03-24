@@ -62,7 +62,7 @@ export class ChatView extends ItemView {
         
         // Agent selector
         const headerRight = header.createEl('div', { cls: 'clawchat-header-right' });
-        headerRight.createEl('label', { text: 'agent:', cls: 'clawchat-agent-label' });
+        headerRight.createEl('label', { text: 'Agent:', cls: 'clawchat-agent-label' });
         this.agentSelectEl = headerRight.createEl('select', { cls: 'clawchat-agent-select' });
 
         // Messages area
@@ -98,12 +98,12 @@ export class ChatView extends ItemView {
 
         this.inputEl = this.inputContainerEl.createEl('textarea', {
             cls: 'clawchat-input',
-            attr: { placeholder: 'type your message...' }
+            attr: { placeholder: 'Type your message...' }
         });
 
         const sendBtn = this.inputContainerEl.createEl('button', {
             cls: 'clawchat-send-btn',
-            text: 'send'
+            text: 'Send'
         });
 
         sendBtn.addEventListener('click', () => { void this.sendMessage(); });
@@ -130,31 +130,34 @@ export class ChatView extends ItemView {
         this.connectOverlayEl.addClass('clawchat-hidden');
         
         const overlayContent = this.connectOverlayEl.createEl('div', { cls: 'clawchat-connect-overlay-content' });
-        new Setting(overlayContent).setName('connect to openclaw').setHeading();
+        new Setting(overlayContent).setName('Connect to openclaw').setHeading();
         
         const instructions = overlayContent.createEl('div', { cls: 'clawchat-instructions' });
-        instructions.createEl('p', { text: 'to connect:' });
+        instructions.createEl('p', { text: 'To connect:' });
         
         const ol = instructions.createEl('ol');
         const step1 = ol.createEl('li');
-        step1.createEl('span', { text: 'run ' });
-        step1.createEl('code', { text: 'openclaw dashboard' });
+        step1.createEl('span', { text: 'Run ' });
+        step1.createEl('code', { text: 'Openclaw dashboard' });
         
-        ol.createEl('li', { text: 'click "overview" and copy the gateway token' });
-        ol.createEl('li', { text: 'click connect below and paste the token' });
+        ol.createEl('li', { text: 'Click "overview" and copy the gateway token' });
+        ol.createEl('li', { text: 'Click connect below and paste the token' });
 
         const connectBtn = overlayContent.createEl('button', {
             cls: 'clawchat-connect-btn',
-            text: 'connect'
+            text: 'Connect'
         });
         
         connectBtn.addEventListener('click', () => {
+            console.log('[ClawChat] Connect button clicked');
             void (async () => {
                 const connected = await this.plugin.tryConnect();
+                console.log('[ClawChat] tryConnect returned:', connected);
                 if (connected) {
+                    console.log('[ClawChat] Calling showConnected()');
                     this.showConnected();
                 } else {
-                    // No token stored or connection failed - show modal to enter credentials
+                    console.log('[ClawChat] Showing token modal');
                     this.plugin.showTokenModal();
                 }
             })();
@@ -172,6 +175,7 @@ export class ChatView extends ItemView {
     hideConnectOverlay() {
         if (this.connectOverlayEl) {
             this.connectOverlayEl.addClass('clawchat-hidden');
+            this.connectOverlayEl.removeClass('clawchat-visible');
         }
     }
 
@@ -355,7 +359,7 @@ export class ChatView extends ItemView {
         
         if (agentsList.length === 0) {
             selectEl.createEl('option', {
-                text: 'no agents available',
+                text: 'No agents available',
                 value: '',
                 attr: { disabled: 'true', selected: 'true' }
             });
@@ -390,8 +394,10 @@ export class ChatView extends ItemView {
     }
 
     showConnected() {
+        console.log('[ClawChat] showConnected called');
         this.hideConnectOverlay();
         if (this.connectOverlayEl) this.connectOverlayEl.addClass('clawchat-hidden');
+        console.log('[ClawChat] overlay hidden, showing chat UI');
         if (this.contextBarEl) {
             this.contextBarEl.removeClass('clawchat-hidden');
             this.contextBarEl.addClass('clawchat-visible');
@@ -429,7 +435,7 @@ export class ChatView extends ItemView {
             // Optionally show a placeholder
             this.messagesEl.createEl('div', { 
                 cls: 'clawchat-empty-history',
-                text: 'no chat history yet. start a conversation!' 
+                text: 'No chat history yet. Start a conversation!' 
             });
             return;
         }
@@ -464,7 +470,7 @@ export class ChatView extends ItemView {
                 cls: 'clawchat-message-container clawchat-message-container-user'
             });
             const block = msgContainer.createEl('div', { cls: 'clawchat-message-block clawchat-user-block' });
-            block.createEl('div', { cls: 'clawchat-message-sender clawchat-user-sender', text: 'you' });
+            block.createEl('div', { cls: 'clawchat-message-sender clawchat-user-sender', text: 'You' });
             block.createEl('div', { cls: 'clawchat-message-bubble clawchat-user-bubble', text: msg.content });
         } else {
             const msgContainer = this.messagesEl.createEl('div', {
@@ -533,11 +539,11 @@ export class ChatView extends ItemView {
         // TFile objects from Obsidian vault are already validated
         // But add a check for safety
         if (!file || !file.path) {
-            new Notice('invalid file');
+            new Notice('Invalid file');
             return;
         }
         if (this.attachedFiles.some(f => f.path === file.path)) {
-            new Notice('file already attached');
+            new Notice('File already attached');
             return;
         }
         this.attachedFiles.push({ path: file.path, name: file.name });
@@ -548,7 +554,7 @@ export class ChatView extends ItemView {
         // console.log('[ClawChat] sendMessage() called');
         
         if (!this.client.isConnected()) {
-            new Notice('not connected. click connect first.');
+            new Notice('Not connected. Click connect first.');
             return;
         }
         if (this.isLoading) return;
@@ -663,7 +669,7 @@ export class ChatView extends ItemView {
                 cls: 'clawchat-message-container clawchat-message-container-user'
             });
             const block = msgContainer.createEl('div', { cls: 'clawchat-message-block clawchat-user-block' });
-            block.createEl('div', { cls: 'clawchat-message-sender clawchat-user-sender', text: 'you' });
+            block.createEl('div', { cls: 'clawchat-message-sender clawchat-user-sender', text: 'You' });
             block.createEl('div', { cls: 'clawchat-message-bubble clawchat-user-bubble', text });
         } else {
             const msgContainer = this.messagesEl.createEl('div', {
@@ -897,7 +903,7 @@ export class ChatView extends ItemView {
         if (!query.trim()) { new Notice('usage: /search <query>'); return; }
         // Sanitize query input
         const sanitizedQuery = this.sanitizeInput(query);
-        if (!sanitizedQuery) { new Notice('invalid query'); return; }
+        if (!sanitizedQuery) { new Notice('Invalid query'); return; }
         new Notice(`🔍 searching for "${sanitizedQuery}"...`);
         
         const files = this.app.vault.getMarkdownFiles();
@@ -948,7 +954,7 @@ export class ChatView extends ItemView {
         
         // Sanitize title input
         const sanitizedTitle = this.sanitizeInput(title).replace(/[^a-zA-Z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
-        if (!sanitizedTitle) { new Notice('invalid title'); return; }
+        if (!sanitizedTitle) { new Notice('Invalid title'); return; }
         
         const path = `${sanitizedTitle}.md`;
         
@@ -976,7 +982,7 @@ export class ChatView extends ItemView {
 
     async commandSummarize(): Promise<void> {
         const activeFile = this.app.workspace.getActiveFile();
-        if (!activeFile) { new Notice('no file active. open a note first.'); return; }
+        if (!activeFile) { new Notice('No file active. Open a note first.'); return; }
         
         try {
             const content = await this.app.vault.read(activeFile);
@@ -1008,7 +1014,7 @@ export class ChatView extends ItemView {
         this.plugin.chatHistory.messages = [];
         await this.plugin.saveChatHistory();
         this.messagesEl.empty();
-        new Notice('chat history cleared');
+        new Notice('Chat history cleared');
     }
 }
 
@@ -1017,7 +1023,7 @@ class FileSuggestModal extends FuzzySuggestModal<TFile> {
     constructor(app: App, chatView: ChatView) {
         super(app);
         this.chatView = chatView;
-        this.setPlaceholder('search files to add...');
+        this.setPlaceholder('Search files to add...');
     }
     getItems(): TFile[] { return this.app.vault.getMarkdownFiles(); }
     getItemText(file: TFile): string { return file.basename; }

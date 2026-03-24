@@ -107,6 +107,7 @@ export class ClawChatSettingTab extends PluginSettingTab {
             .setName('Gateway URL')
             .setDesc('Openclaw gateway websocket URL')
             .addText(text => text
+                // eslint-disable-next-line obsidianmd/ui/sentence-case
                 .setPlaceholder('wss://your-gateway-url')
                 .setValue(this.plugin.settings.gatewayUrl)
                 .onChange((value) => {
