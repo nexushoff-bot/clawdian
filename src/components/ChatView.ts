@@ -149,15 +149,11 @@ export class ChatView extends ItemView {
         });
         
         connectBtn.addEventListener('click', () => {
-            console.log('[ClawChat] Connect button clicked');
             void (async () => {
                 const connected = await this.plugin.tryConnect();
-                console.log('[ClawChat] tryConnect returned:', connected);
                 if (connected) {
-                    console.log('[ClawChat] Calling showConnected()');
                     this.showConnected();
                 } else {
-                    console.log('[ClawChat] Showing token modal');
                     this.plugin.showTokenModal();
                 }
             })();
@@ -226,13 +222,11 @@ export class ChatView extends ItemView {
                         
                         // Hide loading on any chat response
                         if (payload?.state === 'final' || payload?.state === 'complete' || payload?.state === 'done') {
-                            console.log('[ClawChat] Hiding loading, state:', payload?.state);
                             this.hideLoading();
                         }
                         
                         // Also hide loading if we receive any message content
                         if (payload?.message?.content && payload?.message?.content.length > 0) {
-                            console.log('[ClawChat] Received message content, hiding loading');
                             this.hideLoading();
                         }
                         
@@ -278,7 +272,7 @@ export class ChatView extends ItemView {
                         return;
                     }
 
-                } catch (_e) {
+                } catch {
                     // Ignore parse errors
                 }
             })();
@@ -406,10 +400,8 @@ export class ChatView extends ItemView {
     }
 
     showConnected() {
-        console.log('[ClawChat] showConnected called');
         this.hideConnectOverlay();
         if (this.connectOverlayEl) this.connectOverlayEl.addClass('clawchat-hidden');
-        console.log('[ClawChat] overlay hidden, showing chat UI');
         if (this.contextBarEl) {
             this.contextBarEl.removeClass('clawchat-hidden');
             this.contextBarEl.addClass('clawchat-visible');
@@ -563,7 +555,6 @@ export class ChatView extends ItemView {
     }
 
     async sendMessage() {
-        // console.log('[ClawChat] sendMessage() called');
         
         if (!this.client.isConnected()) {
             new Notice('Not connected. Click connect first.');
@@ -595,14 +586,12 @@ export class ChatView extends ItemView {
             }
         }
         
-        // console.log('[ClawChat] sendMessage - text:', text.substring(0, 50));
 
         // Add to history and render
         const agentId = this.agentSelectEl?.value || this.plugin.settings.defaultAgent || 'main';
         const agentName = this.agentSelectEl?.options[this.agentSelectEl.selectedIndex]?.text || agentId;
         const agentEmoji = this.getAgentEmoji(agentId);
         
-        // console.log('[ClawChat] Calling addMessageToHistory with agentId:', agentId);
         await this.plugin.addMessageToHistory({
             agentId,
             agentName,
@@ -611,7 +600,6 @@ export class ChatView extends ItemView {
             content: text
         });
         
-        // console.log('[ClawChat] Calling addMessage for UI render');
         this.addMessage('user', text);
         this.inputEl.value = '';
         this.showLoading();
@@ -630,7 +618,6 @@ export class ChatView extends ItemView {
                         fileContents.push(`--- ${file.name} ---\n${truncated}`);
                     }
                 } catch (e) {
-                    // console.log('[ClawChat] Could not read file:', file.path, e);
                     void e;
                 }
             }
@@ -657,12 +644,10 @@ export class ChatView extends ItemView {
     }
 
     addMessage(role: 'user' | 'assistant', text: string, savedEmoji?: string) {
-        // console.log('[ClawChat] addMessage() called - role:', role, 'text length:', text.length);
         
         // Render immediately
         const agentId = this.agentSelectEl?.value || this.plugin.settings.defaultAgent || 'main';
         const agentName = role === 'user' ? 'You' : (this.agentSelectEl?.options[this.agentSelectEl.selectedIndex]?.text || agentId);
-        // console.log('[ClawChat] addMessage - agentId:', agentId, 'agentName:', agentName);
         
         const agentColor = role === 'user' ? '' : this.getAgentColor(agentId);
         const agents = this.client.getAgents();
@@ -774,14 +759,12 @@ export class ChatView extends ItemView {
         
         try {
             const status = await this.client.getSessionStatus(sessionKey);
-            // console.log('[ClawChat] Session status:', status, 'elapsed:', elapsedMin, 'min');
             
             if (status === 'error' || status === 'aborted' || status === 'timeout') {
                 this.hideLoading();
                 this.showErrorText('⚠️ Agent timed out or failed. Please try again.');
             }
         } catch (err) {
-            // console.log('[ClawChat] Status check failed:', err);
             void err;
         }
     }
@@ -928,7 +911,7 @@ export class ChatView extends ItemView {
                     results.push({ file, content });
                     if (results.length >= 5) break;
                 }
-            } catch (_e) {
+            } catch {
                         // Skip files that can't be read
                     }
         }

@@ -138,7 +138,7 @@ export class OpenClawClient {
                     try {
                         const data = JSON.parse(event.data);
                         this.handleMessage(data);
-                    } catch (_e) {
+                    } catch {
                         this.onMessage?.(event.data);
                     }
                 };

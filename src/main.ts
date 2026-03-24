@@ -43,7 +43,6 @@ export default class ClawChatPlugin extends Plugin {
     
     private debugLog(..._args: unknown[]) {
         if (this.debug) {
-            // console.log('[ClawChat]', ...args);
         }
     }
     
@@ -215,8 +214,7 @@ export default class ClawChatPlugin extends Plugin {
                 }
             }
             return null;
-        } catch (_e) {
-            // console.log('[ClawChat] No stored token found');
+        } catch {
             return null;
         }
     }
@@ -232,12 +230,11 @@ export default class ClawChatPlugin extends Plugin {
             
             try {
                 await adapter.mkdir(secretDir);
-            } catch (_e) {
+            } catch {
                 // Directory may already exist
             }
             
             await adapter.write(secretPath, token);
-            // console.log('[ClawChat] Token saved to Secret Storage');
         } else {
             console.error('[ClawChat] Secret Storage not available!');
             throw new Error('secret storage not available');
@@ -253,7 +250,7 @@ export default class ClawChatPlugin extends Plugin {
             const secretPath = `.obsidian/plugins/${this.manifest.id}/.secrets/token`;
             try {
                 await adapter.remove(secretPath);
-            } catch (_e) {
+            } catch {
                 // File may not exist
             }
         }
@@ -261,11 +258,9 @@ export default class ClawChatPlugin extends Plugin {
 
     setupClientCallbacks() {
         this.client.onConnect = () => {
-            // console.log('[ClawChat] Connected to Gateway');
         };
 
         this.client.onDisconnect = () => {
-            // console.log('[ClawChat] Disconnected from Gateway');
         };
 
         this.client.onError = (err) => {
@@ -303,14 +298,11 @@ export default class ClawChatPlugin extends Plugin {
         const token = await this.loadToken();
         
         if (!token) {
-            console.log('[ClawChat] No token found');
             return false;
         }
 
         try {
-            console.log('[ClawChat] Attempting connection...');
             await this.client.connect();
-            console.log('[ClawChat] Connection succeeded');
             return true;
         } catch (err: unknown) {
             const errorMsg = err instanceof Error ? err.message : String(err);
