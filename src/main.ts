@@ -237,7 +237,7 @@ export default class ClawChatPlugin extends Plugin {
             // console.log('[ClawChat] Token saved to Secret Storage');
         } else {
             console.error('[ClawChat] Secret Storage not available!');
-            throw new Error('Secret Storage not available');
+            throw new Error('secret storage not available');
         }
     }
 

@@ -101,7 +101,7 @@ export class OpenClawClient {
 
     updateConfig(url: string, token: string) {
         if (!this.validateGatewayUrl(url)) {
-            throw new Error('Invalid Gateway URL. Must use wss:// or ws:// protocol.');
+            throw new Error('invalid gateway URL. Must use wss:// or ws:// protocol.');
         }
         this.url = url;
         this.token = token;
@@ -119,7 +119,7 @@ export class OpenClawClient {
             
             // Validate URL before attempting connection
             if (!this.validateGatewayUrl(this.url)) {
-                const errorMsg = 'Invalid Gateway URL. Must use wss:// or ws:// protocol.';
+                const errorMsg = 'invalid gateway URL. Must use wss:// or ws:// protocol.';
                 console.error('[ClawChat] ' + errorMsg);
                 reject(new Error(errorMsg));
                 return;
@@ -145,8 +145,8 @@ export class OpenClawClient {
 
                 this.ws.onerror = (err) => {
                     console.error('[ClawChat] WebSocket error:', err);
-                    this.onError?.(new Error('WebSocket connection failed'));
-                    this.connectionReject?.(new Error('WebSocket connection failed'));
+                    this.onError?.(new Error('websocket connection failed'));
+                    this.connectionReject?.(new Error('websocket connection failed'));
                     this.connectionResolve = null;
                     this.connectionReject = null;
                 };
@@ -198,7 +198,7 @@ export class OpenClawClient {
                 } else if (data.error) {
                     const errorMsg = (data.error as { message?: string }).message 
                         || (typeof data.error === 'string' ? data.error : JSON.stringify(data.error))
-                        || 'Connection failed';
+                        || 'connection failed';
                     console.error('[Claw Chat] Connection error:', errorMsg);
                     this.onAuthError?.(errorMsg);
                     this.connectionReject?.(new Error(errorMsg));
@@ -222,7 +222,7 @@ export class OpenClawClient {
                 } else if (data.error) {
                     const errorMsg = (data.error as { message?: string }).message 
                         || (typeof data.error === 'string' ? data.error : JSON.stringify(data.error))
-                        || 'Auth failed';
+                        || 'auth failed';
                     console.error('[Claw Chat] Auth error:', errorMsg);
                     this.onAuthError?.(errorMsg);
                     this.connectionReject?.(new Error(errorMsg));
@@ -282,7 +282,7 @@ export class OpenClawClient {
     sendMessage(msg: ChatMessage): Promise<string> {
         return new Promise((resolve, reject) => {
             if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-                reject(new Error('Not connected'));
+                reject(new Error('not connected'));
                 return;
             }
 

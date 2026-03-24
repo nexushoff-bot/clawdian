@@ -141,9 +141,9 @@ export class LoadingIndicator {
 
     private startStatusCycle(): void {
         const statuses = [
-            'Thinking...',
-            'Analyzing context...',
-            'Processing...',
+            'thinking...',
+            'analyzing context...',
+            'processing...',
             'Generating response...'
         ];
         let index = 0;

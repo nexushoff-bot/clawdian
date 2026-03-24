@@ -32,7 +32,7 @@ export class ContextChips {
         // Empty state hint
         const hintEl = this.container.createEl('div', { 
             cls: 'clawchat-context-hint',
-            text: 'Drop files or click + to add context'
+            text: 'drop files or click + to add context'
         });
 
         this.chipsEl.addEventListener('click', () => {
