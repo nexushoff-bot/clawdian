@@ -946,7 +946,7 @@ export class ChatView extends ItemView {
         
         // Sanitize title input
         const sanitizedTitle = this.sanitizeInput(title).replace(/[^a-zA-Z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
-        if (!sanitizedTitle) { new Notice('Invalid title'); return; }
+        if (!sanitizedTitle) { new Notice('invalid title'); return; }
         
         const path = `${sanitizedTitle}.md`;
         

@@ -79,7 +79,7 @@ export class TokenModal extends Modal {
                             return;
                         }
                         if (!token) {
-                            new Notice('Please enter the gateway token');
+                            new Notice('please enter the gateway token');
                             return;
                         }
 

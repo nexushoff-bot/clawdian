@@ -6,17 +6,20 @@
     "sourceType": "module",
     "project": "./tsconfig.json"
   },
-  "plugins": ["@typescript-eslint"],
+  "plugins": ["@typescript-eslint", "@obsidianmd"],
   "extends": [
     "eslint:recommended",
-    "plugin:@typescript-eslint/recommended"
+    "plugin:@typescript-eslint/recommended",
+    "plugin:@obsidianmd/recommended"
   ],
   "rules": {
     "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
     "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/require-await": "off",
     "no-constant-condition": "off",
-    "prefer-const": "warn"
+    "prefer-const": "warn",
+    "@obsidianmd/no-text-severity": "off",
+    "@obsidianmd/no-capitalized-commands": "error"
   },
   "ignorePatterns": ["node_modules/", "main.js"]
 }
