@@ -42,8 +42,7 @@ export class TokenModal extends Modal {
             .setDesc('Your openclaw gateway websocket URL')
             .addText(text => {
                 this.gatewayInput = text.inputEl;
-                // eslint-disable-next-line obsidianmd/ui/sentence-case
-                text.setPlaceholder('wss://your-gateway-url');
+                text.setPlaceholder('wss://your-gateway-url (WebSocket address for your OpenClaw gateway)');
                 text.setValue(this.gatewayUrl);
             });
 
@@ -63,8 +62,7 @@ export class TokenModal extends Modal {
         // Security note
         const securityNote = contentEl.createEl('div', { cls: 'clawchat-security-note' });
         securityNote.createEl('small', { 
-            // eslint-disable-next-line obsidianmd/ui/sentence-case
-            text: '🔒 your token is stored securely using Obsidian\'s Secret Storage API.' 
+            text: '🔒 Your token is stored securely using Obsidian\'s Secret Storage API.' 
         });
 
         // Buttons

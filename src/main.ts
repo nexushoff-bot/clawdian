@@ -43,6 +43,7 @@ export default class ClawChatPlugin extends Plugin {
     
     private debugLog(..._args: unknown[]) {
         if (this.debug) {
+            // Debug logging is disabled in production
         }
     }
     
@@ -258,9 +259,11 @@ export default class ClawChatPlugin extends Plugin {
 
     setupClientCallbacks() {
         this.client.onConnect = () => {
+            // Connected callback
         };
 
         this.client.onDisconnect = () => {
+            // Disconnected callback
         };
 
         this.client.onError = (err) => {
