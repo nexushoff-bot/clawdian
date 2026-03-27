@@ -339,7 +339,7 @@ export default class ClawChatPlugin extends Plugin {
             await leaf.setViewState({ type: VIEW_TYPE_CHAT, active: true });
         }
 
-        workspace.revealLeaf(leaf);
+        void workspace.revealLeaf(leaf);
 
         // Connect when opening if not already connected
         if (!this.client.isConnected()) {
