@@ -42,7 +42,7 @@ export class TokenModal extends Modal {
             .setDesc('Your openclaw gateway websocket URL')
             .addText(text => {
                 this.gatewayInput = text.inputEl;
-                text.setPlaceholder('Wss://gateway-url (Your OpenClaw gateway WebSocket address)');
+                text.setPlaceholder('wss://your-gateway-url');
                 text.setValue(this.gatewayUrl);
             });
 
@@ -62,7 +62,7 @@ export class TokenModal extends Modal {
         // Security note
         const securityNote = contentEl.createEl('div', { cls: 'clawchat-security-note' });
         securityNote.createEl('small', { 
-            text: '🔒 Your token is stored securely using Obsidian\'s Secret Storage API.' 
+            text: '🔒 your token is stored securely using Obsidian\'s Secret Storage API.' 
         });
 
         // Buttons

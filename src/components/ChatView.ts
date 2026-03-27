@@ -53,6 +53,7 @@ export class ChatView extends ItemView {
      
     async onOpen(): Promise<void> {
         const container = this.containerEl.children[1] as HTMLElement;
+        await Promise.resolve();
         container.empty();
         container.addClass('clawchat-chat-container');
 
