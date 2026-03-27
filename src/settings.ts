@@ -107,7 +107,7 @@ export class ClawChatSettingTab extends PluginSettingTab {
             .setName('Gateway URL')
             .setDesc('Openclaw gateway websocket URL')
             .addText(text => text
-                .setPlaceholder('wss://your-gateway-url')
+                .setPlaceholder('Enter your gateway URL')
                 .setValue(this.plugin.settings.gatewayUrl)
                 .onChange((value) => {
                     this.plugin.settings.gatewayUrl = value;

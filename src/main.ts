@@ -343,9 +343,7 @@ export default class ClawChatPlugin extends Plugin {
 
         // Connect when opening if not already connected
         if (!this.client.isConnected()) {
-            void this.tryConnect().catch(() => {
-                // Connection failed silently - user can retry manually
-            });
+            void this.tryConnect();
         }
     }
 }

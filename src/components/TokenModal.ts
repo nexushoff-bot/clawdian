@@ -42,7 +42,7 @@ export class TokenModal extends Modal {
             .setDesc('Your openclaw gateway websocket URL')
             .addText(text => {
                 this.gatewayInput = text.inputEl;
-                text.setPlaceholder('wss://your-gateway-url');
+                text.setPlaceholder('Enter your gateway URL');
                 text.setValue(this.gatewayUrl);
             });
 
@@ -52,7 +52,7 @@ export class TokenModal extends Modal {
             .setDesc('Paste the token from your dashboard')
             .addText(text => {
                 this.tokenInput = text.inputEl;
-                text.setPlaceholder('Paste your gateway token here');
+                text.setPlaceholder('Enter your gateway token');
                 text.inputEl.type = 'password';
                 this.tokenInput.addEventListener('input', () => {
                     this.token = this.tokenInput.value;
