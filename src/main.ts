@@ -347,6 +347,8 @@ export default class ClawChatPlugin extends Plugin {
                 const errorMsg = err instanceof Error ? err.message : String(err);
                 new Notice('Failed to connect: ' + errorMsg);
             });
+        } else {
+            // Connection already established, no-op
         }
     }
 }

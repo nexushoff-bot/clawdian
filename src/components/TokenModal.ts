@@ -62,7 +62,7 @@ export class TokenModal extends Modal {
         // Security note
         const securityNote = contentEl.createEl('div', { cls: 'clawchat-security-note' });
         securityNote.createEl('small', { 
-            text: '🔒 your token is stored securely in the secret storage.' 
+            text: '🔒 Your token is stored securely in the secret storage.' 
         });
 
         // Buttons
