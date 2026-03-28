@@ -65,6 +65,7 @@ export class TokenModal extends Modal {
             text: '🔒 Your token is stored securely in secret storage.'
         });
 
+
         // Buttons
         new Setting(contentEl)
             .addButton(btn => {
