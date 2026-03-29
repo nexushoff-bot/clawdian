@@ -76,11 +76,11 @@ export class TokenModal extends Modal {
                         const token = this.tokenInput.value.trim();
 
                         if (!gateway) {
-                            new Notice('Please enter the gateway URL');
+                            new Notice('Please enter the gateway url');
                             return;
                         }
                         if (!token) {
-                            new Notice('Please enter the gateway token');
+                            new Notice('Please enter the token');
                             return;
                         }
 
