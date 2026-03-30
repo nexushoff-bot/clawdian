@@ -30,11 +30,11 @@ export class TokenModal extends Modal {
         
         const ol = instructions.createEl('ol');
         const step1 = ol.createEl('li');
-        step1.createEl('span', { text: 'Open a terminal and run: ' });
-        step1.createEl('code', { text: 'Openclaw dashboard' });
+        step1.createEl('span', { text: 'open a terminal and run: ' });
+        step1.createEl('code', { text: 'openclaw dashboard' });
         
-        ol.createEl('li', { text: 'Click on "overview" in the dashboard' });
-        ol.createEl('li', { text: 'Copy the gateway token' });
+        ol.createEl('li', { text: 'click on "overview" in the dashboard' });
+        ol.createEl('li', { text: 'copy the gateway token' });
 
         // Gateway URL input
         new Setting(contentEl)
@@ -76,11 +76,11 @@ export class TokenModal extends Modal {
                         const token = this.tokenInput.value.trim();
 
                         if (!gateway) {
-                            new Notice('Please enter the gateway url');
+                            new Notice('please enter the gateway url');
                             return;
                         }
                         if (!token) {
-                            new Notice('Please enter the token');
+                            new Notice('please enter the token');
                             return;
                         }
 
