@@ -22,7 +22,7 @@ export class TokenModal extends Modal {
         contentEl.empty();
         contentEl.addClass('clawchat-token-modal');
 
-        new Setting(contentEl).setName('Connect to openclaw').setHeading();
+        new Setting(contentEl).setName('connect to openclaw').setHeading();
 
         // Instructions
         const instructions = contentEl.createEl('div', { cls: 'clawchat-instructions' });
