@@ -69,7 +69,7 @@ export class TokenModal extends Modal {
         // Buttons
         new Setting(contentEl)
             .addButton(btn => {
-                btn.setButtonText('Connect')
+                btn.setButtonText('connect')
                     .setCta()
                     .onClick(() => {
                         const gateway = this.gatewayInput.value.trim();
@@ -89,7 +89,7 @@ export class TokenModal extends Modal {
                     });
             })
             .addButton(btn => {
-                btn.setButtonText('Cancel')
+                btn.setButtonText('cancel')
                     .onClick(() => this.close());
             });
     }
