@@ -22,24 +22,24 @@ export class TokenModal extends Modal {
         contentEl.empty();
         contentEl.addClass('clawchat-token-modal');
 
-        new Setting(contentEl).setName('Connect to Openclaw').setHeading();
+        new Setting(contentEl).setName('connect to openclaw').setHeading();
 
         // Instructions
         const instructions = contentEl.createEl('div', { cls: 'clawchat-instructions' });
-        instructions.createEl('p', { text: 'To get your gateway token:' });
+        instructions.createEl('p', { text: 'to get your gateway token:' });
         
         const ol = instructions.createEl('ol');
         const step1 = ol.createEl('li');
-        step1.createEl('span', { text: 'Open a terminal and run: ' });
+        step1.createEl('span', { text: 'open a terminal and run: ' });
         step1.createEl('code', { text: 'openclaw dashboard' });
         
-        ol.createEl('li', { text: 'Click on "overview" in the dashboard' });
-        ol.createEl('li', { text: 'Copy the gateway token' });
+        ol.createEl('li', { text: 'click on "overview" in the dashboard' });
+        ol.createEl('li', { text: 'copy the gateway token' });
 
         // Gateway URL input
         new Setting(contentEl)
-            .setName('Gateway URL')
-            .setDesc('Your openclaw gateway websocket URL')
+            .setName('gateway url')
+            .setDesc('your openclaw gateway websocket URL')
             .addText(text => {
                 this.gatewayInput = text.inputEl;
                 text.setPlaceholder('Enter your gateway URL');
@@ -48,8 +48,8 @@ export class TokenModal extends Modal {
 
         // Token input
         new Setting(contentEl)
-            .setName('Gateway Token')
-            .setDesc('Paste the token from your dashboard')
+            .setName('gateway token')
+            .setDesc('paste the token from your dashboard')
             .addText(text => {
                 this.tokenInput = text.inputEl;
                 text.setPlaceholder('Enter your gateway token');
@@ -69,18 +69,18 @@ export class TokenModal extends Modal {
         // Buttons
         new Setting(contentEl)
             .addButton(btn => {
-                btn.setButtonText('Connect')
+                btn.setButtonText('connect')
                     .setCta()
                     .onClick(() => {
                         const gateway = this.gatewayInput.value.trim();
                         const token = this.tokenInput.value.trim();
 
                         if (!gateway) {
-                            new Notice('Please enter the gateway URL');
+                            new Notice('please enter the gateway URL');
                             return;
                         }
                         if (!token) {
-                            new Notice('Please enter the token');
+                            new Notice('please enter the token');
                             return;
                         }
 
@@ -89,7 +89,7 @@ export class TokenModal extends Modal {
                     });
             })
             .addButton(btn => {
-                btn.setButtonText('Cancel')
+                btn.setButtonText('cancel')
                     .onClick(() => this.close());
             });
     }
