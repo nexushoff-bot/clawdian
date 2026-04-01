@@ -22,7 +22,7 @@ export class TokenModal extends Modal {
         contentEl.empty();
         contentEl.addClass('clawchat-token-modal');
 
-        new Setting(contentEl).setName('Connect to OpenClaw').setHeading();
+        new Setting(contentEl).setName('Connect to openclaw').setHeading();
 
         // Instructions
         const instructions = contentEl.createEl('div', { cls: 'clawchat-instructions' });
@@ -39,7 +39,7 @@ export class TokenModal extends Modal {
         // Gateway URL input
         new Setting(contentEl)
             .setName('Gateway URL')
-            .setDesc('Your OpenClaw gateway URL')
+            .setDesc('your openclaw gateway URL')
             .addText(text => {
                 this.gatewayInput = text.inputEl;
                 text.setPlaceholder('Enter your gateway URL');
@@ -49,7 +49,7 @@ export class TokenModal extends Modal {
         // Token input
         new Setting(contentEl)
             .setName('Gateway token')
-            .setDesc('Paste the token from your dashboard')
+            .setDesc('paste the token from your dashboard')
             .addText(text => {
                 this.tokenInput = text.inputEl;
                 text.setPlaceholder('Enter your gateway token');
@@ -64,6 +64,8 @@ export class TokenModal extends Modal {
         securityNote.createEl('small', { 
             text: '🔒 your token is stored securely in secret storage.'
         });
+
+        // eslint-disable-next-line obsidianmd/ui/sentence-case
 
 
         // Buttons
