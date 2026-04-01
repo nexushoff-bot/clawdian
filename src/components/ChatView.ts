@@ -637,6 +637,15 @@ export class ChatView extends ItemView {
                 sessionId: this.sessionId
             });
             this.currentRunId = runId;
+            
+            // Set response timeout
+            if (this.responseTimeout) {
+                clearTimeout(this.responseTimeout);
+            }
+            this.responseTimeout = setTimeout(() => {
+                this.hideLoading();
+                this.showErrorText('⚠️ Response timeout. Please try again.');
+            }, this.RESPONSE_TIMEOUT_MS);
         } catch (err) {
             this.hideLoading();
             this.addMessage('assistant', '⚠️ Failed to send. Connection lost?');
@@ -705,6 +714,15 @@ export class ChatView extends ItemView {
             this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
         });
         this.startStatusPolling();
+        
+        // Clear any existing timeout and set new one
+        if (this.responseTimeout) {
+            clearTimeout(this.responseTimeout);
+        }
+        this.responseTimeout = setTimeout(() => {
+            this.hideLoading();
+            this.showErrorText('⚠️ Response timeout. Please try again.');
+        }, this.RESPONSE_TIMEOUT_MS);
     }
 
     hideLoading() {
