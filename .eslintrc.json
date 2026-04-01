@@ -18,7 +18,7 @@
     "@typescript-eslint/require-await": "off",
     "no-constant-condition": "off",
     "prefer-const": "warn",
-    "obsidianmd/ui/sentence-case": ["error", { "enforceCamelCaseLower": false }]
+    "obsidianmd/ui/sentence-case": ["error", { "enforceCamelCaseLower": true }]
   },
   "ignorePatterns": ["node_modules/", "main.js"]
 }
