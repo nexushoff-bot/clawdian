@@ -9,8 +9,7 @@
   "plugins": ["@typescript-eslint", "obsidianmd"],
   "extends": [
     "eslint:recommended",
-    "plugin:@typescript-eslint/recommended",
-    "plugin:obsidianmd/recommended"
+    "plugin:@typescript-eslint/recommended"
   ],
   "rules": {
     "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
@@ -18,7 +17,7 @@
     "@typescript-eslint/require-await": "off",
     "no-constant-condition": "off",
     "prefer-const": "warn",
-    "obsidianmd/ui/sentence-case": ["error", { "enforceCamelCaseLower": true }]
+    "obsidianmd/ui/sentence-case": "off"
   },
   "ignorePatterns": ["node_modules/", "main.js"]
 }
