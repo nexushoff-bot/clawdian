@@ -31,7 +31,7 @@ export class TokenModal extends Modal {
         const ol = instructions.createEl('ol');
         const step1 = ol.createEl('li');
         step1.createEl('span', { text: 'Open a terminal and run: ' });
-        step1.createEl('code', { text: 'OpenClaw dashboard' });
+        step1.createEl('code', { text: 'openclaw dashboard' });
         
         ol.createEl('li', { text: 'Click on Overview in the dashboard' });
         ol.createEl('li', { text: 'Copy the gateway token' });
