@@ -221,13 +221,8 @@ export class ChatView extends ItemView {
                             if (messageSessionId !== this.sessionId) return;
                         }
                         
-                        // Hide loading on any chat response
-                        if (payload?.state === 'final' || payload?.state === 'complete' || payload?.state === 'done') {
-                            this.hideLoading();
-                        }
-                        
-                        // Also hide loading if we receive any message content
-                        if (payload?.message?.content && payload?.message?.content.length > 0) {
+                        // Only hide loading on final message
+                        if (payload?.state === 'final') {
                             this.hideLoading();
                         }
                         
@@ -267,8 +262,9 @@ export class ChatView extends ItemView {
                                 content: textContent
                             });
                             
-                            this.hideLoading();
+                            // Add message first, then hide loading to ensure smooth transition
                             this.addMessage('assistant', textContent, agentEmoji);
+                            this.hideLoading();
                         }
                         return;
                     }
