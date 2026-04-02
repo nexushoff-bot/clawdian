@@ -86,7 +86,7 @@ export default class ClawChatPlugin extends Plugin {
         // Add command
         this.addCommand({
             id: 'open-chat',
-            name: 'Open',
+            name: 'Open Chat',
             callback: () => { void this.activateView(); }
         });
 
@@ -260,10 +260,12 @@ export default class ClawChatPlugin extends Plugin {
     setupClientCallbacks() {
         this.client.onConnect = () => {
             // Connected callback
+            console.warn('Client connected');
         };
 
         this.client.onDisconnect = () => {
             // Disconnected callback
+            console.warn('Client disconnected');
         };
 
         this.client.onError = (err) => {
@@ -348,7 +350,7 @@ export default class ClawChatPlugin extends Plugin {
                 new Notice('Failed to connect: ' + errorMsg);
             });
         } else {
-            // Connection already established, no-op
+            // Connection already established
         }
     }
 }

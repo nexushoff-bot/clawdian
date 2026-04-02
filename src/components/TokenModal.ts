@@ -22,7 +22,7 @@ export class TokenModal extends Modal {
         contentEl.empty();
         contentEl.addClass('clawchat-token-modal');
 
-        new Setting(contentEl).setName('Connect to OpenClaw').setHeading();
+        new Setting(contentEl).setName('Connect to openclaw').setHeading();
 
         // Instructions
         const instructions = contentEl.createEl('div', { cls: 'clawchat-instructions' });
@@ -33,13 +33,13 @@ export class TokenModal extends Modal {
         step1.createEl('span', { text: 'Open a terminal and run: ' });
         step1.createEl('code', { text: 'OpenClaw dashboard' });
         
-        ol.createEl('li', { text: 'Click on overview in the dashboard' });
+        ol.createEl('li', { text: 'Click on Overview in the dashboard' });
         ol.createEl('li', { text: 'Copy the gateway token' });
 
         // Gateway URL input
         new Setting(contentEl)
             .setName('Gateway URL')
-            .setDesc('Your OpenClaw gateway URL')
+            .setDesc('Your openclaw gateway URL')
             .addText(text => {
                 this.gatewayInput = text.inputEl;
                 text.setPlaceholder('Enter your gateway URL');
@@ -62,7 +62,7 @@ export class TokenModal extends Modal {
         // Security note
         const securityNote = contentEl.createEl('div', { cls: 'clawchat-security-note' });
         securityNote.createEl('small', { 
-            text: '🔒 your token is stored securely in secret storage.'
+            text: '🔒 Your token is stored securely in secret storage.'
         });
 
 
