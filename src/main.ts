@@ -86,7 +86,7 @@ export default class ClawChatPlugin extends Plugin {
         // Add command
         this.addCommand({
             id: 'open-chat',
-            name: 'Open Chat',
+            name: 'Open chat',
             callback: () => { void this.activateView(); }
         });
 
@@ -350,7 +350,7 @@ export default class ClawChatPlugin extends Plugin {
                 new Notice('Failed to connect: ' + errorMsg);
             });
         } else {
-            // Connection already established
+            // Connection already established, no-op
         }
     }
 }
