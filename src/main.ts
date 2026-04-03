@@ -350,7 +350,7 @@ export default class ClawChatPlugin extends Plugin {
                 new Notice('Failed to connect: ' + errorMsg);
             });
         } else {
-            // Connection already established, no-op
+            // Connection already established
         }
     }
 }
