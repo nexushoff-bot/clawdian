@@ -22,15 +22,15 @@ export class TokenModal extends Modal {
         contentEl.empty();
         contentEl.addClass('clawchat-token-modal');
 
-        new Setting(contentEl).setName('Connect to openclaw').setHeading();
+        new Setting(contentEl).setName('Connect to OpenClaw').setHeading();
 
         // Instructions
         const instructions = contentEl.createEl('div', { cls: 'clawchat-instructions' });
-        instructions.createEl('p', { text: 'To get your gateway token:' });
+        instructions.createEl('p', { text: 'To get your gateway token' });
         
         const ol = instructions.createEl('ol');
         const step1 = ol.createEl('li');
-        step1.createEl('span', { text: 'Open a terminal and run: ' });
+        step1.createEl('span', { text: 'Open a terminal and run' });
         step1.createEl('code', { text: 'Openclaw dashboard' });
         
         ol.createEl('li', { text: 'Click on overview in the dashboard' });
@@ -71,7 +71,7 @@ export class TokenModal extends Modal {
         // Buttons
         new Setting(contentEl)
             .addButton(btn => {
-                btn.setButtonText('Connect')
+                btn.setButtonText('connect')
                     .setCta()
                     .onClick(() => {
                         const gateway = this.gatewayInput.value.trim();
